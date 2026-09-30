@@ -1,6 +1,6 @@
 # CORNFIELD
 
-**[Play on your phone](https://osangen.github.io/cornfields/?controls=touch)** · [Play with keyboard and mouse](https://osangen.github.io/cornfields/?controls=mouse)
+**[Play CORNFIELD](https://osangen.github.io/cornfields/)** · Automatically selects desktop or touch controls.
 
 On a phone, turn to landscape and tap **ENTER THE FIELD**. The left joystick moves; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
 
@@ -43,7 +43,7 @@ Its final scream briefly turns the sky red. No health is restored by escaping.
 
 Rotation to portrait or switching away pauses the game and clears held controls. Return to landscape and tap CONTINUE. Action buttons never count as looking. Genuine joystick movement and looking still reveal a hiding player. Touch mode caps rendering pixel ratio at 1.
 
-Input mode normally follows the browser's primary pointer. Use `?controls=touch` or `?controls=mouse` to override it on hybrid devices or during verification. Physical-phone frame rate, browser interruptions and comfort still need a phone playtest.
+Input mode follows the device: a touchscreen with a coarse primary pointer gets touch controls; a mouse or trackpad gets desktop controls. Window size does not determine input mode. Older shared links containing `controls=touch` or `controls=mouse` also auto-detect. Verification alone can force a mode with `?test=1&controls=touch` or `?test=1&controls=mouse`. Physical-phone frame rate, browser interruptions and comfort still need a phone playtest.
 
 ## Static build and GitHub Pages
 

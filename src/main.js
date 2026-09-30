@@ -3,14 +3,17 @@ import {createScene} from './scene.js';
 import {FieldAudio} from './audio.js';
 import {createGameApp} from './app.js';
 import {installDebugHooks} from './debug.js';
+import {selectControlMode} from './control-mode.js';
 
 const node = id => document.getElementById(id);
 node('start-btn').disabled = true;
 
 try {
   const parameters = new URLSearchParams(location.search);
-  const touch = parameters.get('controls') === 'touch' ||
-    (parameters.get('controls') !== 'mouse' && matchMedia('(pointer: coarse)').matches);
+  const touch = selectControlMode({search:location.search,
+    coarse:matchMedia('(pointer: coarse)').matches,
+    fine:matchMedia('(pointer: fine)').matches,
+    maxTouchPoints:navigator.maxTouchPoints})==='touch';
   document.body.classList.toggle('touch', touch);
   node('rotate').hidden = !touch || innerWidth >= innerHeight;
   const maze = createMaze();
