@@ -215,7 +215,7 @@ export function requestDoor(game,door,open,actor='player'){
   if(open&&state.amount<.01){
     const body=actor==='enemy'?game.enemy:game.player;
     const preferred=(body.x-door.x)*door.normal.x+(body.z-door.z)*door.normal.z>0?-1:1;
-    const bodies=[game.player,...(game.enemies?.filter(e=>e.active&&e.zone===game.player.zone)||[game.enemy])];
+    const bodies=game.enemies?[...(game.player.zone===body.zone?[game.player]:[]),...game.enemies.filter(e=>e.active&&e.zone===body.zone)]:[game.player,game.enemy];
     state.swing=game.interaction?.landing?.swings?.[door.index]||safeDoorSwing(door,bodies,preferred)||preferred;
   }
   state.target=open?1:0;state.requestedBy=actor;return true;

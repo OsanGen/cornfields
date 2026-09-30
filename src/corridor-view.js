@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import {doorLeaf} from './corn-world.js';
 
-export function createCorridorFieldView(scene,maze,floorMaterial,{touch=false}={}){
+export function createCorridorFieldView(scene,maze,floor,{touch=false}={}){
   if(!maze.corridorLayout)return {update(){},setAssets(){},stats:{enabled:false}};
   const wallsGroup=new THREE.Group(),fieldGroup=new THREE.Group();scene.add(wallsGroup,fieldGroup);
   const wood=new THREE.MeshStandardMaterial({color:0x978269,roughness:1});
   const matrix=new THREE.Object3D(),w=maze.cornWorld;
   const panels=new THREE.InstancedMesh(new THREE.BoxGeometry(1,2.65,.08),wood,6000);panels.frustumCulled=false;wallsGroup.add(panels);
   const rails=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.10,.13),wood,12000);rails.frustumCulled=false;wallsGroup.add(rails);
-  const fieldFloor=new THREE.Mesh(new THREE.PlaneGeometry(140,140),floorMaterial);fieldFloor.rotation.x=-Math.PI/2;fieldGroup.add(fieldFloor);
+  const fieldFloor=new THREE.Mesh(new THREE.PlaneGeometry(140,140),floor.material);fieldFloor.rotation.x=-Math.PI/2;fieldGroup.add(fieldFloor);
   const leaf=new THREE.Mesh(new THREE.BoxGeometry(1,2.25,.06).translate(.5,1.125,0),wood);fieldGroup.add(leaf);
   for(const x of [-.8,.8]){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,2.65,.15),wood);post.position.set(x,1.325,0);fieldGroup.add(post);}
   const lantern=new THREE.Mesh(new THREE.BoxGeometry(.16,.25,.16),new THREE.MeshStandardMaterial({color:0xf3c56d,emissive:0xe8a44e,emissiveIntensity:3}));lantern.position.set(.95,2.2,0);fieldGroup.add(lantern);
@@ -46,7 +46,7 @@ export function createCorridorFieldView(scene,maze,floorMaterial,{touch=false}={
     }
     plants.forEach((mesh,i)=>{mesh.count=counts[i];mesh.instanceMatrix.needsUpdate=true;});
   }
-  return {stats,setAssets(assets,mats){if(assets?.length)setPlants(assets);materials=mats;if(mats)for(const key of ['map','normalMap','roughnessMap'])wood[key]=mats.wood[key];wood.needsUpdate=true;},
+  return {stats,setAssets(assets,mats){if(assets?.length)setPlants(assets);materials=mats;fieldFloor.material=floor.material;if(mats)for(const key of ['map','normalMap','roughnessMap'])wood[key]=mats.wood[key];wood.needsUpdate=true;},
     update(game){
       const inField=game.player.zone==='field';stats.activeZone=inField?'field':'corridor';wallsGroup.visible=!inField;fieldGroup.visible=inField;
       if(runId!==game.runId||revision!==game.corridorMaze.cornWorld.revision){refreshWalls(game);runId=game.runId;revision=game.corridorMaze.cornWorld.revision;}

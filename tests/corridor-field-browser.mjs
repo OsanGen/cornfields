@@ -16,6 +16,7 @@ try{
   const shot=async name=>{const d=await page.evaluate(()=>window.__test.diagnostics());console.log(kind,name,JSON.stringify({drawCalls:d.drawCalls,triangles:d.triangles,mode:d.mode,zone:d.zone}));await page.screenshot({path:`${output}/${kind}-${name}.png`,timeout:30000,animations:'disabled'});};
   const action=async type=>{if(touch)await page.locator(type==='interact'?'#touch-interact':'#touch-stab').tap();else await page.keyboard.press(type==='interact'?'KeyE':'Space');await page.evaluate(()=>window.advanceTime(17));};
   await page.goto(preview.url+'?test=1&intro=off',{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__test?.intro().coreReady);
+  await page.bringToFront();await step(0);
   await page.locator('#start-btn')[touch?'tap':'click']();await step(0);
   assert.equal((await state()).mode,'playing');assert.equal((await page.evaluate(()=>window.__test.diagnostics())).controlMode,touch?'touch':'mouse');
   if(!touch)assert.equal(await page.evaluate(()=>document.pointerLockElement?.id),'scene');

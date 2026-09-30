@@ -170,7 +170,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const worldObjects=scene.children.filter(o=>o!==camera&&o!==enemy&&o!==dust&&!o.isHemisphereLight&&!o.isDirectionalLight);
   const originalVisible=new Map(worldObjects.map(o=>[o,o.visible]));
   const extraGroups=maze.corridorLayout?Array.from({length:3},()=>{const group=enemy.clone();scene.add(group);return group;}):[];
-  const corridorView=createCorridorFieldView(scene,maze,floor.material,{touch});visuals.corridors=corridorView.stats;
+  const corridorView=createCorridorFieldView(scene,maze,floor,{touch});visuals.corridors=corridorView.stats;
   const weatherView=weather?createWeatherView(scene,weather):null;
   const cornView=createCornView(scene,maze);visuals.corn=cornView.stats;
   const survivalView=createSurvivalView(scene,maze);
@@ -278,7 +278,9 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
       for(const o of worldObjects)o.visible=!field&&originalVisible.get(o);
       for(const o of [walls,stalks,leaves,ears,straw,door,...entranceObjects,pocket])o.visible=false;
       for(const {ring,id}of rewardRings)ring.visible=!field&&!g.progress.activatedCheckpoints.includes(id);
-      cornView.setVisible(!field);fieldVisuals?.setVisible(!field);corridorView.update(g);
+      // The old corn islands are hidden behind the new opaque wooden panels.
+      // Borrow their assets/materials without drawing that redundant vegetation.
+      cornView.setVisible(!field);fieldVisuals?.setVisible(false);corridorView.update(g);
     }
     renderer.render(scene,camera);
   }

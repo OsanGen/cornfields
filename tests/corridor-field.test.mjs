@@ -108,3 +108,8 @@ test('application retry clears field enemies, trip state and corridor qualificat
   assert.ok(h.app.snapshot(true).enemies.length>0);await h.app.restart();
   const s=h.app.snapshot(true);assert.equal(s.zone,'corridor');assert.equal(s.fieldTrip.active,false);assert.equal(s.corridorRun.elapsed,0);assert.equal(s.corridorRun.ready,false);assert.equal(s.enemies.length,1);h.app.dispose();
 });
+test('shooting a pursuer before hiding preserves its stagger across the zone boundary',()=>{
+  const g=setup(),d=g.maze.cornDoors.find(d=>d.fieldEntrance),e=g.enemies[0];
+  Object.assign(e,{x:d.x,z:d.z+1.8,state:'staggered',timer:2});e.memory.lastKnown={x:d.x,z:d.z+1};field(g);
+  const from={x:e.x,z:e.z};updateGame(g,1,{});assert.equal(e.zone,'corridor');assert.equal(e.x,from.x);assert.equal(e.z,from.z);
+});

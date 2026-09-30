@@ -92,11 +92,18 @@ function updateFieldPressure(g){
 // Inactive-zone pursuit uses its last doorway evidence, not the player's remote
 // transform. Actors cross only after physically reaching the open threshold.
 function followAcrossDoor(g,e,dt){
+  e.attackCooldown=Math.max(0,e.attackCooldown-dt);e.timer=Math.max(0,e.timer-dt);
+  if(['staggered','flashlight_recoil'].includes(e.state)&&e.timer>0)return;
   if(e.followDoor==null||g.elapsed<(e.followAfter||0))return;
   const d=g.corridorMaze.cornDoors[e.followDoor],fromField=e.zone==='field';
   const maze=fromField?g.fieldMaze:g.corridorMaze;
   const target=fromField?{x:0,z:.85}:{x:d.x,z:d.z+.85};
   const blocks=[];blocks.doors=g.cornDoors;
+  if(distance(e,target)<1.5&&g.cornDoors[d.index].amount<.96){
+    const previous=g.maze;g.maze=maze;
+    try{withEnemy(g,e,()=>openDoor(g,maze.cornDoors[d.index],'enemy'));}finally{g.maze=previous;}
+    return;
+  }
   const path=cornPath(maze.cornWorld,e,target,blocks,{allowDoors:true});
   const to=path.find(p=>distance(p,e)>.08);
   if(to){const length=distance(e,to),step=Math.min(length,dt*C.zombie.investigateSpeed),x=e.x+(to.x-e.x)/length*step,z=e.z+(to.z-e.z)/length*step;
@@ -105,7 +112,8 @@ function followAcrossDoor(g,e,dt){
   const arrival=fromField?{x:d.x,z:d.z+.3,zone:'corridor'}:{x:0,z:.3,zone:'field'};
   if([g.player,...g.enemies.filter(other=>other!==e&&other.active)].some(other=>other.zone===arrival.zone&&distance(other,arrival)<e.radius+other.radius+.03))return;
   Object.assign(e,arrival);
-  e.followDoor=null;e.path=[];e.target=null;e.state='investigate';e.memory.lastKnown={x:e.x,z:e.z};e.memory.lastObservation={source:'doorway',position:{...e.memory.lastKnown},at:g.elapsed};
+  e.followDoor=null;e.path=[];e.searchCells=[];e.target=null;e.state='investigate';
+  e.memory={...createEnemy().memory,lastKnown:{x:e.x,z:e.z},lastHeardAt:g.elapsed,lastObservation:{source:'doorway',position:{x:e.x,z:e.z},at:g.elapsed}};
 }
 export function updateCorridorEnemies(g,dt,blocks){
   if(!g.enemies){updateZombie(g,dt,blocks);return;}

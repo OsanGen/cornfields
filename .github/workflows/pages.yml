@@ -35,7 +35,7 @@ jobs:
           "$RUNNER_TEMP/corn-browser/node_modules/.bin/playwright" install --with-deps chromium
           ln -s "$RUNNER_TEMP/corn-browser/node_modules/playwright" node_modules/playwright
       - name: Verify corridor and field in desktop and touch browsers
-        run: CORNFIELD_HEADED=1 xvfb-run -a node tests/corridor-field-browser.mjs
+        run: node tests/corridor-field-browser.mjs
       - name: Run shared game client
         run: |
           CORNFIELD_BASE_PATH=/cornfields/ CORNFIELD_SESSION_SECONDS=90 node scripts/preview-dist.mjs &
