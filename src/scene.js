@@ -11,6 +11,7 @@ import {createWeatherView} from './weather-view.js';
 import {installHands} from './hands.js';
 import {strugglePose,nightmareState} from './horror-presentation.js';
 import {createCornView} from './corn-view.js';
+import {createSurvivalView} from './corn-survival-view.js';
 
 function seeded(seed=719){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 const material=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
@@ -30,7 +31,8 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const ctx=groundCanvas.getContext('2d');ctx.fillStyle='#474635';ctx.fillRect(0,0,128,128);
   for(let i=0;i<3300;i++){const b=35+Math.floor(random()*45);ctx.fillStyle=`rgba(${b+12},${b+9},${b},.4)`;ctx.fillRect(random()*128,random()*128,1+random()*3,1+random()*2);}
   const groundTex=new THREE.CanvasTexture(groundCanvas);groundTex.wrapS=groundTex.wrapT=THREE.RepeatWrapping;groundTex.repeat.set(55,58);groundTex.colorSpace=THREE.SRGBColorSpace;
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(WIDTH*CELL,HEIGHT*CELL),new THREE.MeshStandardMaterial({map:groundTex,roughness:weather?.state.enabled ? .58 : 1}));floor.rotation.x=-Math.PI/2;floor.position.set(WIDTH*CELL/2,0,HEIGHT*CELL/2);scene.add(floor);
+  const floorHeight=maze.cornWorld.height*maze.cornWorld.size;
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(WIDTH*CELL,floorHeight),new THREE.MeshStandardMaterial({map:groundTex,roughness:weather?.state.enabled ? .58 : 1}));floor.rotation.x=-Math.PI/2;floor.position.set(WIDTH*CELL/2,0,floorHeight/2);scene.add(floor);
   const wallCells=[];
   for(let z=0;z<HEIGHT;z++)for(let x=0;x<WIDTH;x++)if(maze.grid[z][x]&&!maze.hideAnchors?.some(a=>x===a.corridorCell.x+a.cornSide.x&&z===a.corridorCell.z+a.cornSide.z))wallCells.push({x,z});
   const walls=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),material(0x394630),wallCells.length);
@@ -166,12 +168,16 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   visuals.hands=hands.stats;
   const weatherView=weather?createWeatherView(scene,weather):null;
   const cornView=createCornView(scene,maze);visuals.corn=cornView.stats;
+  const survivalView=createSurvivalView(scene,maze);
+  visuals.survival=survivalView.stats;
+  if(maze.survivalLayout){const d=maze.cornWorld.doors[maze.survivalLayout.outer],label=textSign('C O R N F I E L D',2.3,.5);label.position.set(d.x,2.7,d.z-.1);label.rotation.y=Math.PI;scene.add(label);}
   visuals.weather=weatherView?.stats||{enabled:false};
   let fieldVisuals=null;
   const fieldReady=mode==='legacy'?Promise.resolve():installFieldVisuals({scene,maze,camera,floor,door,entranceObjects,
     legacy:{cells:wallCells,walls,stalks,leaves,ears,straw},mode,details:detailsEnabled,wet:weather?.state.enabled}).then(result=>{
       fieldVisuals=result;visuals.status='ready';visuals.stats=result.stats;
       cornView.setMaterials(result.materials);
+      survivalView.setCorn(result.introCorn);
       if(detailsEnabled)reuseFieldMaterials({wood,darkWood,bands:barrelBands},result.materials);
     }).catch(error=>{visuals.status='fallback';visuals.error=error.message;console.warn('Field visuals unavailable; using original scene.',error.message);});
   let nightSky=null;
@@ -199,12 +205,14 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     shotFlash=Math.max(0,shotFlash-renderDt);gunRecoil=Math.max(0,gunRecoil-renderDt);
     const playerAt=actorPosition(g,'player'),enemyAt=actorPosition(g,'enemy');
     const q=g.interaction,locked=interactionLocked(g),inCorn=g.player.hidden||g.player.cornZoneId;
-    scene.fog.density=inCorn?.30:.096;pocket.visible=false;
+    scene.fog.density=inCorn?.30:g.cornSurvival&&!g.cornSurvival.complete&&g.player.z>84?.22:.096;pocket.visible=false;
     if(pocket.visible){const anchor=maze.landingZones.find(a=>a.id===g.player.cornZoneId);pocket.position.set(anchor?.pocket.x??playerAt.x,0,anchor?.pocket.z??playerAt.z);}
     gun.visible=g.mode==='playing'&&!locked;muzzle.visible=shotFlash>0;
     gun.position.set(-.035,.02,-.20+(reduced?0:gunRecoil*.32));
     if(g.mode==='menu'){
-      camera.position.set(maze.spawn.x+1.9,1.66,maze.spawn.z+1.7);camera.lookAt(doorPos.x-.25,1.7,doorPos.z);flashlight.intensity=15;
+      camera.position.set(maze.spawn.x+1.9,1.66,maze.spawn.z+1.7);
+      const entrance=maze.survivalLayout?maze.cornWorld.doors[maze.survivalLayout.outer]:doorPos;
+      camera.lookAt(entrance.x-.25,1.7,entrance.z);flashlight.intensity=15;
     }else{
       const bob=reduced||!g.player.moving?0:Math.sin(g.steps*7)*.021;
       camera.position.set(playerAt.x,GAME_CONFIG.player.eyeHeight+bob,playerAt.z);camera.rotation.set(g.player.pitch,g.player.yaw,0,'YXZ');
@@ -250,7 +258,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     for(const {ring,id}of rewardRings)ring.visible=!g.progress.activatedCheckpoints.includes(id);
     dust.position.set(camera.position.x,0,camera.position.z);dust.rotation.y=reduced?0:Math.sin(time*.018)*.1;
     dust.visible=!weather?.state.enabled;
-    hands.update(g);cornView.update(g);fieldVisuals?.update(g);nightSky?.update(red,flash);weatherView?.update(camera,g,nightmare);renderer.render(scene,camera);
+    hands.update(g);cornView.update(g);survivalView.update(g);fieldVisuals?.update(g);nightSky?.update(red,flash);weatherView?.update(camera,g,nightmare);renderer.render(scene,camera);
   }
   return {renderer,scene,camera,render,resize,ready,visuals,
     introCorn:()=>fieldVisuals?.introCorn||null,

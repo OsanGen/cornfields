@@ -4,6 +4,11 @@
 
 This source includes rain and puddles, the hands/QTE/enterable-corn update and the psychedelic intro. Publication status and deployed commit are available in the [Pages workflow runs](https://github.com/OsanGen/cornfields/actions/workflows/pages.yml).
 
+This source also includes the dynamic survival-maze update. The manual Pages
+workflow gates publication on the full tests, checks and build. See
+[SURVIVAL_UPDATE.md](SURVIVAL_UPDATE.md) for the implementation evidence and
+remaining browser, performance and human acceptance checks.
+
 On a phone, choose **BEGIN** or **SKIP INTRO**, then turn to landscape and tap **ENTER THE FIELD**. The left joystick moves; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
 
 For future changes, start with [ARCHITECTURE.md](ARCHITECTURE.md). It maps mechanics, input, UI, AI, visuals and audio to their files and verification commands.
@@ -63,6 +68,9 @@ The manual `Publish playtest to GitHub Pages` workflow installs locked dependenc
 ## Implemented loop
 
 1. Enter the field with 100 health and two rounds.
+   The local update first leads south through two gates into a required corn detour.
+   Its original entrance eventually reconnects; returning through it unlocks the
+   onward route. This segment grants no health, ammunition or checkpoint reward.
 2. Follow landmarks; choose movement, flashlight, hiding or a shot to survive.
 3. A successful hit staggers the zombie. A miss spends the round. It cannot die.
 4. The flashlight makes it recoil, then rage. Shoot it or escape beyond sight and distance to end rage.
@@ -80,7 +88,8 @@ once and resumes hunting from legitimate observations. Extra shots cannot reset 
 active gun stagger or the escape recovery timer. A shot outside recovery buys the
 original 3 / 2.5 / 2 seconds, depending on checkpoint progress.
 
-There are 631 operable corn gates and 29 fixed outer-containment spans. Gates stay
+Outside the new dedicated segment, the inherited route retains 631 operable corn
+gates and 29 fixed outer-containment spans. Those gates stay
 open until explicitly closed. A closing leaf stops safely if an actor blocks its arc.
 The zombie opens gates on its planned route. Corn contains 25 connected loop regions;
 standing still conceals without locking movement or deleting enemy memory. Rustling
@@ -115,6 +124,8 @@ Use ?horror=off for clean hand/eye inspection.
 - `src/game-config.js`: gameplay tuning values.
 - `src/combat.js`, `src/hiding.js`: shooting, contact, physical corn entry and local rustling.
 - `src/corn-world.js`, `src/corn-view.js`: shared lane topology, collision, routing, door geometry and instanced rendering.
+- `src/corn-layout.js`, `src/corn-survival.js`: pooled corridor footprints, protected recycling, committed entry, hidden qualification and original-gate return.
+- `src/corn-survival-view.js`: fixed-capacity dynamic corn instances driven by the run's geometry revision.
 - `src/hands.js`, `src/horror-presentation.js`: optional hand asset, progression dirt and derived QTE/taunt presentation.
 - `src/grapple.js`: tackle, timestamped knife input, health drain, safe throw and recovery deadlines.
 - `src/zombie-poses.js`: original per-bone choreography over the existing Pixelhouse rig.
@@ -130,6 +141,7 @@ Use ?horror=off for clean hand/eye inspection.
 - `src/style.css`, `index.html`: title screen, controls and overlays.
 - `tests/*.test.mjs`: deterministic gameplay, AI fairness, input and infrastructure checks.
 - `tests/hands-corn-browser.mjs`: current desktop/touch gate, name, QTE and recovery browser scenarios.
+- `tests/corn-survival.test.mjs`, `tests/corn-survival-browser.mjs`: dynamic-maze simulation checks and the prepared desktop/touch entry, QTE and return browser story.
 - `tests/hands-corn-performance.mjs`: pending matched comparison against the saved pre-update source.
 - Older `browser.mjs`, `mobile-browser.mjs` and `horror-browser.mjs` are historical harnesses for the superseded pocket mechanic; the npm browser commands use the current harness.
 - `scripts/build.mjs`, `scripts/preview-dist.mjs`: allowlisted static packaging and project-path preview.

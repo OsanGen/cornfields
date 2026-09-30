@@ -30,6 +30,7 @@ export function createPuddleLayout(maze) {
       if (!canOccupy(maze, x + p.cos * u + p.sin * v, z - p.sin * u + p.cos * v, .025)) return;
     }
     puddles.push(p);
+    return p;
   }
   for (let z = 0; z < maze.grid.length; z++) for (let x = 0; x < maze.grid[z].length; x++) {
     if (maze.grid[z][x] || (x === maze.door.x && z === maze.door.z) ||
@@ -45,6 +46,10 @@ export function createPuddleLayout(maze) {
     if (random() > .08) continue;
     add(bay.pocket.x, bay.pocket.z, .27, .48, Math.atan2(-bay.cornSide.z, bay.cornSide.x));
   }
+  for(const section of maze.survivalLayout?.sections||[]){
+    const puddle=add(section.anchor.x,section.anchor.z,.3,.3,section.slot*.7);
+    if(puddle)puddle.section=section.slot;
+  }
   return puddles;
 }
 
@@ -55,6 +60,8 @@ export function createWeather(maze, {touch = false, enabled = true} = {}) {
   const limits = WEATHER_LIMITS[touch ? 'touch' : 'desktop'];
   const puddles = enabled ? createPuddleLayout(maze) : [];
   const cells = new Map();
+  function indexPuddles(){
+  cells.clear();
   for (const p of puddles) {
     const radius = Math.max(p.rx, p.rz);
     for (let z = Math.floor((p.z - radius) / CELL); z <= Math.floor((p.z + radius) / CELL); z++) {
@@ -65,14 +72,22 @@ export function createWeather(maze, {touch = false, enabled = true} = {}) {
       }
     }
   }
+  }
+  indexPuddles();
+  let geometry='';
   const ripples = Array.from({length: limits.ripples}, () => ({born: -Infinity}));
   const drops = Array.from({length: limits.drops}, () => ({born: -Infinity}));
   let random, ringIndex, dropIndex, lastStep, foot, nextStorm, thunderAt, nextRain, quietUntil;
   const state = {enabled, limits, puddles, ripples, drops, time: 0, lightning: 0, quiet: false,
     reduced: false, active: false, flashStarted: -Infinity, flashes: 0, thunders: 0,
-    wetSteps: 0, drySteps: 0, splashes: 0, lastFootstep: null};
+    wetSteps: 0, drySteps: 0, splashes: 0, lastFootstep: null,layoutRevision:0};
 
   function reset() {
+    geometry='';
+    if(maze.survivalLayout){
+      for(const p of puddles)if(p.section!==undefined)Object.assign(p,maze.survivalLayout.sections[p.section].anchor);
+      indexPuddles();state.layoutRevision++;
+    }
     random = weatherRandom(); ringIndex = dropIndex = foot = 0; lastStep = 0;
     nextStorm = 12; thunderAt = null; nextRain = .15; quietUntil = 0;
     Object.assign(state, {time: 0, lightning: 0, quiet: false, active: false,
@@ -100,6 +115,14 @@ export function createWeather(maze, {touch = false, enabled = true} = {}) {
   }
   function update(game, dt, {events = [], reduced = false, muted = false} = {}) {
     const output = [];
+    const revision=`${game.runId}:${game.maze.cornWorld.revision||0}`;
+    if(game.maze.survivalLayout&&revision!==geometry){
+      geometry=revision;
+      for(const p of puddles)if(p.section!==undefined)Object.assign(p,game.maze.survivalLayout.sections[p.section].anchor);
+      indexPuddles();state.layoutRevision++;
+      // A recycled surface must not retain a ripple or splash from its old location.
+      for(const pool of [ripples,drops])for(const item of pool)item.born=-Infinity;
+    }
     state.reduced = reduced;
     state.active = game.mode === 'playing';
     if (!state.active) {

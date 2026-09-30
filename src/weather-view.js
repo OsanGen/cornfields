@@ -76,12 +76,19 @@ export function createWeatherView(scene, weather) {
     transparent: true, opacity: .62, alphaMap: waterEdge(), depthWrite: false,
     polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1});
   const puddles = new THREE.InstancedMesh(puddleGeometry(), water, state.puddles.length);
+  puddles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   puddles.name = 'Instanced wet ground'; puddles.renderOrder = 1;
+  let layoutRevision=-1;
+  function updatePuddles(){
+  if(layoutRevision===state.layoutRevision)return;
+  layoutRevision=state.layoutRevision;
   for (const p of state.puddles) {
     dummy.position.set(p.x, .008, p.z); dummy.rotation.set(0, p.angle, 0);
     dummy.scale.set(p.rx, 1, p.rz); dummy.updateMatrix(); puddles.setMatrixAt(p.id, dummy.matrix);
   }
-  puddles.computeBoundingSphere(); group.add(puddles);
+  puddles.instanceMatrix.needsUpdate=true;puddles.computeBoundingSphere();
+  }
+  updatePuddles();group.add(puddles);
 
   const random = weatherRandom(82), rainSeeds = [];
   const rainPositions = new Float32Array(state.limits.rain * 6);
@@ -160,6 +167,7 @@ export function createWeatherView(scene, weather) {
   const stats = {enabled: true, puddles: state.puddles.length, maxDrawCalls: 4,
     rain: state.limits.rain, activeRipples: 0, activeDrops: 0};
   function update(camera, game, effects) {
+    updatePuddles();
     nightmare.update(camera,game,effects);
     const time = state.time, active = game.mode === 'playing' || game.mode === 'paused';
     normal.offset.set(time * .012, -time * .009);

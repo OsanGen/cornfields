@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {SURVIVAL_VIEW_BOUNDS as B} from './corn-layout.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {CELL,WIDTH,HEIGHT,centerOf} from './maze.js';
 
@@ -18,6 +19,8 @@ export function fieldLayout(maze){
     const w=maze.cornWorld;
     const plant=(x,z)=>plants.push({x,z,yaw:random()*Math.PI*2,scale:.96+random()*.18,variant:Math.floor(random()*3)});
     for(let z=0;z<w.height;z++)for(let x=0;x<w.width;x++){
+      if(maze.survivalLayout&&x>=B.x&&x<B.x+B.width&&z>=B.z&&z<B.z+B.height)continue;
+      if(maze.survivalLayout&&z>=HEIGHT*3&&(x<28||x>62||z>138))continue;
       const id=z*w.width+x;if(w.walk[id])continue;
       const cx=(x+.5)*w.size,cz=(z+.5)*w.size;
       for(let i=0;i<3;i++)plant(cx+(random()-.5)*w.size*.7,cz+(random()-.5)*w.size*.7);
@@ -155,7 +158,7 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
       mesh.computeBoundingSphere();group.add(mesh);chunk.objects.push(mesh);
     }
   }
-  for(const map of [mudColor,mudNormal,mudRough])map.repeat.set(WIDTH*CELL/1.3,HEIGHT*CELL/1.3);
+  for(const map of [mudColor,mudNormal,mudRough])map.repeat.set(WIDTH*CELL/1.3,(maze.cornWorld.height*maze.cornWorld.size)/1.3);
   const ground=new THREE.MeshStandardMaterial({map:mudColor,normalMap:mudNormal,
     normalScale:new THREE.Vector2(wet ? .8 : .6,wet ? .8 : .6),roughnessMap:mudRough,
     roughness:wet ? .58 : 1,color:wet?0x928476:0xaaa38c});

@@ -1,4 +1,5 @@
 import {buildCornWorld,cornNode,cornPath,cornOccupy,cornSight,cornNeighbors} from './corn-world.js';
+import {installSurvivalLayout} from './corn-layout.js';
 export const CELL = 2.35;
 export const WIDTH = 33;
 export const HEIGHT = 35;
@@ -24,7 +25,7 @@ const SIDE_PATHS = [
   [[19,23],[19,25],[15,25],[15,23]],
 ];
 
-export function createMaze() {
+export function createMaze({survival=false}={}) {
   const grid = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(1));
   const carve = (points) => {
     for (let i = 1; i < points.length; i++) {
@@ -78,7 +79,7 @@ export function createMaze() {
     const owner=maze.cornWorld.owner[i];
     if(!maze.cornRegions.has(owner))maze.cornRegions.set(owner,{id:`corn-region-${owner}`,stage:owner,walkable:true});
   }
-  return maze;
+  return survival?installSurvivalLayout(maze):maze;
 }
 
 export function inCornBay(zone,x,z,r=0){

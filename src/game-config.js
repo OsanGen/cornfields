@@ -1,4 +1,5 @@
 export const GAME_CONFIG = {
+  cornSurvival:{seconds:180,distance:120},
   grapple:{targetPresses:8,inputReadyGrace:.2,fullHealthSeconds:3,tackleSeconds:.3,
     stabSeconds:.2,throwSeconds:.5,recoverySeconds:10,redSkySeconds:3,retackleGrace:1},
   player: {

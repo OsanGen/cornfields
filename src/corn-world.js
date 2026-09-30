@@ -99,28 +99,28 @@ function blockedNode(world,id,blocks){
   const x=Math.floor((id%world.width)/3),z=Math.floor(Math.floor(id/world.width)/3);
   return blocks.some(b=>b.x===x&&b.z===z);
 }
-export function cornNeighbors(world,id,blocks=[],allowDoors=false){
+export function cornNeighbors(world,id,blocks=[],allowDoors=false,sound=false){
   const result=[],x=id%world.width,z=Math.floor(id/world.width);
   for(const [dx,dz] of dirs){
     const nx=x+dx,nz=z+dz,n=nz*world.width+nx;if(nx<0||nx>=world.width||nz<0||nz>=world.height||blockedNode(world,n,blocks))continue;
     const edge=pair(id,n),door=world.edgeDoors.get(edge);
-    if(world.edges.has(edge)||(!allowDoors&&door!==undefined&&doorAmount(blocks,door)<.96))continue;
+    if(world.edges.has(edge)||(door!==undefined&&blocks.doors?.[door]?.locked&&!sound)||(!allowDoors&&door!==undefined&&doorAmount(blocks,door)<.96))continue;
     if(blocks.physical){
       const a=xy(world,id),b=xy(world,n);
       let clear=true;
-      for(let i=0;i<=4;i++)if(!cornOccupy(world,a.x+(b.x-a.x)*i/4,a.z+(b.z-a.z)*i/4,.25,blocks)){clear=false;break;}
+      for(let i=0;i<=4;i++)if(!cornOccupy(world,a.x+(b.x-a.x)*i/4,a.z+(b.z-a.z)*i/4,blocks.radius??.25,blocks)){clear=false;break;}
       if(!clear)continue;
     }
     result.push(n);
   }
   return result;
 }
-export function cornPath(world,from,to,blocks=[],{allowDoors=false,maxDistance=Infinity}={}){
+export function cornPath(world,from,to,blocks=[],{allowDoors=false,sound=false,maxDistance=Infinity,radius=from.radius??.25}={}){
   const first=cornNode(world,from),last=cornNode(world,to);
   if(blockedNode(world,first,blocks)||blockedNode(world,last,blocks))return [];
-  const physical=[...blocks];physical.physical=true;
-  physical.doors=allowDoors?(blocks.doors||world.doors.map(()=>({amount:0}))).map((s,i)=>({...s,amount:1,swing:s.swing||((from.x-world.doors[i].x)*world.doors[i].normal.x+(from.z-world.doors[i].z)*world.doors[i].normal.z>0?-1:1)})):blocks.doors;
-  if(!cornOccupy(world,from.x,from.z,.25,physical)||!cornOccupy(world,to.x,to.z,.25,physical))return [];
+  const physical=[...blocks];physical.physical=true;physical.radius=radius;
+  physical.doors=allowDoors?(blocks.doors||world.doors.map(()=>({amount:0}))).map((s,i)=>({...s,amount:s.locked&&!sound?s.amount:1,swing:s.swing||((from.x-world.doors[i].x)*world.doors[i].normal.x+(from.z-world.doors[i].z)*world.doors[i].normal.z>0?-1:1)})):blocks.doors;
+  if(!cornOccupy(world,from.x,from.z,radius,physical)||!cornOccupy(world,to.x,to.z,radius,physical))return [];
   const heap=[],previous=new Int32Array(world.walk.length).fill(-2),cost=new Float64Array(world.walk.length).fill(Infinity);
   const heuristic=id=>(Math.abs(id%world.width-last%world.width)+Math.abs(Math.floor(id/world.width)-Math.floor(last/world.width)))*world.size;
   const push=(id,g)=>{const v={id,g,f:g+heuristic(id)};let i=heap.length;heap.push(v);while(i>0){const p=(i-1)>>1;if(heap[p].f<=v.f)break;heap[i]=heap[p];i=p;}heap[i]=v;};
@@ -128,7 +128,7 @@ export function cornPath(world,from,to,blocks=[],{allowDoors=false,maxDistance=I
   previous[first]=-1;cost[first]=0;push(first,0);
   while(heap.length){
     const item=pop(),id=item.id;if(item.g!==cost[id])continue;if(id===last)break;
-    for(const next of cornNeighbors(world,id,physical,allowDoors)){
+    for(const next of cornNeighbors(world,id,physical,allowDoors,sound)){
       const door=world.edgeDoors.get(pair(id,next));
       const d=cost[id]+world.size+(Number.isFinite(maxDistance)&&door!==undefined&&doorAmount(blocks,door)<.96?2:0);
       if(d>maxDistance||d>=cost[next])continue;cost[next]=d;previous[next]=id;push(next,d);
@@ -143,7 +143,7 @@ export function cornPath(world,from,to,blocks=[],{allowDoors=false,maxDistance=I
   if(path.length>2){
     const b=path[2],n=Math.max(1,Math.ceil(Math.hypot(b.x-from.x,b.z-from.z)/.08));
     let clear=true;
-    for(let i=0;i<=n;i++)if(!cornOccupy(world,from.x+(b.x-from.x)*i/n,from.z+(b.z-from.z)*i/n,.25,physical)){clear=false;break;}
+    for(let i=0;i<=n;i++)if(!cornOccupy(world,from.x+(b.x-from.x)*i/n,from.z+(b.z-from.z)*i/n,radius,physical)){clear=false;break;}
     if(clear)path.splice(1,1);
   }
   if(path.length===2&&Math.hypot(path[1].x-from.x,path[1].z-from.z)<.01)path.pop();
@@ -198,6 +198,7 @@ export function safeDoorSwing(door,bodies,preferred=1){
 export function requestDoor(game,door,open,actor='player'){
   if(!door||game.mode!=='playing'||(actor==='enemy'&&game.interaction?.phase==='recovery'))return false;
   const state=game.cornDoors[door.index];
+  if(state.locked)return false;
   if(open&&state.amount<.01){
     const body=actor==='enemy'?game.enemy:game.player;
     const preferred=(body.x-door.x)*door.normal.x+(body.z-door.z)*door.normal.z>0?-1:1;

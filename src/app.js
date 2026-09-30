@@ -9,6 +9,7 @@ import {createTouchInput} from './touch-input.js';
 import {normalizeAlias} from './horror-presentation.js';
 import {createUI} from './ui.js';
 import {createIntro, INTRO_ENABLED} from './intro.js';
+import {setReturnOpen} from './corn-layout.js';
 
 /**
  * Owns one game session and its browser lifecycle.
@@ -355,19 +356,33 @@ export function createGameApp({
     startLoop() {
       if (frameId === null && !disposed) frameId = requestFrame(frame);
     },
-    snapshot: () => ({...gameSnapshot(game), ...(weather ? {weather: weather.snapshot()} : {})}),
+    snapshot: (diagnostic=false) => ({...gameSnapshot(game,{diagnostic}), ...(weather ? {weather: weather.snapshot()} : {})}),
     weatherSurfaces: () => weather ? weather.state.puddles.map(p => ({...p})) : [],
     fixture(name){
+      if(name==='eligible'&&game.cornSurvival?.state==='active_survival'){
+        Object.assign(game.cornSurvival,{elapsed:180,distance:120,movementQualified:true});return;
+      }
       if(!['gate','encounter'].includes(name))throw new Error('Unknown local fixture');
+      if(name==='encounter'&&game.cornSurvival){
+        const layout=game.maze.survivalLayout;
+        Object.assign(game.cornSurvival,{state:'active_survival',startedAt:game.elapsed,previous:{...layout.sections[4].anchor}});
+        setReturnOpen(game.maze,false);
+        for(const index of [layout.outer,layout.inner])Object.assign(game.cornDoors[index],{amount:0,target:0,locked:true});
+        game.mode='playing';game.entered=true;game.grace=0;
+        Object.assign(game.player,layout.sections[4].anchor,{yaw:0,pitch:0,flashlightOn:false});
+        Object.assign(game.enemy,{x:game.player.x,z:game.player.z-.7,state:'chase',target:{x:game.player.x,z:game.player.z},visible:true,yaw:Math.PI});
+        input.clear();clock.reset();manual=true;present();return;
+      }
       const d=maze.hideAnchors[0];game.doorOpen=true;game.doorAmount=1;game.entered=true;game.mode='playing';
       Object.assign(game.player,{x:d.x-d.normal.x*.7,z:d.z-d.normal.z*.7,yaw:d.entryYaw,pitch:0,flashlightOn:false});
       Object.assign(game.enemy,{x:game.player.x-d.normal.x*(name==='encounter'?.7:10),z:game.player.z-d.normal.z*(name==='encounter'?.7:10),state:'chase',target:{x:game.player.x,z:game.player.z},visible:true,yaw:d.entryYaw+Math.PI});
       if(name==='gate')Object.assign(game.enemy,{state:'disengage',target:null,timer:100});
       game.grace=name==='gate'?100:0;input.clear();clock.reset();manual=true;present();
     },
-    route: () => pathTo(maze, game.player, maze.center, blocksFor(game)),
+    route: (target=game.maze.center) => pathTo(game.maze, game.player, target, blocksFor(game)),
+    survivalLayout:()=>structuredClone(game.maze.survivalLayout),
     diagnostics: () => ({
-      ...gameSnapshot(game),
+      ...gameSnapshot(game,{diagnostic:true}),
       audioState: audio.ctx?.state || 'uninitialized',
       audioSamples:Object.keys(audio.samples||{}),
       weatherAudioSamples:Object.keys(audio.weatherSamples||{}),

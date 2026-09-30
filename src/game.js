@@ -6,6 +6,8 @@ import { fireGun, attackPlayer } from './combat.js';
 import { createEnemy, updateZombie, checkpointDisengage } from './zombie-ai.js';
 import { updateDirector, updateFeedback } from './threat-director.js';
 import {interactionLocked,updateInteraction} from './grapple.js';
+import {cloneSurvivalMaze} from './corn-layout.js';
+import {createCornSurvival,initializeCornSurvival,advanceCornSurvival,survivalLocomotion,finishCornSurvival,survivalSnapshot} from './corn-survival.js';
 let nextRunId=0;
 
 export { actorPosition };
@@ -75,8 +77,10 @@ function createMetrics() {
 
 /** Every run owns fresh mutable state; the authored maze is shared read-only. */
 export function createGame(maze) {
-  return {
+  maze=cloneSurvivalMaze(maze);
+  const game={
     maze,
+    cornSurvival:createCornSurvival(maze),
     runId:++nextRunId,eventId:0,interaction:null,interactionSerial:0,pendingStabs:[],skyRedUntil:0,
     mode: 'menu',
     elapsed: 0,
@@ -124,6 +128,8 @@ export function createGame(maze) {
     },
     metrics: createMetrics(),
   };
+  initializeCornSurvival(game);
+  return game;
 }
 
 export function startGame(game) {
@@ -147,7 +153,7 @@ export function blocksFor(game) {
 }
 
 export function nearDoor(game) {
-  return !game.doorOpen &&
+  return (!game.cornSurvival||game.cornSurvival.complete)&&!game.doorOpen &&
     distance(game.player, centerOf(game.maze.door.x, game.maze.door.z)) < 3.2;
 }
 
@@ -155,7 +161,7 @@ export function interactionPrompt(game) {
   if(interactionLocked(game))return '';
   if (nearDoor(game)) return 'E - OPEN DOOR';
   blocksFor(game);const door=gateAt(game);
-  if(door)return game.cornDoors[door.index].target>.5?'E - CLOSE':'E - OPEN';
+  if(door){const state=game.cornDoors[door.index];return state.locked?'':state.target>.5?'E - CLOSE':'E - OPEN';}
   return '';
 }
 
@@ -170,7 +176,7 @@ export function interact(game) {
     return;
   }
   const door=gateAt(game);
-  if(door){toggleDoor(game,door);addEvidence(game,'door',door,C.hearing.doorRadius,3);emit(game,'door','',door);}
+  if(door&&!game.cornDoors[door.index].locked){toggleDoor(game,door);addEvidence(game,'door',door,C.hearing.doorRadius,3);emit(game,'door','',door);}
 }
 
 function finishMetrics(game, outcome) {
@@ -250,6 +256,7 @@ function resolvePlayerInput(game, dt, input) {
       blocks);
   }
   const moved = distance(player, before);
+  survivalLocomotion(game,moved);
   updateCornPresence(game,input,wasInCorn);
   player.moving = moved > .0001;
   player.sprinting = false;
@@ -259,6 +266,7 @@ function resolvePlayerInput(game, dt, input) {
 
 function updateProgress(game, blocks) {
   const player = game.player;
+  if(game.cornSurvival&&!game.cornSurvival.complete)return;
   const cell = cellOf(player);
   if (game.doorOpen && cell.z < 30 && !game.entered) {
     game.entered = true;
@@ -278,7 +286,7 @@ function updateProgress(game, blocks) {
   }
   if (!game.tutorial.hideShown && nearestHideAnchor(game, blocks)) {
     game.tutorial.hideShown = true;
-    emit(game, 'tutorial', 'OPEN A WOODEN GATE. WALK INTO CORN. CLOSING IS OPTIONAL.');
+    emit(game, 'tutorial', game.cornSurvival?'WALK INTO CORN. STAY STILL. EVEN LOOKING MAKES NOISE.':'OPEN A WOODEN GATE. WALK INTO CORN. CLOSING IS OPTIONAL.');
   }
 }
 
@@ -294,6 +302,7 @@ function tick(game, dt, input) {
   player.muzzleFlash = Math.max(0, player.muzzleFlash - dt);
   game.doorAmount = Math.min(1, game.doorAmount + (game.doorOpen ? dt * 1.2 : 0));
   advanceDoors(game,dt);blocksFor(game);
+  advanceCornSurvival(game,dt);
 
   const stabTimes=game.pendingStabs.filter(at=>at<=game.elapsed+1e-9);
   game.pendingStabs=game.pendingStabs.filter(at=>at>game.elapsed+1e-9);
@@ -314,7 +323,7 @@ function tick(game, dt, input) {
   updateProgress(game, blocks);
 
   // Daughter contact wins over an enemy attack scheduled for this same substep.
-  if (game.entered && !player.hidden && distance(player, game.maze.daughter) < C.progress.daughterRadius) {
+  if ((!game.cornSurvival||game.cornSurvival.complete)&&game.entered && !player.hidden && distance(player, game.maze.daughter) < C.progress.daughterRadius) {
     win(game);
     return;
   }
@@ -324,6 +333,7 @@ function tick(game, dt, input) {
     updateZombie(game,dt,blocks);
     updateInteraction(game,dt);
     updateFeedback(game,dt);
+    finishCornSurvival(game);
     return;
   }
   updateZombie(game, dt, blocks);
@@ -333,6 +343,7 @@ function tick(game, dt, input) {
   game.metrics.proximitySeconds[game.threat.proximityTier] += dt;
   game.metrics.ammoRemaining = player.ammo;
   if (player.health <= 0) fail(game);
+  finishCornSurvival(game);
 }
 
 /**
@@ -358,7 +369,7 @@ export function updateGame(game, dt, input = {}) {
 }
 
 /** Serializable diagnostic projection. Returned arrays and objects cannot mutate the run. */
-export function gameSnapshot(game) {
+export function gameSnapshot(game,{diagnostic=false}={}) {
   const player = game.player;
   const enemy = game.enemy;
   const playerPosition = actorPosition(game, 'player');
@@ -366,6 +377,7 @@ export function gameSnapshot(game) {
   return JSON.parse(JSON.stringify({
     coordinates: 'meters; +x east, +z south; yaw 0 looks north (-z)',
     mode: game.mode,
+    ...(diagnostic?{cornSurvival:survivalSnapshot(game)}:{}),
     interaction:game.interaction,skyRedUntil:game.skyRedUntil,
     elapsed: +game.elapsed.toFixed(2),
     player: {

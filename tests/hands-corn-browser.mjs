@@ -24,7 +24,7 @@ try{
     const pause=()=>touch?click('#touch-pause'):page.keyboard.press('Escape');
     const press=()=>touch?click('#touch-stab'):page.keyboard.press('Space');
     for(const clean of [true,false]){
-      await page.goto(base+`?test=1&intro=off${clean?'&horror=off':''}`,{waitUntil:'networkidle'});await page.bringToFront();
+      await page.goto(base+`?test=1&intro=off&survival=off${clean?'&horror=off':''}`,{waitUntil:'networkidle'});await page.bringToFront();
       await page.waitForFunction(()=>window.__test?.diagnostics().visuals.hands.status==='ready');
       assert.equal((await diagnostics()).controlMode,touch?'touch':'mouse');
       if(clean)await screenshot('00-title');

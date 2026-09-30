@@ -21,7 +21,7 @@ export function findCornLanding(game,blocks=[]){
     if(w.corn[id]&&owners.has(w.owner[id])&&distance(from,p)>.8&&distance(from,p)<3.2)candidates.push(p);
   }
   candidates.sort((a,b)=>Math.abs(distance(from,a)-1.7)-Math.abs(distance(from,b)-1.7));
-  const opened=[...blocks];opened.doors=game.cornDoors.map((s,i)=>({...s,amount:1,swing:s.amount>.01?s.swing:((from.x-w.doors[i].x)*w.doors[i].normal.x+(from.z-w.doors[i].z)*w.doors[i].normal.z>0?-1:1)}));
+  const opened=[...blocks];opened.doors=game.cornDoors.map((s,i)=>({...s,amount:s.locked?s.amount:1,swing:s.amount>.01?s.swing:((from.x-w.doors[i].x)*w.doors[i].normal.x+(from.z-w.doors[i].z)*w.doors[i].normal.z>0?-1:1)}));
   for(const p of candidates){
     const route=pathTo(game.maze,from,p,opened),length=route.slice(1).reduce((sum,b,i)=>sum+distance(route[i],b),0);
     if(length<.75||length>4.5||!route.slice(1).every((b,i)=>sweptClear(game.maze,route[i],b,r,opened)))continue;

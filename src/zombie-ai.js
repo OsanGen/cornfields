@@ -88,7 +88,7 @@ export function senseZombie(game, blocks) {
 
   for (const event of game.evidence) {
     if (game.elapsed - event.at > 1 || distance(enemy, event.position) > event.radius) continue;
-    if(event.type==='rustle'&&!cornPath(game.maze.cornWorld,enemy,event.position,blocks,{allowDoors:true,maxDistance:event.radius}).length)continue;
+    if(event.type==='rustle'&&!cornPath(game.maze.cornWorld,enemy,event.position,blocks,{allowDoors:true,sound:true,maxDistance:event.radius}).length)continue;
     if (!heard || event.priority >= heard.priority) heard = event;
   }
   game.evidence.length = 0;
@@ -172,10 +172,11 @@ function move(game, dt, target, speed, blocks) {
   enemy.repath -= dt;
   const targetCell = cellOf(target);
   const targetKey=cornNode(game.maze.cornWorld,target);
-  if (enemy.repath <= 0 || enemy.pathGoal !== targetKey||enemy.pathRevision!==game.doorRevision) {
+  const revision=game.doorRevision+(game.maze.cornWorld.revision||0);
+  if (enemy.repath <= 0 || enemy.pathGoal !== targetKey||enemy.pathRevision!==revision) {
     enemy.path = cornPath(game.maze.cornWorld, enemy, target, blocks,{allowDoors:true}).slice(1);
     enemy.pathGoal = targetKey;
-    enemy.pathRevision=game.doorRevision;
+    enemy.pathRevision=revision;
     enemy.repath = C.zombie.repathSeconds;
   }
 
@@ -217,6 +218,12 @@ function move(game, dt, target, speed, blocks) {
 export function predictionCandidates(game, blocks) {
   const enemy = game.enemy;
   const origin = enemy.memory.lastKnown || enemy;
+  if(game.cornSurvival&&!game.cornSurvival.complete){
+    const candidates=game.maze.survivalLayout.sections.map(s=>s.anchor)
+      .filter(p=>cornPath(game.maze.cornWorld,enemy,p,blocks,{allowDoors:true}).length)
+      .sort((a,b)=>distance(origin,a)-distance(origin,b)).slice(0,C.zombie.maxCandidates);
+    return candidates.length?candidates:[point(enemy)];
+  }
   const objective = game.maze.checkpoints[game.progress.checkpointIndex] || game.maze.daughter;
   const route = pathTo(game.maze, origin, objective, blocks);
   const candidates = [];

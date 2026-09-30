@@ -12,6 +12,8 @@ This is a JavaScript/Three.js game with desktop and landscape touch input. It ha
 
 | Change | Primary location | Verification |
 | --- | --- | --- |
+| Dedicated corn segment and hidden progression | src/corn-survival.js; src/game-config.js | tests/corn-survival.test.mjs |
+| Pooled geometry and protected recycling | src/corn-layout.js; src/corn-survival-view.js | tests/corn-survival.test.mjs; tests/corn-survival-browser.mjs |
 | Ammo, movement, damage, AI timing | src/game-config.js | npm run test:gameplay |
 | Keyboard, mouse, action edges | src/input.js | npm run test:runtime |
 | Touch pointer ownership, joystick, button edges | src/touch-input.js | npm run test:runtime; npm run test:mobile |
@@ -55,6 +57,35 @@ Weather is presentation state created beside the scene in main.js. After each si
 weather.js owns deterministic puddle footprints, a cell index, fixed ripple/drop pools and the lightning/thunder timer. weather-view.js reads that state into four render batches and uses two tiny generated textures. Reduced effects remove lightning and splash droplets and lower rain density. Pause freezes time, mute consumes pending thunder, and restart clears cues and pools. QTE, red sky and priority scare cues suppress lightning, stop active thunder and duck rain. The existing flat ground and mud maps remain the terrain; puddles simulate surface reactions, not fluid flow or depth.
 
 ## Contracts to preserve
+
+- The production entrypoint enables the dedicated survival detour. `createMaze()`
+  retains the inherited authored fixture for existing tests; use
+  `createMaze({survival:true})` when testing the new play flow. Browser rollback is
+  limited to `?test=1&survival=off` during local acceptance.
+- Each survival run clones mutable walk, cover and owner arrays plus section
+  state. Gate definitions and static topology remain immutable. A geometry revision
+  invalidates the zombie route, corn instances and puddle placement together.
+- Nine six-cell section footprints form three reconnecting branches. During the
+  hunt their ports stay fixed; unseen interiors select a short hub or a longer dogleg. Protect actor
+  sections and neighbors, current routes/targets/searches, recent sounds, exposed
+  wall faces and QTE reservations before replacing a footprint. A rejected
+  candidate leaves the current valid layout intact.
+- Both entry gates use the shared animated leaves and safe collision. Explicit
+  locks apply to player, zombie and throw navigation; sound can still attenuate
+  across a locked gate. Pathfinding uses the moving actor's actual radius.
+- Active time starts once the inner gate has closed. Only post-collision player
+  locomotion contributes to qualification. QTE and recovery count as active time;
+  pause, menu, camera motion and scripted throws cannot manufacture progress.
+- The same original inner and outer gates unlock in reverse. A valid alive outer
+  crossing emits one `corn_survival_complete` event and unlocks the old onward
+  door. It neither grants a checkpoint reward nor wins the daughter objective.
+- At exit readiness, the unseen northern junction and vestibule connector change
+  atomically into a return tree. Both side branches remain connected through the
+  south; the central branch reaches the original entrance. No section is dropped
+  with an actor in it, and no return connection is closed across an active route.
+- Hidden segment fields are absent from ordinary snapshots/UI. Development
+  `__test.state()` includes seed, sections, protection reasons and qualification.
+  See SURVIVAL_UPDATE.md for the limits of return-route and visual proof.
 
 - Movement is continuous. Fire, light, interaction and raw look evidence are consumed once per supplied action.
 - movementIntent records any held movement key, even when opposite keys cancel direction.
