@@ -110,7 +110,10 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const centerGlow=new THREE.PointLight(0xdcca8c,24,14,1.8);centerGlow.position.set(maze.center.x,4,maze.center.z);scene.add(centerGlow);
   const rewardRings=maze.checkpoints.map(cp=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.85,.035,4,24),new THREE.MeshBasicMaterial({color:0xb6be87}));ring.rotation.x=Math.PI/2;ring.position.set(cp.x,.025,cp.z);scene.add(ring);return {ring,id:cp.id};});
   for(const a of maze.hideAnchors){
-    const mark=textSign('CORN / E',.67,.18);mark.position.set(a.x+a.cornSide.x*.97,1.45,a.z+a.cornSide.z*.97);mark.rotation.y=a.entryYaw+Math.PI;scene.add(mark);
+    const mark=textSign('CORN / E',.67,.18);
+    if(maze.corridorLayout)mark.position.set(a.x,2.43,a.z+.08);
+    else mark.position.set(a.x+a.cornSide.x*.97,1.45,a.z+a.cornSide.z*.97);
+    mark.rotation.y=a.entryYaw+Math.PI;scene.add(mark);
     for(const side of [-1,1])box(.07,1.1,.07,wood,a.x+a.cornSide.x*1.04+a.cornSide.z*side*.46,.55,a.z+a.cornSide.z*1.04-a.cornSide.x*side*.46);
   }
   const enemy=new THREE.Group();scene.add(enemy);
@@ -170,7 +173,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const worldObjects=scene.children.filter(o=>o!==camera&&o!==enemy&&o!==dust&&!o.isHemisphereLight&&!o.isDirectionalLight);
   const originalVisible=new Map(worldObjects.map(o=>[o,o.visible]));
   const extraGroups=maze.corridorLayout?Array.from({length:3},()=>{const group=enemy.clone();scene.add(group);return group;}):[];
-  const corridorView=createCorridorFieldView(scene,maze,floor,{touch});visuals.corridors=corridorView.stats;
+  const corridorView=createCorridorFieldView(scene,maze,floor,{touch,createSign:textSign});visuals.corridors=corridorView.stats;
   const weatherView=weather?createWeatherView(scene,weather):null;
   const cornView=createCornView(scene,maze);visuals.corn=cornView.stats;
   const survivalView=createSurvivalView(scene,maze);

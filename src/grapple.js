@@ -167,6 +167,7 @@ export function updateInteraction(game,dt,input={}){
     game.skyRedUntil=q.recoveryDeadline+C.grapple.redSkySeconds;
     game.skyRedStartedAt=q.recoveryDeadline;
     game.enemy.attackCooldown=C.grapple.retackleGrace;
+    if(game.enemies)game.player.damageCooldown=Math.max(game.player.damageCooldown,C.grapple.retackleGrace);
     transition(game,game.grace>0?'disengage':'investigate','qte_recovered',game.grace);
     game.enemy.target=game.enemy.memory.lastKnown;
     emitEvent(game,'hunt_resume','',actorPosition(game,'enemy'));

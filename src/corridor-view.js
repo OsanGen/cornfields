@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {doorLeaf} from './corn-world.js';
 
-export function createCorridorFieldView(scene,maze,floor,{touch=false}={}){
+export function createCorridorFieldView(scene,maze,floor,{touch=false,createSign}={}){
   if(!maze.corridorLayout)return {update(){},setAssets(){},stats:{enabled:false}};
   const wallsGroup=new THREE.Group(),fieldGroup=new THREE.Group();scene.add(wallsGroup,fieldGroup);
   const wood=new THREE.MeshStandardMaterial({color:0x978269,roughness:1});
@@ -13,6 +13,7 @@ export function createCorridorFieldView(scene,maze,floor,{touch=false}={}){
   for(const x of [-.8,.8]){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,2.65,.15),wood);post.position.set(x,1.325,0);fieldGroup.add(post);}
   const lantern=new THREE.Mesh(new THREE.BoxGeometry(.16,.25,.16),new THREE.MeshStandardMaterial({color:0xf3c56d,emissive:0xe8a44e,emissiveIntensity:3}));lantern.position.set(.95,2.2,0);fieldGroup.add(lantern);
   const light=new THREE.PointLight(0xf3c56d,10,7);light.position.copy(lantern.position);fieldGroup.add(light);
+  if(createSign){const sign=createSign('CORRIDORS',1.4,.22);sign.position.set(0,2.45,.08);fieldGroup.add(sign);}
   const patchSize=12,grid=3,perPatch=touch?95:145,capacity=grid*grid*perPatch;
   let plants=[],materials=null,revision=-1,runId=null,patchKey='';
   const stats={enabled:true,wallInstances:0,cornCapacity:capacity,activeZone:'corridor',extraZombieCap:3};

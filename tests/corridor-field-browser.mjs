@@ -31,7 +31,7 @@ try{
   await step(11,{forward:1,yaw:Math.PI});await step(17);const deep=await state();
   assert.equal(deep.zone,'field');assert.equal(deep.enemies.filter(e=>e.id!=='pursuer').length,3);await shot('04-deep-field');
   // Walk back using ordinary movement; the return plane must map to the original door.
-  await page.evaluate(()=>{for(let i=0;i<1000;i++){const s=window.__test.state();if(s.zone==='corridor')return;if(s.interaction&&s.interaction.phase!=='recovery'){window.__test.step(.017,{stab:true});continue;}const p=s.player;window.__test.step(.05,{forward:1,yaw:Math.atan2(p.x,p.z+1)});}throw Error('Could not return to corridor');});
+  await page.evaluate(()=>{for(let i=0;i<1000;i++){const s=window.__test.state();if(s.zone==='corridor'){window.__test.step(0);return;}if(s.interaction&&s.interaction.phase!=='recovery'){window.__test.step(.017,{stab:true},false);continue;}const p=s.player;window.__test.step(.05,{forward:1,yaw:Math.atan2(p.x,p.z+1)},false);}throw Error('Could not return to corridor');});
   assert.equal((await state()).fieldTrip.doorId,deep.fieldTrip.doorId);await shot('05-return');
   await page.evaluate(()=>window.__test.fixture('encounter'));await step(.56);assert.equal((await state()).interaction?.phase,'qte');await shot('06-qte');
   for(let i=0;i<8;i++)await action('stab');await step(1);let s=await state();assert.equal(s.interaction?.phase,'recovery');

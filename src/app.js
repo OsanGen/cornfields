@@ -424,7 +424,7 @@ export function createGameApp({
       else clock.advance(milliseconds / 1000, step => input.read(game.player,game.elapsed+step));
       present();
     },
-    step(seconds, controls = {}) {
+    step(seconds, controls = {}, renderFrame = true) {
       manual = true;
       if(intro.active){tickIntro(seconds);present();return gameSnapshot(game);}
       let first = true;
@@ -436,7 +436,7 @@ export function createGameApp({
         first = false;
         return value;
       });
-      present();
+      if(renderFrame)present();
       return gameSnapshot(game);
     },
     dispose() {

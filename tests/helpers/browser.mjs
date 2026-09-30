@@ -91,7 +91,7 @@ export function createHarness({denyLock = false, lockRequest, audioUnlock, touch
   });
   installDebugHooks(app, window, maze, new URLSearchParams('test=1'));
   return {
-    app, maze, node, document, window, audio, weather: weatherModel,
+    app, maze, node, document, window, audio, view, weather: weatherModel,
     key: (code, values) => document.dispatch('keydown', {code, ...values}),
     release: code => document.dispatch('keyup', {code}),
     click: id => node(id).dispatch('click'),

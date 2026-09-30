@@ -113,3 +113,10 @@ test('shooting a pursuer before hiding preserves its stagger across the zone bou
   Object.assign(e,{x:d.x,z:d.z+1.8,state:'staggered',timer:2});e.memory.lastKnown={x:d.x,z:d.z+1};field(g);
   const from={x:e.x,z:e.z};updateGame(g,1,{});assert.equal(e.zone,'corridor');assert.equal(e.x,from.x);assert.equal(e.z,from.z);
 });
+test('batched verification advances real gameplay and renders only the requested frame',async()=>{
+  const h=createHarness({corridors:true,touch:true});await h.app.enter();h.app.fixture('corridor');let renders=0;h.view.render=()=>renders++;
+  const before=h.app.snapshot(true).corridorRun.elapsed;
+  for(let i=0;i<10;i++)h.app.step(.1,{forward:1},false);
+  assert.equal(renders,0);assert.ok(h.app.snapshot(true).corridorRun.elapsed>before+.99);
+  h.app.step(0);assert.equal(renders,1);h.app.dispose();
+});
