@@ -24,7 +24,7 @@ export async function installNightSky({scene,camera}){
   sky.rotation.y=-Math.PI/4;
   scene.add(sky);
   const normal=material.color.clone(),red=new THREE.Color(0xff3020);
-  const update=(amount=0)=>{sky.position.copy(camera.position);material.color.copy(normal).lerp(red,amount);};
+  const update=(amount=0,flash=0)=>{sky.position.copy(camera.position);material.color.copy(normal).lerp(red,amount).multiplyScalar(1+flash*.65);};
   update();
   return {update,stats:{source:'Solitude Night',width:texture.image.width,height:texture.image.height,
     drawCalls:1,triangles:geometry.index.count/3,animated:false,environmentLighting:false}};

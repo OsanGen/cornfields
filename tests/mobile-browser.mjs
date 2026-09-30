@@ -50,7 +50,7 @@ async function drive(stop) {
   }, stop);
 }
 try {
-  await page.goto(process.env.CORNFIELD_TEST_URL || 'http://127.0.0.1:4180/cornfields/?test=1', {waitUntil: 'networkidle'});
+  await page.goto(process.env.CORNFIELD_TEST_URL || 'http://127.0.0.1:4180/cornfields/?test=1&intro=off', {waitUntil: 'networkidle'});
   await page.waitForFunction(() => window.__test && !document.getElementById('start-btn').disabled);
   report.initialVisuals = await page.evaluate(() => window.__test.diagnostics().visuals);
   assert.equal(report.initialVisuals.status, 'ready', JSON.stringify(report.initialVisuals));

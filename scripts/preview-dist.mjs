@@ -30,7 +30,7 @@ export async function startPreview({
   root = await realpath(root);
   basePath = normalizeBasePath(basePath);
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid preview port');
-  const types = {'.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json', '.png':'image/png', '.jpg':'image/jpeg', '.glb':'model/gltf-binary', '.md':'text/plain; charset=utf-8'};
+  const types = {'.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.css':'text/css; charset=utf-8', '.json':'application/json', '.png':'image/png', '.jpg':'image/jpeg', '.glb':'model/gltf-binary', '.md':'text/plain; charset=utf-8', '.txt':'text/plain; charset=utf-8', '.ttf':'font/ttf', '.wav':'audio/wav', '.mp3':'audio/mpeg'};
   const server = http.createServer(async (req, res) => {
     if (!['GET', 'HEAD'].includes(req.method)) {
       res.writeHead(405, {'Allow':'GET, HEAD'}); res.end(); return;

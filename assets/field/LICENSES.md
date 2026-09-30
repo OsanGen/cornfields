@@ -60,3 +60,11 @@ Timber props, barrel bands and entrance iron reuse the existing field materials.
 recordings from artisticdude's [Zombies Sound Pack](https://opengameart.org/content/zombies-sound-pack),
 released under CC0. Source filenames and SHA-256 hashes are in `assets/audio/sources.json`.
 Playback gain, rate, spatial position and fade are controlled by the game.
+
+# Original first-person hands
+
+`hands.glb` and its embedded 1K skin atlas are original procedural geometry and
+texture work authored for CORNFIELDS with `scripts/build-hands.py`. No downloaded
+hand model or animation is included. The two posed hand meshes share one material;
+the game adds wrist tremor, a straight knife reach and gradual surface dirt.
+Asset size, triangle count and hashes are recorded in `hands-source.json`.

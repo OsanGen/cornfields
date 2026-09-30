@@ -33,7 +33,7 @@ async function driveUntil(stop){return page.evaluate(stop=>{
   }throw new Error('Route did not finish');
 },stop);}
 try{
-  await page.goto(process.env.CORNFIELD_TEST_URL||'http://127.0.0.1:4173/?test=1',{waitUntil:'networkidle'});
+  await page.goto(process.env.CORNFIELD_TEST_URL||'http://127.0.0.1:4173/?test=1&intro=off',{waitUntil:'networkidle'});
   await page.waitForFunction(()=>window.__test&&!document.getElementById('start-btn').disabled);
   assert.equal(await page.locator('#error').isVisible(),false);await shot('01-menu');checks.push('Menu, required art and HUD load');
   // On macOS a genuinely foreground click may be required once. This never
@@ -78,7 +78,7 @@ try{
   for(const mode of ['missing','delayed']){
     const fallback=await browser.newPage({viewport:{width:960,height:640}});let release;
     await fallback.route('**/zombie.glb',async route=>{if(mode==='missing')await route.fulfill({status:404,body:'Missing optional model'});else{await new Promise(resolve=>{release=resolve;});await route.continue().catch(()=>{});}});
-    await fallback.goto('http://127.0.0.1:4173/?test=1',{waitUntil:'domcontentloaded'});
+    await fallback.goto('http://127.0.0.1:4173/?test=1&intro=off',{waitUntil:'domcontentloaded'});
     await fallback.waitForFunction(()=>window.__test&&!document.getElementById('start-btn').disabled);
     if(mode==='delayed')await fallback.waitForFunction(()=>window.__test.diagnostics().visuals.zombie.status==='fallback',{},{timeout:12000});
     assert.equal(await fallback.locator('#error').isVisible(),false);release?.();await fallback.close();checks.push('Start remains available with '+mode+' optional zombie');

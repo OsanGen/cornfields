@@ -3,7 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium} from '../scripts/browser-runtime.mjs';
 
 const desktop=process.env.CORNFIELD_DESKTOP==='1';
-const output=desktop?'output/horror-update/desktop':'output/horror-update/browser';
+const output=process.env.CORNFIELD_HORROR_OUTPUT||(desktop?'output/horror-update/desktop':'output/horror-update/browser');
 await mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const page=await browser.newPage({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:!desktop,hasTouch:!desktop});
@@ -49,7 +49,7 @@ async function encounter(){
   });
 }
 try{
-  await page.goto(process.env.CORNFIELD_TEST_URL||`http://127.0.0.1:4180/cornfields/?test=1&controls=${desktop?'mouse':'touch'}`,{waitUntil:'networkidle'});
+  await page.goto(process.env.CORNFIELD_TEST_URL||`http://127.0.0.1:4180/cornfields/?test=1&intro=off&controls=${desktop?'mouse':'touch'}`,{waitUntil:'networkidle'});
   await page.waitForFunction(()=>window.__test?.diagnostics().visuals.zombie.status==='ready');
   await tap('#start-btn');
   if(desktop)await page.waitForFunction(()=>document.pointerLockElement===document.getElementById('scene'));
@@ -58,6 +58,8 @@ try{
   assert.equal(await page.locator('#qte-prompt').isVisible(),true);
   assert.equal(await page.locator('#touch-stab').isVisible(),!desktop);
   assert.equal(await page.locator('#touch-fire').isVisible(),false);
+  assert.equal((await state()).weather.lightning,0);
+  assert.equal((await state()).weather.quiet,true);
   await shot('01-qte');
   const before=await state();await tap('#touch-pause');await step(20);
   assert.equal((await state()).player.health,before.player.health);
@@ -76,7 +78,7 @@ try{
   if((await state()).mode==='paused')await tap('#resume-btn');
   await step(Math.max(0,deadline-(await state()).elapsed-2),{pitch:.8});await shot('06-small-phone-countdown');
   const timer=await page.locator('#recovery-timer').boundingBox();assert.ok(timer.x>=0&&timer.x+timer.width<=667&&timer.y>=0&&timer.y+timer.height<=375);
-  await step(2.35,{pitch:.8});s=await state();assert.equal(s.interaction,null);assert.ok(s.skyRedUntil>s.elapsed);await shot('07-red-sky');
+  await step(2.35,{pitch:.8});s=await state();assert.equal(s.interaction,null);assert.ok(s.skyRedUntil>s.elapsed);assert.equal(s.weather.lightning,0);await shot('07-red-sky');
   await step(3,{pitch:.8});s=await state();assert.ok(s.skyRedUntil<=s.elapsed);await shot('08-sky-restored');
   checks.push('Small landscape countdown stays within the viewport; recovery ends and the three-second red sky restores');
   if(s.mode==='playing')await tap('#touch-pause');

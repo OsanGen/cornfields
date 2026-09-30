@@ -48,6 +48,9 @@ test('package follows runtime and vendor imports, includes credits, and replaces
   assert(result.files.includes('assets/audio/distress.wav'));
   assert(result.files.includes('assets/audio/scream.wav'));
   assert(result.files.includes('assets/audio/sources.json'));
+  for(const file of ['rain.mp3','thunder.mp3','splash-1.mp3','splash-2.mp3','weather-sources.json','LICENSES.md']) {
+    assert(result.files.includes(`assets/audio/${file}`));
+  }
   assert(result.files.includes('.nojekyll'));
   assert(!result.files.some(file => /(?:node_modules|private|unused|stale|\._)/.test(file)));
   assert(!((await readdir(result.directory)).includes('stale.txt')));
@@ -94,7 +97,7 @@ test('actual runtime graph and HTML resolve entirely below a GitHub Pages projec
       assert(new URL(dependency, base).pathname.startsWith(base.pathname));
     }
   }
-  for (const module of ['field-visuals', 'night-sky', 'zombie', 'prop-details']) {
+  for (const module of ['field-visuals', 'night-sky', 'zombie', 'prop-details', 'hands']) {
     const source = files.get(`src/${module}.js`).toString();
     assert(!/['"`]\/assets\//.test(source), `${module} still has a host-root asset URL`);
     assert(source.includes('import.meta.url'), `${module} must resolve assets beside its module`);
@@ -104,7 +107,10 @@ test('actual runtime graph and HTML resolve entirely below a GitHub Pages projec
       assert(files.has(url.pathname.slice(base.pathname.length)), `Missing module asset ${url}`);
     }
   }
-  assert.equal([...files.keys()].filter(file => file.startsWith('vendor/') && file.endsWith('.js')).length, 5);
+  for(const module of ['EffectComposer','RenderPass','ShaderPass','OutputPass'])assert(files.has(`vendor/three/examples/jsm/postprocessing/${module}.js`));
+  assert(!files.has('vendor/three/examples/jsm/postprocessing/GlitchPass.js'));
+  assert(files.has('assets/fonts/barlow-condensed.ttf'));
+  assert(files.has('assets/fonts/rubik-glitch.ttf'));
 });
 
 test('module closure recognizes multiline imports, reexports, side effects and lazy imports', () => {

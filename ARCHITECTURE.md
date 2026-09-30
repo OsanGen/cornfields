@@ -1,5 +1,11 @@
 # Updating Cornfield
 
+The opening is a separate presentation controller in `intro.js`, driven by the existing `app.js` frame loop. `intro-visuals.js` owns a small scene/camera and composer, borrowing the renderer and ready corn geometry through `scene.introCorn`. It disposes only owned staging/effect resources. `main.js` starts the shell immediately while `view.ready` resolves; entry is gated on core readiness. The timeline and all gameplay ticks are separate, including test stepping.
+
+`FieldAudio.prepare()` creates/resumes the shared context without starting game loops. Intro cues use a separate gain and source set. `startGameplay()` activates game ambience once; the legacy `unlock()` remains prepare plus startGameplay. Intro entry requests pointer lock before awaiting anything and starts the simulation only after capture succeeds. Retrying capture leaves the ready title and simulation unchanged.
+
+`INTRO_ENABLED` and `?intro=off` restore the original entry path. `npm run test:intro` and `npm run test:intro:browser` cover the opening. Existing gameplay browser suites explicitly bypass it. Local font assets and notices are part of the runtime allowlist; no CDN or new package is required.
+
 This is a JavaScript/Three.js game with desktop and landscape touch input. It has one runtime dependency and a small static packaging step for hosting. Keep changes small and preserve the deterministic simulation.
 
 ## Where changes belong
@@ -16,11 +22,15 @@ This is a JavaScript/Three.js game with desktop and landscape touch input. It ha
 | Shooting, hits, damage | src/combat.js | Combat and timed recovery scenarios |
 | Tackle, QTE, corn throws and recovery | src/grapple.js; src/maze.js | tests/grapple.test.mjs |
 | Rigged creature presentation and eyes | src/zombie-poses.js; src/zombie.js | tests/zombie-poses.test.mjs; browser screenshots |
-| Hiding and entry/exit evidence | src/hiding.js | Hidden-input and information-boundary scenarios |
+| Physical corn presence and rustling | src/hiding.js | tests/corn-world.test.mjs; information-boundary regressions |
+| Shared corn topology, gates, collision and navigation | src/corn-world.js; src/corn-view.js | Gate coverage, component cycles, swept routes, checkpoint cuts |
+| Hand asset and gradual dirt | src/hands.js; scripts/build-hands.py | Actual rendered asset, grip and progression review |
+| Derived tremor, nightmare effects and session-only alias | src/horror-presentation.js; src/ui.js | tests/horror-presentation.test.mjs; browser screenshots |
 | AI perception, memory, navigation | src/zombie-ai.js | Whole-AI regression scenarios |
 | AI state initialization | src/enemy-state.js | Same-state refresh and combat regressions |
 | Threat text and intensity | src/threat-director.js | Truthfulness and cooldown tests |
 | Scene, gun, landmarks, foliage | src/scene.js; src/field-visuals.js | Browser screenshots and frame-time comparison |
+| Mud, rain, puddles, ripple/splash limits, storm timing | src/weather.js; src/weather-view.js; src/field-visuals.js | tests/weather.test.mjs; tests/weather-browser.mjs |
 | Sounds and spatial cues | src/audio.js | Browser checks with sound |
 | Browser diagnostics | src/debug.js | Keep existing verification hooks compatible |
 
@@ -40,11 +50,18 @@ build.mjs traverses the runtime import graph from main.js and copies an explicit
 
 The simulation never imports DOM, WebGL or Web Audio modules. The UI never advances the simulation. Tests import createGameApp directly with small browser/renderer/audio adapters; they do not rewrite source text.
 
+Weather is presentation state created beside the scene in main.js. After each simulation tick, app.js captures the game-event batch once, updates weather from active game time, dispatches gameplay events, then sends weather events through the separate audio.weatherEvent boundary. Weather never uses the gameplay event-ID sequence or AI random stream. The shared distance trigger owns player footsteps when weather is connected, including dry footsteps with weather=off. Authoritative landing events produce separate splashes. No new hearing evidence, movement penalty or collision is introduced.
+
+weather.js owns deterministic puddle footprints, a cell index, fixed ripple/drop pools and the lightning/thunder timer. weather-view.js reads that state into four render batches and uses two tiny generated textures. Reduced effects remove lightning and splash droplets and lower rain density. Pause freezes time, mute consumes pending thunder, and restart clears cues and pools. QTE, red sky and priority scare cues suppress lightning, stop active thunder and duck rain. The existing flat ground and mud maps remain the terrain; puddles simulate surface reactions, not fluid flow or depth.
+
 ## Contracts to preserve
 
 - Movement is continuous. Fire, light, interaction and raw look evidence are consumed once per supplied action.
 - movementIntent records any held movement key, even when opposite keys cancel direction.
-- Hiding entry resolves interaction first, then checks newly hidden movement/fire/light. Mouse aim that preceded entry is not replayed as hidden movement.
+- E changes one aimed gate. Actual movement across a foliage boundary owns entry/exit; there is no saved exit transform or translation lock.
+- Corn movement, blocked intent and deliberate look create one local rustle per input sample. Hearing uses a bounded physical route with closed-gate attenuation, not a global occupancy lookup.
+- Gate state belongs to each run. Mesh transforms, circle collision, sight and pathfinding use the same leaf geometry. Closing stops on bodies; opening persists until a fresh close request.
+- Aliases stay in the application/UI closure and render with textContent. Never copy them into gameplay, events, diagnostics or persistent storage.
 - Confirmed observations and predicted navigation targets are different facts. AI decisions must use perception and memory; private player state is not a remote sensor.
 - State re-entry can explicitly refresh initialization without duplicating entry sounds or counters.
 - Events carry presentation effects; gameplay state remains authoritative.
@@ -72,17 +89,22 @@ The simulation never imports DOM, WebGL or Web Audio modules. The UI never advan
 - npm start: bounded loopback preview on port 4173.
 - npm run test:gameplay: simulation and AI regressions.
 - npm run test:runtime: input and actual application lifecycle.
-- npm run test:mobile: browser touch emulation against the packaged project-path preview.
+- node --test tests/weather.test.mjs tests/weather-audio.test.mjs: weather timing, surface boundaries, lifecycle and audio priority.
+- node tests/weather-browser.mjs: desktop/touch weather rendering, asset decoding, pause/restart and missing-audio fallback.
+- npm run test:mobile: current gate/QTE/name/touch browser checks against the packaged project-path preview.
 - npm run build; npm run test:build: static package and portability checks.
 - CORNFIELD_BASE_PATH=/cornfields/ npm run preview: packaged preview on port 4180.
 - npm test: all deterministic tests.
 - npm run check: JavaScript syntax, including test helpers, and pinned Three.js lock consistency.
-- npm run test:browser: headed browser controls, full route, restart and optional-model fallback checks.
+- npm run test:browser: current hands/corn browser checks. Set CORNFIELD_HEADED=1 for desktop pointer-lock verification.
+- node tests/hands-corn-performance.mjs: pending matched before/after comparison; requires CORNFIELD_BASELINE_SOURCE pointing at the preserved weather-era source snapshot.
 
 The browser adapter can reuse installed Playwright and Chrome through CORNFIELD_PLAYWRIGHT_MODULE and CORNFIELD_BROWSER_EXECUTABLE. CORNFIELD_NATIVE_GPU=1 preserves native graphics. No dependency or browser download is required.
 
 On macOS, use CORNFIELD_NATIVE_START=1 when automation cannot obtain mouse capture. The runner prints READY_FOR_NATIVE_START and waits up to 60 seconds for a genuine click on ENTER THE FIELD in its foreground verification window. It never bypasses capture. A denied capture is an environment failure, not a passing controls check.
 
-Set CORNFIELD_BASELINE_SOURCE to a saved source snapshot to include before/after frame-time comparisons using the same assets, viewport and camera positions. The browser report records measured median/p95 times and enforces a 10% p95 budget. This comparison is distinct from the older legacy-art comparison in tests/field-visuals.mjs.
+The current performance runner reports median/p95 and enforces a 10% p95 budget using the saved pre-update source and matching assets, viewport and positions. It is prepared but has not run for this update. Historical pocket-era browser harnesses remain as reference; npm scripts point to hands-corn-browser.mjs.
+
+tests/horror-performance.mjs also compares the working package with the source at HEAD using identical views. Set CORNFIELD_PERFORMANCE_OUTPUT to a fresh output directory for each update. The weather fallback/comparison URL is ?weather=off; it restores the dry material and disables weather graphics/audio loads. Asset provenance and exact hashes live in assets/audio/weather-sources.json and assets/audio/LICENSES.md.
 
 Respect the machine resource policy before browser, full-suite or service workloads. A blocked check remains outstanding. Human first-play pacing, fear, navigation clarity and audio comfort remain human acceptance checks.

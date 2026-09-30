@@ -1,0 +1,9 @@
+{
+  "name": "Cornfields original player hands",
+  "origin": "Original mesh and atlas authored for this project in scripts/build-hands.py",
+  "externalAssets": false,
+  "triangles": 6720,
+  "bytes": 1376104,
+  "sha256": "66b3e6e4bb587905aad8c682d823d9b4120cecfc0a9ccaf88ba98cae1a0c564b",
+  "poses": "One posed grip mirrored for left support; wrist transforms are presentation only."
+}

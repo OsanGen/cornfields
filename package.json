@@ -13,8 +13,10 @@
     "check": "node scripts/check.mjs",
     "test:runtime": "node --test tests/input.test.mjs tests/touch-input.test.mjs tests/ui-runtime.test.mjs",
     "test:gameplay": "node --test tests/game.test.mjs tests/survival.test.mjs tests/gameplay-regressions.test.mjs",
-    "test:browser": "node tests/browser.mjs",
-    "test:mobile": "node tests/mobile-browser.mjs"
+    "test:browser": "node tests/hands-corn-browser.mjs",
+    "test:intro": "node --test tests/intro.test.mjs tests/intro-audio.test.mjs",
+    "test:intro:browser": "node tests/intro-browser.mjs",
+    "test:mobile": "CORNFIELD_DEVICE=phone node tests/hands-corn-browser.mjs"
   },
   "dependencies": { "three": "0.186.0" }
 }

@@ -2,6 +2,7 @@ import {canOccupy,pathTo,cornZoneAt} from './maze.js';
 import {GAME_CONFIG as C,distance,emitEvent} from './game-config.js';
 import {actorPosition} from './hiding.js';
 import {transition} from './enemy-state.js';
+import {cornNode,openDoor,safeDoorSwing} from './corn-world.js';
 
 export const interactionLocked=g=>!!g.interaction&&g.interaction.phase!=='recovery';
 const point=p=>({x:p.x,z:p.z});
@@ -13,18 +14,22 @@ export function sweptClear(maze,a,b,r,blocks=[]){
 
 /** Reserve an actual nearby route before contact. No wall crossing or distant warp. */
 export function findCornLanding(game,blocks=[]){
-  const from=point(actorPosition(game,'player')),r=game.player.radius;
-  const candidates=(game.maze.landingZones||[]).filter(a=>distance(a,from)<3.2)
-    .sort((a,b)=>distance(a.pocket,from)-distance(b.pocket,from));
-  for(const anchor of candidates){
-    let route=pathTo(game.maze,from,anchor.pocket,blocks);
-    if(!route.length)continue;
-    route=[from,...route.slice(1)];
-    // The first corridor center is needed when coming from an off-center contact.
-    if(!cornZoneAt(game.maze,from))route=[from,point(anchor),point(anchor.pocket)];
-    const length=route.slice(1).reduce((sum,p,i)=>sum+distance(route[i],p),0);
-    if(length<.75||length>4.5)continue;
-    if(route.slice(1).every((p,i)=>sweptClear(game.maze,route[i],p,r,blocks)))return {anchor,route,length};
+  const from=point(game.player),r=game.player.radius,w=game.maze.cornWorld,start=cornNode(w,from),owner=w.owner[start],candidates=[];
+  const owners=new Set([owner,...w.doors.filter(d=>w.owner[d.corridorNode]===owner).map(d=>d.stage)]);
+  for(let z=Math.floor((from.z-3.2)/w.size);z<=Math.floor((from.z+3.2)/w.size);z++)for(let x=Math.floor((from.x-3.2)/w.size);x<=Math.floor((from.x+3.2)/w.size);x++){
+    const id=z*w.width+x,p={x:(x+.5)*w.size,z:(z+.5)*w.size};
+    if(w.corn[id]&&owners.has(w.owner[id])&&distance(from,p)>.8&&distance(from,p)<3.2)candidates.push(p);
+  }
+  candidates.sort((a,b)=>Math.abs(distance(from,a)-1.7)-Math.abs(distance(from,b)-1.7));
+  const opened=[...blocks];opened.doors=game.cornDoors.map((s,i)=>({...s,amount:1,swing:s.amount>.01?s.swing:((from.x-w.doors[i].x)*w.doors[i].normal.x+(from.z-w.doors[i].z)*w.doors[i].normal.z>0?-1:1)}));
+  for(const p of candidates){
+    const route=pathTo(game.maze,from,p,opened),length=route.slice(1).reduce((sum,b,i)=>sum+distance(route[i],b),0);
+    if(length<.75||length>4.5||!route.slice(1).every((b,i)=>sweptClear(game.maze,route[i],b,r,opened)))continue;
+    const doors=w.doors.filter(d=>route.slice(1).some((b,i)=>{
+      const a=route[i],side=p=>(p.x-d.x)*d.normal.x+(p.z-d.z)*d.normal.z;
+      return side(a)*side(b)<=0&&Math.min(distance(a,d),distance(b,d))<.7;
+    }));
+    return {anchor:{id:cornZoneAt(game.maze,p).id,pocket:p},route,length,doors:doors.map(d=>d.index)};
   }
   return null;
 }
@@ -45,6 +50,14 @@ export function beginTackle(game,blocks=[]){
       if(sweptClear(game.maze,enemyAt,candidate,game.enemy.radius,blocks)){contact=candidate;break;}
     }
   }
+  landing.swings={};
+  for(const index of landing.doors){
+    if(game.cornDoors[index].amount>=.96)continue;
+    const door=game.maze.cornDoors[index],bodies=[p,{...enemyAt,radius:game.enemy.radius},{...contact,radius:game.enemy.radius}];
+    const swing=safeDoorSwing(door,bodies);
+    if(!swing){game.enemy.reason='seeking_safe_contact';return false;}
+    landing.swings[index]=swing;
+  }
   Object.assign(game.enemy,enemyAt,{ingressDepth:0,rushAnchorId:null});
   p.x=from.x;p.z=from.z;p.hidden=false;p.hideAnchorId=null;p.returnTransform=null;p.moving=false;
   p.yaw=Math.atan2(-(actorPosition(game,'enemy').x-p.x),-(actorPosition(game,'enemy').z-p.z));
@@ -53,6 +66,7 @@ export function beginTackle(game,blocks=[]){
     phaseStartedAt:game.elapsed,until:game.elapsed+C.grapple.tackleSeconds,
     presses:0,targetPresses:C.grapple.targetPresses,landing,origin:point(p),yaw:p.yaw,
     enemyOrigin:enemyAt,enemyContact:contact};
+  for(const index of landing.doors)openDoor(game,game.maze.cornDoors[index],'player');
   game.metrics.hitsTaken++;
   transition(game,'tackle','close_contact');
   emitEvent(game,'tackle','',from);
@@ -108,19 +122,29 @@ export function updateInteraction(game,dt,input={}){
       q.presses++;
       emitEvent(game,'stab_press','',null,{presses:q.presses});
       if(q.presses>=q.targetPresses){
-        phase(game,'stab',at,C.grapple.stabSeconds);emitEvent(game,'eye_stab');break;
+        phase(game,'stab',at,C.grapple.stabSeconds);q.contactAt=at+C.grapple.stabSeconds*.48;break;
       }
     }
     if(q.phase==='qte'){drain(game,Math.max(q.lastDrainAt,start),end);q.lastDrainAt=end;}
   }
   if(game.player.health<=0)return;
-  if(q.phase==='stab'&&end+1e-9>=q.until){phase(game,'throw',q.until,C.grapple.throwSeconds);emitEvent(game,'throw');}
+  if(q.phase==='stab'&&!q.contactEmitted&&end+1e-9>=q.contactAt){q.contactEmitted=true;emitEvent(game,'eye_stab');}
+  if(q.phase==='stab'&&end+1e-9>=q.until){
+    const blocks=game.blocks||[];
+    if(!q.landing.route.slice(1).every((b,i)=>sweptClear(game.maze,q.landing.route[i],b,game.player.radius,blocks))){
+      const next=findCornLanding(game,blocks);
+      if(next){q.landing=next;for(const index of next.doors)openDoor(game,game.maze.cornDoors[index],'player');}
+      q.until=end+1/60;return;
+    }
+    phase(game,'throw',q.until,C.grapple.throwSeconds);emitEvent(game,'throw');
+  }
   if(q.phase==='throw'){
     Object.assign(game.player,positionOnRoute(q.landing,(end-q.phaseStartedAt)/C.grapple.throwSeconds));
     if(end+1e-9>=q.until){
       const at=q.until;phase(game,'recovery',at,C.grapple.recoverySeconds);q.recoveryDeadline=q.until;
       Object.assign(game.player,point(q.landing.anchor.pocket));
       game.player.cornZoneId=q.landing.anchor.id;
+      game.player.cornEnteredAt=at;game.player.stillSince=at;game.player.flashlightOn=false;
       game.player.damageCooldown=0;
       game.enemy.ingressDepth=0;game.enemy.rushAnchorId=null;
       Object.assign(game.enemy.memory,{lastKnown:point(q.landing.anchor.pocket),lastHeard:point(q.landing.anchor.pocket),lastHeardAt:at,

@@ -8,6 +8,7 @@ const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 export const runtimeAssets = [
   'cornfield-kit.glb', 'corn_color.png', 'corn_normal.png',
   'zombie.glb', 'zombie-color.jpg', 'zombie-normal.jpg', 'night-sky.jpg',
+  'hands.glb', 'hands-source.json',
   'brown_mud_diff_1k.jpg', 'brown_mud_nor_gl_1k.jpg', 'brown_mud_rough_1k.jpg',
   'wood_planks_dirt_diff_1k.jpg', 'wood_planks_dirt_nor_gl_1k.jpg', 'wood_planks_dirt_rough_1k.jpg',
   'wood_planks_diff_1k.jpg', 'wood_planks_nor_gl_1k.jpg', 'wood_planks_rough_1k.jpg',
@@ -15,7 +16,11 @@ export const runtimeAssets = [
   'hessian_380_diff_1k.jpg', 'hessian_380_nor_gl_1k.jpg',
   'blue_metal_plate_diff_1k.jpg', 'blue_metal_plate_rough_1k.jpg',
   'LICENSES.md', 'sources.json', 'sky-source.json', 'zombie-source.json', 'prop-sources.json',
-].map(name => `assets/field/${name}`).concat(['distress.wav','scream.wav','sources.json'].map(name=>`assets/audio/${name}`));
+].map(name => `assets/field/${name}`).concat(['distress.wav','scream.wav','sources.json',
+  'rain.mp3','thunder.mp3','splash-1.mp3','splash-2.mp3','weather-sources.json','LICENSES.md',
+].map(name=>`assets/audio/${name}`)).concat([
+  'barlow-condensed.ttf','rubik-glitch.ttf','barlowcondensed-OFL.txt','rubikglitch-OFL.txt','LICENSES.md','sources.json',
+].map(name=>`assets/fonts/${name}`));
 
 // The game's static ES-module imports, including multiline import/export lists.
 export function moduleImports(source) {

@@ -46,8 +46,8 @@ export function attachZombieModel(enemy, gltf) {
     eye.name = index ? 'Creature right eye' : 'Creature left eye';
     // Bip01 head axes: +X crown, +Y face, +/-Z left/right.
     // Face-surface sampling places these just outside the eyelid geometry.
-    eye.position.set(1.90, 1.41, side * .43 - .055);
-    eye.scale.set(.10, .09, .16);
+    eye.position.set(1.35, 1.48, side * .43 - .055);
+    eye.scale.set(.085, .08, .13);
     head.add(eye);
     return eye;
   });

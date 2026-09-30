@@ -5,10 +5,14 @@ export function installDebugHooks(app, window, maze, parameters) {
   if (parameters.has('test')) {
     window.__test = {
       diagnostics: app.diagnostics,
+      intro:app.introSnapshot,
       state: app.snapshot,
       maze: () => maze.grid,
       anchors: () => structuredClone(maze.hideAnchors),
       route: app.route,
+      puddles: app.weatherSurfaces,
+      doors:()=>structuredClone(maze.cornDoors),
+      fixture:app.fixture,
       step: app.step,
     };
   }

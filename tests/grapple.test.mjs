@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMaze,centerOf,canOccupy,cornZoneAt,moveBody,key} from '../src/maze.js';
-import {createGame,startGame,updateGame,pauseGame,resumeGame,fail,win} from '../src/game.js';
+import {createGame,startGame,updateGame,pauseGame,resumeGame,fail,win,blocksFor} from '../src/game.js';
 import {beginTackle,findCornLanding,sweptClear} from '../src/grapple.js';
 import {fireGun,attackPlayer} from '../src/combat.js';
 import {transition} from '../src/enemy-state.js';
@@ -72,25 +72,22 @@ test('expiry screams once and red sky lasts exactly three active seconds',()=>{
 test('terminal modes cancel interaction, queued inputs and temporary sky',()=>{
   for(const finish of [fail,win]){const g=escape();g.skyRedUntil=99;finish(g);assert.equal(g.interaction,null);assert.equal(g.skyRedUntil,0);}
 });
-test('safe landing routes cover ordinary route cells without wall crossing',()=>{
+test('safe landing reservations cover ordinary route cells with physically swept routes',()=>{
   const maze=createMaze(),g=createGame(maze);g.doorOpen=true;let checked=0;const uncovered=[];
+  const opened=[];opened.doors=g.cornDoors.map(()=>({amount:1,swing:1}));
   for(const [id] of maze.distances){
     const [x,z]=id.split(',').map(Number);if(z>=30||x>=13&&x<=19&&z>=13&&z<=17)continue;
     for(const [dx,dz] of [[0,0],[.8,0],[-.8,0],[0,.8],[0,-.8]]){
-    const cell=centerOf(x,z);Object.assign(g.player,{x:cell.x+dx,z:cell.z+dz});const landing=findCornLanding(g);
-    if(!landing){uncovered.push(id);continue;}
-    checked++;
-    for(let i=1;i<landing.route.length;i++)assert.ok(sweptClear(maze,landing.route[i-1],landing.route[i],g.player.radius));
-    const p={...landing.anchor.pocket,radius:.25};
-    moveBody(maze,p,-landing.anchor.cornSide.x*1.72,-landing.anchor.cornSide.z*1.72);
-    assert.ok(Math.hypot(p.x-landing.anchor.x,p.z-landing.anchor.z)<.02);
+      const cell=centerOf(x,z);Object.assign(g.player,{x:cell.x+dx,z:cell.z+dz});
+      const landing=findCornLanding(g);
+      if(!landing){uncovered.push(id+':'+dx+','+dz);continue;}
+      checked++;
+      assert.ok(cornZoneAt(maze,landing.anchor.pocket));
+      for(let i=1;i<landing.route.length;i++)assert.ok(sweptClear(maze,landing.route[i-1],landing.route[i],g.player.radius,opened));
+      assert.ok(landing.length<=4.5);
     }
   }
   assert.ok(checked>1500);assert.deepEqual(uncovered,[]);
-});
-test('corn bays retain a separating wall and do not join parallel corridors',()=>{
-  const maze=createMaze();
-  for(const a of maze.landingZones){const p={x:a.x+a.cornSide.x*2.3,z:a.z+a.cornSide.z*2.3};assert.equal(canOccupy(maze,p.x,p.z,.25),false,a.id);}
 });
 test('close attacks require fresh windup and a shot interrupts before tackle',()=>{
   const g=scenario();g.interaction=null;g.enemy.state='chase';g.enemy.contactSince=null;

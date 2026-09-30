@@ -1,6 +1,7 @@
 import {createMaze} from '../../src/maze.js';
 import {createGameApp} from '../../src/app.js';
 import {installDebugHooks} from '../../src/debug.js';
+import {createWeather} from '../../src/weather.js';
 
 export function eventTarget() {
   const listeners = new Map();
@@ -23,7 +24,7 @@ export function eventTarget() {
 }
 
 /** Fakes only browser/renderer/audio boundaries, never the game or runtime. */
-export function createHarness({denyLock = false, lockRequest, audioUnlock, touch = false, width = 844, height = 390} = {}) {
+export function createHarness({denyLock = false, lockRequest, audioUnlock, touch = false, width = 844, height = 390, weather = false, intro=false, ready=null} = {}) {
   const nodes = new Map();
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {
@@ -59,13 +60,19 @@ export function createHarness({denyLock = false, lockRequest, audioUnlock, touch
   let frameId = 0;
   const frames = new Map();
   const audio = {
-    ctx: null, ticks: 0, resets: 0, muted: false, volume: 0.55, events: [],
+    ctx: null, ticks: 0, resets: 0, muted: false, volume: 0.55, events: [], weatherEvents: [],
     async unlock() {
       if (audioUnlock) await audioUnlock();
       this.ctx = {state: 'running'};
     },
+    async prepare(){if(audioUnlock)await audioUnlock();this.ctx={state:'running'};},
+    startIntro(){this.introStarts=(this.introStarts||0)+1;},
+    stopIntro(){this.introStops=(this.introStops||0)+1;},
+    introCue(id){(this.introCues||=[]).push(id);},
+    startGameplay(){this.gameStarts=(this.gameStarts||0)+1;},
     pause() { if (this.ctx) this.ctx.state = 'suspended'; },
     event(event) { this.events.push(event.type); },
+    weatherEvent(event) { this.weatherEvents.push({...event}); },
     update() { this.ticks++; },
     reset() { this.resets++; },
     setVolume(value) { this.volume = value; },
@@ -76,14 +83,15 @@ export function createHarness({denyLock = false, lockRequest, audioUnlock, touch
     visuals: {}, render() {}, reset() {},
   };
   const maze = createMaze();
+  const weatherModel = weather ? createWeather(maze, {touch}) : null;
   const app = createGameApp({
-    maze, view, audio, document, window, touch, now: () => 0,
+    maze, view, audio, weather: weatherModel, document, window, touch, introEnabled:intro, ready, now: () => 0,
     requestFrame(callback) { frames.set(++frameId, callback); return frameId; },
     cancelFrame(id) { frames.delete(id); },
   });
   installDebugHooks(app, window, maze, new URLSearchParams('test=1'));
   return {
-    app, maze, node, document, window, audio,
+    app, maze, node, document, window, audio, weather: weatherModel,
     key: (code, values) => document.dispatch('keydown', {code, ...values}),
     release: code => document.dispatch('keyup', {code}),
     click: id => node(id).dispatch('click'),

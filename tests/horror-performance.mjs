@@ -2,7 +2,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {chromium} from '../scripts/browser-runtime.mjs';
 
-const output='output/horror-update/performance';await mkdir(output,{recursive:true});
+const output=process.env.CORNFIELD_PERFORMANCE_OUTPUT||'output/horror-update/performance';await mkdir(output,{recursive:true});
 const baseline=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const files=new Map();
 for(const file of ['index.html',...execFileSync('git',['ls-tree','-r','--name-only',baseline,'src'],{encoding:'utf8'}).trim().split('\n')]){
@@ -27,7 +27,7 @@ try{
         if(files.has(key))await route.fulfill({status:200,body:files.get(key),contentType:key.endsWith('.js')?'text/javascript':key.endsWith('.css')?'text/css':'text/html'});
         else await route.continue();
       });
-      await page.goto('http://127.0.0.1:4180/cornfields/?controls=touch&test=1',{waitUntil:'networkidle'});
+      await page.goto('http://127.0.0.1:4180/cornfields/?controls=touch&test=1&intro=off',{waitUntil:'networkidle'});
       await page.waitForFunction(()=>window.__test?.diagnostics().visuals.zombie.status==='ready');
       await page.evaluate(()=>window.advanceTime(0));report.samples[version]={menu:await measure(page)};
       await page.locator('#start-btn').tap();await page.evaluate(()=>{

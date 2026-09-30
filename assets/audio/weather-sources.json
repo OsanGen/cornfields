@@ -1,0 +1,50 @@
+[
+  {
+    "file": "rain.mp3",
+    "original": "2.mp3",
+    "archive": "rain.zip",
+    "source": "https://opengameart.org/content/rain-loopable",
+    "author": "Ylmir",
+    "license": "CC0-1.0",
+    "sha256": "5c67d3f347a990446e0027a1ceb990f0fbb4cf82f4cedca2b528c64a96ddab50",
+    "processing": "Original loopable MP3, unchanged.",
+    "durationSeconds": 26.0,
+    "bytes": 625684
+  },
+  {
+    "file": "thunder.mp3",
+    "original": "sfx100v2_thunder_01.ogg",
+    "archive": "thunder.zip",
+    "source": "https://opengameart.org/content/100-cc0-sfx-2",
+    "author": "rubberduck",
+    "license": "CC0-1.0",
+    "sha256": "62c8395dd1b725ae46dc85fae48ca9b700e41a9f1b86aa0d7fe6f53b02ecc989",
+    "processing": "Converted to mono 44.1 kHz, 96 kbps MP3 for browser decoding.",
+    "durationSeconds": 5.264762,
+    "bytes": 63991
+  },
+  {
+    "file": "splash-1.mp3",
+    "original": "splash_09.ogg",
+    "archive": "water.zip",
+    "source": "https://opengameart.org/content/40-cc0-water-splash-slime-sfx",
+    "author": "rubberduck",
+    "license": "CC0-1.0",
+    "sha256": "1be09a1792f0b04ed07d2407899786dbb18e2329ed6e947586e91a3e9b63209a",
+    "processing": "Converted to mono 44.1 kHz, 96 kbps MP3 for browser decoding.",
+    "durationSeconds": 0.359569,
+    "bytes": 5059
+  },
+  {
+    "file": "splash-2.mp3",
+    "original": "splash_10.ogg",
+    "archive": "water.zip",
+    "source": "https://opengameart.org/content/40-cc0-water-splash-slime-sfx",
+    "author": "rubberduck",
+    "license": "CC0-1.0",
+    "sha256": "1ea7e1ae1ad3884ba050305a7f4b241dd54ca326c93e2fc3f053616fac8e9f27",
+    "processing": "Converted to mono 44.1 kHz, 96 kbps MP3 for browser decoding.",
+    "durationSeconds": 0.318209,
+    "bytes": 4746
+  }
+]

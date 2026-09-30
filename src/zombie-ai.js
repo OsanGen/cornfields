@@ -1,4 +1,5 @@
-import { cellOf, centerOf, key, neighbors, pathTo, moveBody, lineOfSight } from './maze.js';
+import {cellOf,centerOf,key,neighbors,pathTo,moveBody,lineOfSight,navigationNeighbors,cornZoneAt} from './maze.js';
+import {cornNode,cornPath,openDoor} from './corn-world.js';
 import { GAME_CONFIG as C, distance, emitEvent } from './game-config.js';
 import { seesPlayer, actorPosition, hideAnchor } from './hiding.js';
 import { transition } from './enemy-state.js';
@@ -87,6 +88,7 @@ export function senseZombie(game, blocks) {
 
   for (const event of game.evidence) {
     if (game.elapsed - event.at > 1 || distance(enemy, event.position) > event.radius) continue;
+    if(event.type==='rustle'&&!cornPath(game.maze.cornWorld,enemy,event.position,blocks,{allowDoors:true,maxDistance:event.radius}).length)continue;
     if (!heard || event.priority >= heard.priority) heard = event;
   }
   game.evidence.length = 0;
@@ -100,8 +102,7 @@ export function senseZombie(game, blocks) {
       const d = distance(previous, player);
       memory.lastKnownHeading = { x: (player.x - previous.x) / d, z: (player.z - previous.z) / d };
     }
-    const cell = cellOf(player);
-    const cellKey = key(cell.x, cell.z);
+    const cellKey=String(cornNode(game.maze.cornWorld,player));
     if (memory.recentPlayerRoute.at(-1) !== cellKey) {
       memory.recentPlayerRoute.push(cellKey);
       if (memory.recentPlayerRoute.length > 12) memory.recentPlayerRoute.shift();
@@ -111,7 +112,7 @@ export function senseZombie(game, blocks) {
   if (heard) {
     memory.lastHeard = point(heard.position);
     memory.lastHeardAt = heard.at;
-    const knownHide = hiddenSounds.has(heard.type) ? heard.anchorId || null : null;
+    const knownHide = null;
     recordObservation(game, heard.type, heard.position, knownHide, heard.at);
   }
 
@@ -120,12 +121,12 @@ export function senseZombie(game, blocks) {
   const d = distance(from, to);
   const facing = d < .01 ? 1 :
     (-Math.sin(player.yaw) * (to.x - from.x) - Math.cos(player.yaw) * (to.z - from.z)) / d;
-  const beam = player.flashlightOn && !player.hidden &&
+  const beam = player.flashlightOn &&
     d < C.zombie.flashlightRange &&
     facing > Math.cos(C.zombie.flashlightCone) &&
     Math.abs(player.pitch) < .55 &&
     lineOfSight(game.maze, from, to, blocks);
-  const noticed=!player.hidden&&d<16&&facing>.88&&Math.abs(player.pitch)<.65&&lineOfSight(game.maze,from,to,blocks);
+  const noticed=d<16&&facing>.88&&Math.abs(player.pitch)<.65&&lineOfSight(game.maze,from,to,blocks);
 
   if (beam) {
     memory.lastBeam = point(player);
@@ -149,13 +150,7 @@ export function senseZombie(game, blocks) {
   }
 
   // Finding a pocket empty requires physically reaching its local inspection point.
-  const anchor = hideAnchor(game, enemy.rushAnchorId);
-  const canInspect = anchor && (anchor.walkable?distance(enemy,anchor.pocket)<.35:
-    distance(enemy, anchor) < .12 && enemy.ingressDepth >= C.hiding.pocketDepth - .15);
-  const inspectedHide = canInspect ? {
-    anchorId: anchor.id,
-    occupied: anchor.walkable?player.cornZoneId===anchor.id:player.hidden && player.hideAnchorId === anchor.id,
-  } : null;
+  const inspectedHide=null;
   const escapeEligible = distance(enemy, player) >= C.zombie.rageEscapeDistance &&
     !lineOfSight(game.maze, enemy, player, blocks);
 
@@ -176,10 +171,11 @@ function move(game, dt, target, speed, blocks) {
   if(enemy.contactSince!=null&&aggressive.has(enemy.state))return false;
   enemy.repath -= dt;
   const targetCell = cellOf(target);
-  const targetKey = key(targetCell.x, targetCell.z);
-  if (enemy.repath <= 0 || enemy.pathGoal !== targetKey) {
-    enemy.path = pathTo(game.maze, enemy, target, blocks).slice(1);
+  const targetKey=cornNode(game.maze.cornWorld,target);
+  if (enemy.repath <= 0 || enemy.pathGoal !== targetKey||enemy.pathRevision!==game.doorRevision) {
+    enemy.path = cornPath(game.maze.cornWorld, enemy, target, blocks,{allowDoors:true}).slice(1);
     enemy.pathGoal = targetKey;
+    enemy.pathRevision=game.doorRevision;
     enemy.repath = C.zombie.repathSeconds;
   }
 
@@ -200,6 +196,18 @@ function move(game, dt, target, speed, blocks) {
   const dz = (destination.z - enemy.z) / d;
   const step = Math.min(d, speed * dt);
   const before = point(enemy);
+  for(const door of game.maze.cornDoors){
+    if(game.cornDoors[door.index].amount>=.96||distance(enemy,door)>1.2)continue;
+    // Only open the gate on the planned local crossing, never infer occupancy.
+    const a=(enemy.x-door.x)*door.normal.x+(enemy.z-door.z)*door.normal.z;
+    const crossing=enemy.path.slice(0,3).some(p=>a*((p.x-door.x)*door.normal.x+(p.z-door.z)*door.normal.z)<=0&&distance(p,door)<1.3);
+    if(crossing){
+      if(Math.abs(a)<1.04&&game.cornDoors[door.index].amount<.01){
+        moveBody(game.maze,enemy,door.normal.x*Math.sign(a)*dt*speed,door.normal.z*Math.sign(a)*dt*speed,blocks);
+      }else openDoor(game,door,'enemy');
+      return false;
+    }
+  }
   enemy.yaw = Math.atan2(-dx, -dz);
   moveBody(game.maze, enemy, dx * step, dz * step, blocks);
   enemy.step += distance(enemy, before);
@@ -214,8 +222,7 @@ export function predictionCandidates(game, blocks) {
   const candidates = [];
   const unique = new Set();
   const add = position => {
-    const cell = cellOf(position);
-    const cellKey = key(cell.x, cell.z);
+    const cellKey=String(cornNode(game.maze.cornWorld,position));
     if (!unique.has(cellKey) && candidates.length < C.zombie.maxCandidates) {
       unique.add(cellKey);
       candidates.push(position);
@@ -225,11 +232,11 @@ export function predictionCandidates(game, blocks) {
   route.slice(1, 11).forEach((position, index) => {
     add(position);
     if (index % 2 === 0) {
-      neighbors(game.maze, cellOf(position), blocks).forEach(cell => add(centerOf(cell.x, cell.z)));
+      navigationNeighbors(game.maze,position,blocks).forEach(add);
     }
   });
-  neighbors(game.maze, cellOf(origin), blocks).forEach(cell => add(centerOf(cell.x, cell.z)));
-  if (!candidates.length) add(centerOf(cellOf(enemy).x, cellOf(enemy).z));
+  navigationNeighbors(game.maze,origin,blocks).forEach(add);
+  if (!candidates.length) add(point(enemy));
   return candidates;
 }
 
@@ -282,7 +289,7 @@ function beginSearch(game, blocks) {
   const target = choosePrediction(game, blocks);
   enemy.searchCells = [
     target,
-    ...neighbors(game.maze, cellOf(target), blocks).slice(0, 3).map(cell => centerOf(cell.x, cell.z)),
+    ...navigationNeighbors(game.maze,target,blocks).slice(0,3),
   ];
   enemy.searchVisited = 0;
   enemy.listenTimer = 0;
@@ -300,8 +307,7 @@ export function checkpointDisengage(game, blocks) {
   enemy.memory.lastObservation = null;
   // Checkpoint progress is public director information; no private player transform is needed.
   const checkpoint = game.maze.checkpoints[game.progress.checkpointIndex - 1] || enemy;
-  const options = neighbors(game.maze, cellOf(enemy), blocks)
-    .map(cell => centerOf(cell.x, cell.z))
+  const options = navigationNeighbors(game.maze,enemy,blocks)
     .sort((a, b) => distance(b, checkpoint) - distance(a, checkpoint));
   enemy.target = options[0] || point(enemy);
   transition(game, 'disengage', 'checkpoint_grace', 3, { refresh: true });
@@ -310,10 +316,9 @@ export function checkpointDisengage(game, blocks) {
 function resumeAfterStagger(game) {
   const enemy = game.enemy;
   emitEvent(game, 'recover', '', actorPosition(game, 'enemy'));
-  const knownAnchor = enemy.memory.anchorId && hideAnchor(game, enemy.memory.anchorId);
-  if (knownAnchor) {
-    enemy.rushAnchorId = knownAnchor.id;
-    enemy.target = point(knownAnchor);
+  const knownCorn=enemy.memory.lastKnown&&cornZoneAt(game.maze,enemy.memory.lastKnown);
+  if (knownCorn) {
+    enemy.target = point(enemy.memory.lastKnown);
     transition(game, 'corn_rush', 'known_hide_after_stagger');
   } else {
     transition(game, 'investigate', 'stagger_recovered');
@@ -323,27 +328,9 @@ function resumeAfterStagger(game) {
 
 function updateCornRush(game, dt, blocks, sensed) {
   const enemy = game.enemy;
-  const anchor = hideAnchor(game, enemy.rushAnchorId);
-  const heardExit = sensed.heard?.type === 'leave' && sensed.heard.anchorId === enemy.rushAnchorId;
-  const inspectedEmpty = sensed.inspectedHide?.anchorId === enemy.rushAnchorId &&
-    !sensed.inspectedHide.occupied;
-  if (!anchor || sensed.seen || heardExit || inspectedEmpty) {
-    if (inspectedEmpty) enemy.memory.anchorId = null;
-    transition(game, sensed.seen ? 'chase' : 'investigate',
-      sensed.seen ? 'visual_contact' : inspectedEmpty ? 'hide_searched_empty' : 'observed_corn_exit');
-    enemy.target = sensed.seen ? enemy.memory.lastSeen : anchor ? point(anchor) : enemy.memory.lastKnown;
-    return;
-  }
-  if(enemy.contactSince!=null)return;
-  if(anchor.walkable){
-    move(game,dt,anchor.pocket,C.zombie.cornRushSpeedByTier[game.progress.escalationTier],blocks);
-  }else if (distance(enemy, anchor) > .12) {
-    move(game, dt, anchor, C.zombie.cornRushSpeedByTier[game.progress.escalationTier], blocks);
-  } else {
-    enemy.ingressDepth = Math.min(C.hiding.pocketDepth,
-      enemy.ingressDepth + C.zombie.cornRushSpeedByTier[game.progress.escalationTier] * dt);
-    enemy.yaw = Math.atan2(-anchor.cornSide.x, -anchor.cornSide.z);
-  }
+  if(sensed.seen){transition(game,'chase','visual_contact');enemy.target=enemy.memory.lastSeen;return;}
+  enemy.target=enemy.memory.lastKnown;
+  if(!enemy.target||move(game,dt,enemy.target,C.zombie.cornRushSpeedByTier[game.progress.escalationTier],blocks))beginSearch(game,blocks);
 }
 
 /** State arbitration uses the perception packet and memory. No live hidden-state branching. */
@@ -366,6 +353,9 @@ export function updateZombie(game, dt, blocks) {
     if (enemy.timer <= 0) resumeAfterStagger(game);
     return;
   }
+  if(game.grace<=0&&sensed.heard&&(sensed.heard.type==='rustle'||(sensed.heard.type==='gunshot'&&cornZoneAt(game.maze,sensed.heard.position)))){
+    transition(game,'corn_rush','heard_corn_motion');enemy.target=point(sensed.heard.position);
+  }
   if (enemy.state === 'disengage') {
     move(game, dt, enemy.target, C.zombie.investigateSpeed, blocks);
     if (enemy.timer <= 0) {
@@ -378,10 +368,6 @@ export function updateZombie(game, dt, blocks) {
     return;
   }
 
-  if (sensed.heard?.anchorId && hiddenSounds.has(sensed.heard.type)) {
-    enemy.rushAnchorId = sensed.heard.anchorId;
-    transition(game, 'corn_rush', 'detected_hide');
-  }
   if (enemy.state === 'corn_rush') {
     updateCornRush(game, dt, blocks, sensed);
     return;
@@ -469,8 +455,7 @@ export function updateZombie(game, dt, blocks) {
     if (!target) {
       if (tier >= 1 && !enemy.falseWithdrawalDone && memory.lastKnown) {
         enemy.falseWithdrawalDone = true;
-        const away = neighbors(game.maze, cellOf(enemy), blocks)
-          .map(cell => centerOf(cell.x, cell.z))
+        const away = navigationNeighbors(game.maze,enemy,blocks)
           .sort((a, b) => distance(b, memory.lastKnown) - distance(a, memory.lastKnown));
         enemy.target = away[0] || point(enemy);
         transition(game, 'disengage', 'false_withdrawal', 1.3);

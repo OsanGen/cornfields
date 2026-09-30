@@ -1,9 +1,11 @@
 import {interactionPrompt} from './game.js';
 import {GAME_CONFIG} from './game-config.js';
 import {interactionLocked} from './grapple.js';
+import {corruptionFrame} from './horror-presentation.js';
+import {INTRO} from './intro.js';
 
 /** Presentation only: it never advances gameplay, captures the mouse or plays audio. */
-export function createUI(document, {debug = false, reducedMotion = false, touch = false} = {}) {
+export function createUI(document, {debug = false, reducedMotion = false, touch = false, horror = true} = {}) {
   const nodes = new Map();
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, document.getElementById(id));
@@ -18,8 +20,15 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
   let previousMessageAt = null;
   let previousResult = null;
   let previousSeconds=null,glitchUntil=0;
+  let alias='STRANGER';
+  let introFontsReady=false;
+  const fontDeadline=Date.now()+2000;
+  if(document.fonts?.load)Promise.all([document.fonts.load('600 16px "Barlow Condensed"'),document.fonts.load('16px "Rubik Glitch"')]).then(fonts=>{
+    introFontsReady=Date.now()<=fontDeadline&&fonts.every(faces=>faces.length>0);
+  }).catch(()=>{});
   node('debug').hidden = !debug;
   node('motion').checked = reducedMotion;
+  node('intro-motion').checked = reducedMotion;
   document.body.classList.toggle('reduced-motion', reducedMotion);
   if (touch) {
     text('control-summary', 'LEFT THUMB MOVE · RIGHT SIDE LOOK');
@@ -30,6 +39,48 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
 
   return {
     node,
+    chooseIntroFont(){
+      // Fix the font for this run. A late font load must not reflow a credit.
+      document.body.classList.toggle('intro-fonts',introFontsReady);
+    },
+    renderIntro(intro,{enabled,portrait,coreReady,coreError,entering,pointerError,creditsOpen,muted,volume}){
+      const phase=intro.phase, active=intro.active, preflight=phase==='preflight', ready=phase==='ready', paused=phase==='paused';
+      const frame=intro.frame(reducedMotion);
+      document.body.classList.toggle('intro-active',active);
+      document.body.classList.toggle('intro-preflight',preflight);
+      node('intro-screen').hidden=!active||preflight;
+      node('intro-settings').hidden=!active;
+      node('preflight-skip').hidden=!preflight;
+      node('intro-content-note').hidden=!preflight;
+      node('credits').hidden=!creditsOpen;
+      node('credits-replay').hidden=active||!enabled;
+      node('replay-intro').hidden=!enabled;
+      node('intro-continue').hidden=!paused;
+      node('intro-enter').hidden=!ready;
+      node('intro-enter').disabled=!coreReady||!!coreError||entering||portrait;
+      node('intro-skip').hidden=ready;
+      node('intro-status').hidden=!paused&&!ready;
+      text('intro-status',paused?'INTRO PAUSED':coreError?'The field could not load. Reload to retry.':pointerError||(!coreReady?'PREPARING THE FIELD...':portrait?'TURN YOUR PHONE TO ENTER THE FIELD':entering?'ENTERING THE FIELD...':''));
+      text('intro-label',paused?'A MOMENT BETWEEN THE ROWS':frame.label);
+      text('intro-name',paused?'Hold your breath.':frame.name);
+      text('intro-ghost',paused?'':frame.name);
+      node('intro-card').style.opacity=String(paused?1:frame.opacity);
+      node('intro-card').className=`intro-card ${frame.shot==='title'&&!paused?'title-card':''}`;
+      node('intro-ghost').style.opacity=String(frame.accent*.18);
+      node('intro-ghost').style.transform=`translateX(${frame.accent*5}px)`;
+      text('intro-mute',muted?'SOUND OFF':'SOUND ON');
+      node('intro-mute').setAttribute?.('aria-pressed',String(muted));
+      node('intro-volume').value=String(Math.round((volume??.55)*100));
+      node('start-btn').disabled=!active&&!coreReady;
+      text('start-btn',preflight?'BEGIN':'ENTER THE FIELD ↗');
+      if(active){
+        node('menu').hidden=!preflight;
+        for(const id of ['hud','pause','result','touch-controls','rotate'])node(id).hidden=true;
+        document.body.classList.toggle('playing',false);
+      }
+      text('credits-roles',INTRO.roles);
+    },
+    setAlias(value){alias=value;},
     setReducedMotion(value) {
       reducedMotion = value;
       document.body.classList.toggle('reduced-motion', value);
@@ -92,6 +143,15 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
       node('hide-status').hidden = !player.hidden||locked;
       node('caption').hidden=locked||recovering;
       text('hide-status', 'DO NOT MOVE. IT CAN HEAR YOU.');
+      const corruption=horror?corruptionFrame(game,{reduced:reducedMotion,touch}):{fragments:[],taunt:null};
+      for(let i=0;i<4;i++){
+        const fragment=corruption.fragments[i],element=node(`die-${i}`);
+        element.hidden=!fragment;
+        if(fragment){text(`die-${i}`,fragment.text);element.className=`die-fragment slot-${fragment.slot}`;}
+      }
+      const taunt=corruption.taunt&&!prompt&&!game.caption;
+      node('corn-taunt').hidden=!taunt;
+      if(taunt)text('corn-taunt',`${alias}, ${taunt}`);
 
       const message = game.threat.activeMessage;
       if (message && game.threat.lastMessageAt !== previousMessageAt) {

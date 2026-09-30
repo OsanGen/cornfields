@@ -70,3 +70,97 @@
   .touch .survival-hud{gap:10px}
 }
 #recovery-timer.glitch{transform:translateX(calc(-50% + 1px));text-shadow:-1px 0 #5b2820,1px 0 #dbc7a0}
+.alias-label{display:block;font:10px monospace;letter-spacing:.14em;color:#c3bea6;margin:20px 0 8px}
+.alias-input{display:block;width:min(310px,80vw);padding:11px 12px;background:#101811d9;border:1px solid #69705a;color:#e5e2cc;font:17px Georgia;border-radius:2px;outline-offset:4px}
+.alias-note{font:10px/1.5 monospace;color:#a8ac94;margin:8px 0 12px}
+.intro{top:12vh}
+.intro h1{font-size:clamp(62px,10vw,128px)}
+.menu-footer{pointer-events:none}
+.menu-footer a{pointer-events:auto}
+#corruption{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.die-fragment{position:absolute;font:clamp(14px,2vw,25px)/1.1 monospace;font-weight:700;color:#d85144;text-shadow:2px 1px #300b07;letter-spacing:.08em;max-width:24%;overflow:hidden;white-space:pre-line}
+.slot-0{left:3%;top:24%}.slot-1{right:3%;top:23%}.slot-2{left:4%;top:45%}.slot-3{right:4%;top:44%}
+.slot-4{left:5%;top:64%}.slot-5{right:5%;top:65%}.slot-6{left:7%;top:34%}.slot-7{right:7%;top:34%}
+#corn-taunt{position:absolute;top:27%;left:15%;width:70%;margin:0;text-align:center;font:clamp(14px,2vw,23px)/1.4 monospace;color:#c19d91;letter-spacing:.04em;text-shadow:0 2px 5px #000;pointer-events:none;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.grappling .objective,.grappling #caption,.grappling .hud-footer{visibility:hidden}
+.grappling .survival-hud,.grappling #qte-prompt{z-index:4}
+.touch .die-fragment{font-size:15px;max-width:20%}
+.touch #corn-taunt{font-size:14px;top:28%;left:24%;width:52%}
+.reduced-motion .die-fragment{text-shadow:none;color:#b77a6b}
+@media(orientation:landscape) and (max-height:600px){
+  .touch .intro{top:30px;width:calc(100% - 64px);display:grid;grid-template-columns:1fr 1fr;column-gap:26px;align-items:start}
+  .touch .intro .eyebrow{grid-column:1;grid-row:1}.touch .intro h1{grid-column:1;grid-row:2/5;font-size:clamp(48px,20vh,82px);margin:5px 0}
+  .touch .intro-copy,.touch .field-note{display:none}
+  .touch .alias-label{grid-column:2;grid-row:1;margin:0 0 8px;font-size:9px}
+  .touch .alias-input{grid-column:2;grid-row:2;width:100%;box-sizing:border-box;min-height:44px}
+  .touch .alias-note{grid-column:2;grid-row:3;font-size:8px;margin:7px 0}
+  .touch #start-btn{grid-column:2;grid-row:4;margin:4px 0 8px}
+  .touch .intro .small-note{grid-column:2;margin:3px 0}
+}
+/* Intro typography is selected once per playback; downloads never block entry. */
+@font-face{font-family:"Barlow Condensed";src:url('../assets/fonts/barlow-condensed.ttf') format('truetype');font-weight:600;font-display:swap}
+@font-face{font-family:"Rubik Glitch";src:url('../assets/fonts/rubik-glitch.ttf') format('truetype');font-weight:400;font-display:swap}
+.intro-active .masthead,.intro-active .grain,.intro-active .vignette{display:none}
+.intro-active #danger{opacity:0!important}
+.intro-handoff #scene{animation:intro-entry-fade .35s ease-out}
+@keyframes intro-entry-fade{from{opacity:0}to{opacity:1}}
+#intro-screen{position:absolute;inset:0;z-index:5;color:#e8eee6;background:radial-gradient(ellipse at center,transparent 25%,#01040399);overflow:hidden}
+.intro-card{position:absolute;left:6%;width:88%;top:43%;transform:translateY(-50%);text-align:center;pointer-events:none}
+#intro-label{max-width:800px;margin:0 auto 20px;font:600 clamp(16px,1.35vw,19px)/1.5 'Arial Narrow',Arial,sans-serif;letter-spacing:.12em;text-wrap:balance;color:#bfcbbf}
+#intro-name,#intro-ghost{margin:0;font:600 clamp(36px,6vw,80px)/1.05 'Arial Narrow',Arial,sans-serif;letter-spacing:.035em;text-shadow:0 2px 28px #000;overflow-wrap:normal}
+.intro-fonts #intro-label,.intro-fonts #intro-name,.intro-fonts #intro-ghost{font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif}
+#intro-ghost{position:absolute;inset:auto 0 0;color:#9785ae;mix-blend-mode:screen}
+.title-card #intro-name,.title-card #intro-ghost{font-size:clamp(37px,10vw,140px);font-weight:400;letter-spacing:.015em}
+.intro-fonts .title-card #intro-name,.intro-fonts .title-card #intro-ghost{font-family:'Rubik Glitch','Arial Narrow',Arial,sans-serif}
+#intro-skip{position:absolute;right:max(5%,env(safe-area-inset-right));top:max(20px,env(safe-area-inset-top));min-height:44px;color:#bbc7bc;font-size:13px}
+#intro-skip span{opacity:.5;margin-left:8px}
+.intro-actions{position:absolute;left:6%;right:6%;bottom:22%;text-align:center}
+#intro-status{font:14px/1.5 Arial,sans-serif;color:#bdcaba;max-width:480px;margin:12px auto}
+#intro-settings{position:absolute;bottom:max(22px,env(safe-area-inset-bottom));left:6%;right:6%;z-index:6;display:flex;align-items:center;justify-content:center;gap:24px;font:12px/1.4 Arial,sans-serif;color:#b5c0b1}
+#intro-settings label{display:flex;gap:9px;align-items:center;min-height:44px}
+#intro-settings input[type=range]{width:86px;accent-color:#b7c49c}
+#intro-settings input[type=checkbox]{accent-color:#b7c49c;width:18px;height:18px}
+#intro-settings button{min-height:44px;margin:0}
+.intro-preflight #intro-settings{left:auto;right:6%;bottom:15%;flex-direction:column;align-items:flex-start;gap:2px;padding:14px;background:#071009d9;border:1px solid #72816b40}
+.intro-preflight .field-note{display:none}
+.intro-preflight #menu{overflow:auto;touch-action:pan-y}
+.intro-preflight #menu .intro{position:relative;top:auto;left:auto;width:min(600px,88%);margin:7vh 6% 50px}
+.intro-preflight #menu h1{font-size:clamp(48px,9vh,100px);margin:18px 0}
+.intro-preflight .menu-footer{display:none}
+#preflight-skip,#credits-btn{margin:0 0 0 12px;min-height:44px}
+#intro-content-note{font-size:12px;max-width:370px}
+.credits-panel{z-index:9!important;overflow:auto;justify-content:flex-start!important;padding:5vh 6%!important;background:#071009f7}
+.credits-panel>p{max-width:650px;line-height:1.5!important;font-size:16px!important;margin:12px auto!important}
+.credits-panel strong{font-size:clamp(24px,5vw,38px);color:#e4eadd}
+.credits-panel a{color:#bac8b3;text-underline-offset:3px}
+.credits-panel .credit-notices{font-size:13px!important}
+#intro-screen button:focus-visible,#intro-settings :focus-visible,.credits-panel :focus-visible{outline:2px solid #dce9c9;outline-offset:5px}
+@media(max-width:700px){
+  #intro-settings{gap:10px;flex-wrap:wrap;bottom:max(10px,env(safe-area-inset-bottom))}
+  #intro-settings label{font-size:12px}
+  #intro-label{letter-spacing:.04em;line-height:1.4;margin-bottom:16px}
+  .intro-preflight #intro-settings{position:relative;left:6%;right:auto;bottom:auto;display:flex;flex-direction:row;flex-wrap:wrap;gap:12px;width:88%;margin-top:12px;padding:6px}
+  .intro-preflight #menu{position:relative;min-height:0}
+  .intro-preflight #menu .intro{margin:35px 6% 0}
+  .intro-preflight #game{overflow:auto;touch-action:pan-y}
+  .intro-actions{bottom:23%}
+}
+@media(max-height:500px) and (min-width:701px){
+  .intro-preflight #menu .intro{margin:12px 5% 20px;max-width:55%}
+  .intro-preflight #menu h1{font-size:42px;line-height:.85;margin:10px 0}
+  .intro-preflight .intro-copy{display:none}
+  .intro-preflight .alias-label{margin-top:8px}
+  .intro-preflight .alias-note{font-size:9px}
+  .intro-preflight .intro>.small-note:last-child{display:none}
+  .intro-preflight #intro-settings{bottom:18%;right:5%}
+}
+@media(max-height:500px){
+  .intro-card{top:40%}
+  #intro-name,#intro-ghost{font-size:46px}
+  .title-card #intro-name,.title-card #intro-ghost{font-size:clamp(37px,9vw,86px)}
+  #intro-label{font-size:16px;max-width:620px;margin-bottom:10px}
+  .intro-actions{bottom:19%}
+  #intro-settings{bottom:5px}
+  #intro-status{margin:3px auto;font-size:12px}
+  .intro-actions .primary{padding:12px 16px;min-height:44px}
+}

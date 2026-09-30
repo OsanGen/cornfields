@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101713">
-  <title>CORNFIELD · Find your daughter</title>
+  <title>CORNFIELDS · Find your daughter</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23101713'/%3E%3Cpath d='M20 35V5M20 15L10 8M20 22L30 12M20 28L10 20' stroke='%23c3c598' stroke-width='2' fill='none'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./src/style.css">
   <script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
@@ -19,14 +19,51 @@
     <section id="menu" class="panel">
       <div class="intro">
         <p class="eyebrow"><span class="status-dot"></span> SOMETHING IS IN THE ROWS</p>
-        <h1>CORN<br>FIELD<span class="title-period">.</span></h1>
+        <h1>CORN<br>FIELDS<span class="title-period">.</span></h1>
         <p class="intro-copy">Your daughter is somewhere in the middle.<br>Something else is listening.</p>
+        <label class="alias-label" for="player-alias">WHAT SHOULD THE CORN CALL YOU?</label>
+        <input id="player-alias" class="alias-input" autocomplete="off" spellcheck="false" maxlength="160" dir="auto" placeholder="Name or alias" aria-label="Name or fictional alias">
+        <p class="alias-note">Fictional horror uses only this name. It stays in this session.<br>No camera or microphone. Leave blank to be STRANGER.</p>
         <button id="start-btn" class="primary">ENTER THE FIELD <span>↗</span></button>
+        <button id="preflight-skip" class="text-button" hidden>SKIP INTRO</button>
+        <p id="intro-content-note" class="small-note" hidden>Distorted visuals and sudden sounds. Reduced effects available.</p>
+        <button id="credits-btn" class="text-button">CREDITS</button>
         <p id="loading" class="small-note">Loading the field...</p>
         <p class="small-note">Zombie model: <a href="https://opengameart.org/content/zombie" target="_blank" rel="noopener noreferrer" style="color:inherit">Pixelhouse</a> · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer" style="color:inherit">CC BY 3.0</a> · modified in Blender</p>
       </div>
       <div class="field-note"><span class="note-number">01 /</span><p>2 rounds. They only buy time.<br>Hide unseen. Stay completely still.<br>Light makes it angry.</p><span class="note-rule"></span><p class="muted">Two landmarks restore health and ammo.<br>Find her. End the nightmare.</p></div>
       <footer class="menu-footer"><span>HEADPHONES RECOMMENDED</span><span id="control-summary">WASD <i>MOVE</i> &nbsp; CLICK <i>FIRE</i> &nbsp; F <i>LIGHT</i> &nbsp; E <i>INTERACT</i></span><span id="device-label">DESKTOP / KEYBOARD + MOUSE</span></footer>
+    </section>
+    <section id="intro-screen" aria-label="Cornfields opening" hidden>
+      <div id="intro-card" class="intro-card">
+        <p id="intro-label"></p>
+        <h2 id="intro-name"></h2>
+        <span id="intro-ghost" aria-hidden="true"></span>
+      </div>
+      <button id="intro-skip" class="text-button">SKIP INTRO <span aria-hidden="true">/ ESC</span></button>
+      <div class="intro-actions">
+        <p id="intro-status" role="status"></p>
+        <button id="intro-continue" class="primary" hidden>CONTINUE INTRO</button>
+        <button id="intro-enter" class="primary" hidden>ENTER THE FIELD <span>↗</span></button>
+      </div>
+    </section>
+    <div id="intro-settings" aria-label="Intro settings" hidden>
+      <button id="intro-mute" class="text-button" aria-pressed="false">SOUND ON</button>
+      <label>VOLUME <input id="intro-volume" aria-label="Intro and game volume" type="range" min="0" max="100" value="55"></label>
+      <label><input id="intro-motion" type="checkbox"> Reduced effects</label>
+    </div>
+    <section id="credits" class="modal credits-panel" aria-label="Credits" hidden>
+      <p class="eyebrow">CORNFIELDS</p>
+      <p>CREATED BY<br><strong>OPENGAMES</strong></p>
+      <p>STORY BY<br><strong>JACOB NANGLE</strong></p>
+      <p><span id="credits-roles">GAME DIRECTION • DEVELOPMENT • BUILD • GAMEPLAY • CINEMATIC IMPLEMENTATION</span><br><strong>OSCAR SANCHEZ</strong></p>
+      <p class="credit-notices">Zombie: Pixelhouse, CC BY 3.0, modified in Blender.<br>
+        <a href="./assets/field/LICENSES.md" target="_blank" rel="noopener noreferrer">Field and character notices</a> ·
+        <a href="./assets/audio/LICENSES.md" target="_blank" rel="noopener noreferrer">Audio notices</a> ·
+        <a href="./assets/fonts/LICENSES.md" target="_blank" rel="noopener noreferrer">Font notices</a>
+      </p>
+      <button id="credits-replay" class="text-button">REPLAY INTRO</button>
+      <button id="credits-close" class="primary">BACK</button>
     </section>
     <div id="hud" hidden>
       <div class="objective"><span id="chapter">THE THRESHOLD</span><p id="objective">Open the CORNFIELD door</p></div>
@@ -37,8 +74,10 @@
       <div id="qte-prompt" hidden><span>BREAK ITS HOLD</span><strong id="qte-copy">SPAM SPACE - STAB</strong></div>
       <div id="recovery-timer" hidden><span>IT RISES IN</span><strong id="recovery-number">10</strong></div>
       <div id="threat-card" hidden aria-live="off"></div>
+      <div id="corruption" aria-hidden="true"><span id="die-0"></span><span id="die-1"></span><span id="die-2"></span><span id="die-3"></span></div>
+      <p id="corn-taunt" hidden dir="auto"></p>
       <p id="caption" role="status" aria-live="polite"></p>
-      <div class="hud-footer"><span id="landmark">TRUST THE LANDMARKS</span><span>CLICK <i>FIRE</i> &nbsp; F <i>LIGHT</i> &nbsp; E <i>HIDE / EXIT</i> &nbsp; ESC <i>PAUSE</i></span></div>
+      <div class="hud-footer"><span id="landmark">TRUST THE LANDMARKS</span><span>CLICK <i>FIRE</i> &nbsp; F <i>LIGHT</i> &nbsp; E <i>OPEN / CLOSE</i> &nbsp; ESC <i>PAUSE</i></span></div>
     </div>
     <div id="touch-controls" hidden aria-label="Touch controls">
       <div id="look-zone" aria-label="Drag to look"><span>DRAG TO LOOK</span></div>
@@ -54,9 +93,12 @@
       <button id="resume-btn" class="primary">CONTINUE <span>↗</span></button>
       <label class="volume">Sound <input id="volume" aria-label="Sound volume" type="range" min="0" max="100" value="55"></label>
       <label class="check"><input id="motion" type="checkbox"> Reduce camera motion and flicker</label>
-      <p id="controls-help" class="controls">WASD move · Mouse look · Click fire · E interact / hide / exit<br>F flashlight · Esc pause · M mute<br>Grabbed? Repeatedly press Space to stab. Your health drains.<br>Hidden? Any movement or mouse look gives you away.</p>
+      <p id="controls-help" class="controls">WASD move · Mouse look · Click fire · E open / close<br>F flashlight · Esc pause · M mute<br>Grabbed? Repeatedly press Space to stab. Your health drains.<br>Walk into corn to hide. Stay still. Even looking makes noise.</p>
       <button id="fullscreen-btn" class="text-button">TOGGLE FULLSCREEN</button>
       <button id="restart-btn" class="text-button">START OVER</button>
+      <button id="title-btn" class="text-button">TITLE / EDIT ALIAS</button>
+      <button id="replay-intro" class="text-button">REPLAY INTRO</button>
+      <button id="pause-credits" class="text-button">CREDITS</button>
     </section>
     <section id="result" class="modal" hidden>
       <p id="result-label" class="eyebrow">THE FIELD REMEMBERS</p><h2 id="result-title">You were found.</h2><p id="result-copy">Listen for footsteps. Break its line of sight. Run.</p>

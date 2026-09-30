@@ -14,6 +14,21 @@ function bound(promise,ms){let timer;return Promise.race([promise,new Promise((_
 // Pure placement: art lives inside existing wall cells, never in the walkable grid.
 export function fieldLayout(maze){
   const random=seeded(),plants=[],fences=[],litter=[];
+  if(maze.cornWorld){
+    const w=maze.cornWorld;
+    const plant=(x,z)=>plants.push({x,z,yaw:random()*Math.PI*2,scale:.96+random()*.18,variant:Math.floor(random()*3)});
+    for(let z=0;z<w.height;z++)for(let x=0;x<w.width;x++){
+      const id=z*w.width+x;if(w.walk[id])continue;
+      const cx=(x+.5)*w.size,cz=(z+.5)*w.size;
+      for(let i=0;i<3;i++)plant(cx+(random()-.5)*w.size*.7,cz+(random()-.5)*w.size*.7);
+    }
+    for(const {a,b}of w.segments)for(let i=0;i<4;i++)plant(a.x+(b.x-a.x)*(i+.5)/4,a.z+(b.z-a.z)*(i+.5)/4);
+    for(let z=0;z<HEIGHT;z++)for(let x=0;x<WIDTH;x++)if(!maze.grid[z][x])for(const [dx,dz]of directions){
+      const nx=x+dx,nz=z+dz;if(maze.grid[nz]?.[nx]!==1||!(nx===0||nz===0||nx===WIDTH-1||nz===HEIGHT-1))continue;
+      const p=centerOf(x,z);fences.push({x:p.x+dx*CELL/2,z:p.z+dz*CELL/2,yaw:Math.atan2(dx,dz),variant:1});
+    }
+    return {plants,fences,litter};
+  }
   for(let z=0;z<HEIGHT;z++)for(let x=0;x<WIDTH;x++){
     if(!maze.grid[z][x])continue;
     const p=centerOf(x,z);
@@ -80,7 +95,7 @@ function signTexture(){
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 
-export async function installFieldVisuals({scene,maze,camera,floor,door,entranceObjects,legacy,mode,details=false}){
+export async function installFieldVisuals({scene,maze,camera,floor,door,entranceObjects,legacy,mode,details=false,wet=false}){
   const loader=new THREE.TextureLoader();
   const [gltf,mudColor,mudNormal,mudRough,woodColor,woodNormal,woodRough,fenceColor,fenceNormal,fenceRough,rustColor]=await bound(Promise.all([
     new GLTFLoader().loadAsync(ROOT+'cornfield-kit.glb'),
@@ -141,7 +156,9 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
     }
   }
   for(const map of [mudColor,mudNormal,mudRough])map.repeat.set(WIDTH*CELL/1.3,HEIGHT*CELL/1.3);
-  const ground=new THREE.MeshStandardMaterial({map:mudColor,normalMap:mudNormal,normalScale:new THREE.Vector2(.6,.6),roughnessMap:mudRough,roughness:1,color:0xaaa38c});
+  const ground=new THREE.MeshStandardMaterial({map:mudColor,normalMap:mudNormal,
+    normalScale:new THREE.Vector2(wet ? .8 : .6,wet ? .8 : .6),roughnessMap:mudRough,
+    roughness:wet ? .58 : 1,color:wet?0x928476:0xaaa38c});
   const wood=new THREE.MeshStandardMaterial({map:woodColor,normalMap:woodNormal,normalScale:new THREE.Vector2(.55,.55),roughnessMap:woodRough,roughness:1,color:0xaba38d});
   kit.entrance_door.material=wood;kit.entrance_frame.material=wood;
   if(details)kit.entrance_hardware.material=wireMaterial;
@@ -179,5 +196,5 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
       }
     }
   }
-  update();return {update,stats,materials:{wood,wire:wireMaterial}};
+  update();return {update,stats,materials:{wood,wire:wireMaterial},introCorn:[0,1,2].map(i=>({geometry:kit[`corn_near_${i}`].geometry,material:kit[`corn_near_${i}`].material}))};
 }

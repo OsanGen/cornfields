@@ -1,0 +1,48 @@
+[
+  {
+    "file": "barlow-condensed.ttf",
+    "creator": "The Barlow Project Authors",
+    "license": "SIL Open Font License 1.1",
+    "licenseFile": "barlowcondensed-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/barlowcondensed/BarlowCondensed-SemiBold.ttf",
+    "sha256": "7b619d14bc2327509a9ef32b0890f709626f7ecc9ff61191c2a4314c5499d2d9",
+    "bytes": 109428,
+    "revision": "23e54b51ddffbc7713c583748e3bd86f62b1fa4a",
+    "retrieved": "2026-09-30T03:14:56.746177+00:00",
+    "modifications": "none"
+  },
+  {
+    "file": "barlowcondensed-OFL.txt",
+    "creator": "The Barlow Project Authors",
+    "license": "SIL Open Font License 1.1",
+    "source": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/barlowcondensed/OFL.txt",
+    "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+    "bytes": 4377,
+    "revision": "23e54b51ddffbc7713c583748e3bd86f62b1fa4a",
+    "retrieved": "2026-09-30T03:14:56.906002+00:00",
+    "modifications": "none"
+  },
+  {
+    "file": "rubik-glitch.ttf",
+    "creator": "The Rubik Filtered Project Authors",
+    "license": "SIL Open Font License 1.1",
+    "licenseFile": "rubikglitch-OFL.txt",
+    "source": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/rubikglitch/RubikGlitch-Regular.ttf",
+    "sha256": "260245012483d56956269100ebece747aa95b4b67e5a9411a81a36e91f55e653",
+    "bytes": 407304,
+    "revision": "23e54b51ddffbc7713c583748e3bd86f62b1fa4a",
+    "retrieved": "2026-09-30T03:14:57.400382+00:00",
+    "modifications": "none"
+  },
+  {
+    "file": "rubikglitch-OFL.txt",
+    "creator": "The Rubik Filtered Project Authors",
+    "license": "SIL Open Font License 1.1",
+    "source": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/rubikglitch/OFL.txt",
+    "sha256": "f9e2d4498ea80d38bac7b8841d68af68c132fa67e1552e7c05717e6987de1d74",
+    "bytes": 4406,
+    "revision": "23e54b51ddffbc7713c583748e3bd86f62b1fa4a",
+    "retrieved": "2026-09-30T03:14:57.664725+00:00",
+    "modifications": "none"
+  }
+]

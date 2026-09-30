@@ -1,6 +1,7 @@
 import { cellOf, key, centerOf, moveBody, lineOfSight, cornZoneAt } from './maze.js';
 import { GAME_CONFIG as C, distance, emitEvent, addEvidence } from './game-config.js';
-import { nearestHideAnchor, enterCorn, leaveCorn, hiddenInput, actorPosition } from './hiding.js';
+import {nearestHideAnchor,hiddenInput,updateCornPresence,actorPosition} from './hiding.js';
+import {gateAt,toggleDoor,advanceDoors} from './corn-world.js';
 import { fireGun, attackPlayer } from './combat.js';
 import { createEnemy, updateZombie, checkpointDisengage } from './zombie-ai.js';
 import { updateDirector, updateFeedback } from './threat-director.js';
@@ -83,6 +84,7 @@ export function createGame(maze) {
     enemy: createEnemy(),
     doorOpen: false,
     doorAmount: 0,
+    cornDoors:maze.cornDoors.map(()=>({amount:0,target:0})),movingDoors:new Set(),doorRevision:0,
     entered: false,
     deepest: 0,
     beats: [],
@@ -141,7 +143,7 @@ export function resumeGame(game) {
 }
 
 export function blocksFor(game) {
-  return game.doorOpen ? [] : [game.maze.door];
+  const blocks=game.doorOpen?[]:[game.maze.door];blocks.doors=game.cornDoors;blocks.revision=game.doorRevision;game.blocks=blocks;return blocks;
 }
 
 export function nearDoor(game) {
@@ -151,19 +153,15 @@ export function nearDoor(game) {
 
 export function interactionPrompt(game) {
   if(interactionLocked(game))return '';
-  if (game.player.hidden) return 'E - LEAVE CORN';
   if (nearDoor(game)) return 'E - OPEN DOOR';
-  if (nearestHideAnchor(game, blocksFor(game))) return 'E - ENTER CORN';
+  blocksFor(game);const door=gateAt(game);
+  if(door)return game.cornDoors[door.index].target>.5?'E - CLOSE':'E - OPEN';
   return '';
 }
 
 export function interact(game) {
   if (game.mode !== 'playing'||interactionLocked(game)) return;
   const blocks = blocksFor(game);
-  if (game.player.hidden) {
-    leaveCorn(game, blocks);
-    return;
-  }
   if (nearDoor(game)) {
     game.doorOpen = true;
     game.objective = 'FIND YOUR DAUGHTER';
@@ -171,11 +169,8 @@ export function interact(game) {
     addEvidence(game, 'door', game.player, C.hearing.doorRadius, 2);
     return;
   }
-  const anchor = nearestHideAnchor(game, blocks);
-  if (anchor) {
-    enterCorn(game, anchor, blocks);
-    game.tutorial.entered = true;
-  }
+  const door=gateAt(game);
+  if(door){toggleDoor(game,door);addEvidence(game,'door',door,C.hearing.doorRadius,3);emit(game,'door','',door);}
 }
 
 function finishMetrics(game, outcome) {
@@ -230,15 +225,12 @@ function checkpoints(game, blocks) {
 
 function resolvePlayerInput(game, dt, input) {
   const player = game.player;
-  const wasHidden = player.hidden;
   if (Number.isFinite(input.yaw)) player.yaw = input.yaw;
   if (Number.isFinite(input.pitch)) player.pitch = Math.max(-1.25, Math.min(1.25, input.pitch));
 
-  // Existing hidden input is heard before exit. On entry, pre-entry mouse look
-  // has already been consumed; subsequent actions and held keys belong to the new hide.
-  if (wasHidden) hiddenInput(game, input);
+  const wasInCorn=!!player.cornZoneId;
+  if(wasInCorn)hiddenInput(game,input);
   if (input.interact) interact(game);
-  if (!wasHidden && player.hidden) hiddenInput(game, { ...input, interact: false, lookDelta: 0 });
 
   if (input.flashlight) {
     player.flashlightOn = !player.flashlightOn;
@@ -251,20 +243,14 @@ function resolvePlayerInput(game, dt, input) {
   const strafe = Number.isFinite(input.strafe) ? input.strafe : 0;
   const length = Math.hypot(forward, strafe);
   const blocks = blocksFor(game);
-  if (length && !player.hidden && !wasHidden) {
+  if (length) {
     moveBody(game.maze, player,
       (-Math.sin(player.yaw) * forward + Math.cos(player.yaw) * strafe) / length * C.player.moveSpeed * dt,
       (-Math.cos(player.yaw) * forward - Math.sin(player.yaw) * strafe) / length * C.player.moveSpeed * dt,
       blocks);
   }
   const moved = distance(player, before);
-  const corn=cornZoneAt(game.maze,player);
-  player.cornZoneId=corn?.id||null;
-  if(corn&&(input.movementIntent||length||Math.abs(input.lookDelta||0)>C.hiding.mouseMovementThresholdPixels||input.fire||input.flashlight)){
-    addEvidence(game,'rustle',player,C.hearing.rustleRadius,5,{anchorId:corn.id});
-    if(!player.cornNoisy)emit(game,'rustle','IT HEARD YOU.',player);
-    player.cornNoisy=true;
-  }else if(!corn)player.cornNoisy=false;
+  updateCornPresence(game,input,wasInCorn);
   player.moving = moved > .0001;
   player.sprinting = false;
   game.steps += moved;
@@ -292,7 +278,7 @@ function updateProgress(game, blocks) {
   }
   if (!game.tutorial.hideShown && nearestHideAnchor(game, blocks)) {
     game.tutorial.hideShown = true;
-    emit(game, 'tutorial', 'HIDE IN THE CORN WHEN IT GETS CLOSE. E TO ENTER.');
+    emit(game, 'tutorial', 'OPEN A WOODEN GATE. WALK INTO CORN. CLOSING IS OPTIONAL.');
   }
 }
 
@@ -307,6 +293,7 @@ function tick(game, dt, input) {
   player.damageCooldown = Math.max(0, player.damageCooldown - dt);
   player.muzzleFlash = Math.max(0, player.muzzleFlash - dt);
   game.doorAmount = Math.min(1, game.doorAmount + (game.doorOpen ? dt * 1.2 : 0));
+  advanceDoors(game,dt);blocksFor(game);
 
   const stabTimes=game.pendingStabs.filter(at=>at<=game.elapsed+1e-9);
   game.pendingStabs=game.pendingStabs.filter(at=>at>game.elapsed+1e-9);
@@ -390,6 +377,8 @@ export function gameSnapshot(game) {
       presentationPosition: playerPosition,
     },
     doorOpen: game.doorOpen,
+    cornDoors:game.cornDoors.flatMap((s,i)=>s.amount>0||distance(player,game.maze.cornDoors[i])<2?[{id:game.maze.cornDoors[i].id,...s}]:[]),
+    cornDoorCount:game.cornDoors.length,doorRevision:game.doorRevision,
     canInteract: !!interactionPrompt(game),
     interactionPrompt: interactionPrompt(game),
     objective: game.objective,
@@ -407,7 +396,7 @@ export function gameSnapshot(game) {
       x: +enemy.x.toFixed(3),
       z: +enemy.z.toFixed(3),
       distance: +distance(enemyPosition, playerPosition).toFixed(2),
-      lineOfSight: !player.hidden && lineOfSight(game.maze, player, enemy, blocksFor(game)),
+      lineOfSight: lineOfSight(game.maze, player, enemy, blocksFor(game)),
       presentationPosition: enemyPosition,
     },
     daughter: game.maze.daughter,

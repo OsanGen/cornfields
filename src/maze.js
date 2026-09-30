@@ -1,3 +1,4 @@
+import {buildCornWorld,cornNode,cornPath,cornOccupy,cornSight,cornNeighbors} from './corn-world.js';
 export const CELL = 2.35;
 export const WIDTH = 33;
 export const HEIGHT = 35;
@@ -69,6 +70,14 @@ export function createMaze() {
     if(!maze.landingZoneCells.has(id))maze.landingZoneCells.set(id,[]);
     maze.landingZoneCells.get(id).push(a);
   }
+  maze.cornWorld=buildCornWorld(maze,CELL,WIDTH,HEIGHT);
+  maze.cornDoors=maze.cornWorld.doors;
+  maze.hideAnchors=maze.hideAnchors.map(a=>maze.cornDoors.find(d=>d.corridorCell.x===a.corridorCell.x&&d.corridorCell.z===a.corridorCell.z&&d.cornSide.x===a.cornSide.x&&d.cornSide.z===a.cornSide.z)).filter(Boolean);
+  maze.landingZones=maze.cornDoors;maze.cornRegions=new Map();
+  for(let i=0;i<maze.cornWorld.corn.length;i++)if(maze.cornWorld.corn[i]){
+    const owner=maze.cornWorld.owner[i];
+    if(!maze.cornRegions.has(owner))maze.cornRegions.set(owner,{id:`corn-region-${owner}`,stage:owner,walkable:true});
+  }
   return maze;
 }
 
@@ -79,6 +88,7 @@ export function inCornBay(zone,x,z,r=0){
   return along>=-.7+r&&along<=2.05-r&&Math.abs(across)<=.78-r;
 }
 export function cornZoneAt(maze,p){
+  if(maze.cornWorld){const id=cornNode(maze.cornWorld,p);return maze.cornWorld.corn[id]?maze.cornRegions.get(maze.cornWorld.owner[id]):null;}
   if(!isWall(maze,cellOf(p).x,cellOf(p).z))return null;
   return maze.landingZoneCells?.get(key(cellOf(p).x,cellOf(p).z))?.find(zone=>inCornBay(zone,p.x,p.z))||null;
 }
@@ -98,6 +108,7 @@ export function flood(maze, start, blocks=[]) {
   return result;
 }
 export function pathTo(maze,from,to,blocks=[]) {
+  if(maze.cornWorld)return cornPath(maze.cornWorld,from,to,blocks);
   const fromBay=cornZoneAt(maze,from),toBay=cornZoneAt(maze,to);
   const start=fromBay?.corridorCell||cellOf(from), goal=toBay?.corridorCell||cellOf(to), first=key(start.x,start.z), last=key(goal.x,goal.z);
   if(isWall(maze,goal.x,goal.z,blocks))return [];
@@ -115,6 +126,7 @@ export function pathTo(maze,from,to,blocks=[]) {
   return path;
 }
 export function canOccupy(maze,x,z,r=.24,blocks=[]) {
+  if(maze.cornWorld)return cornOccupy(maze.cornWorld,x,z,r,blocks);
   if(maze.landingZoneCells?.get(key(Math.floor(x/CELL),Math.floor(z/CELL)))?.some(zone=>inCornBay(zone,x,z,r))&&
       !blocks.some(b=>x+r>b.x*CELL&&x-r<(b.x+1)*CELL&&z+r>b.z*CELL&&z-r<(b.z+1)*CELL))return true;
   for(let gz=Math.floor((z-r)/CELL);gz<=Math.floor((z+r)/CELL);gz++)for(let gx=Math.floor((x-r)/CELL);gx<=Math.floor((x+r)/CELL);gx++){
@@ -133,7 +145,13 @@ export function moveBody(maze,body,dx,dz,blocks=[]) {
   }
 }
 export function lineOfSight(maze,a,b,blocks=[]) {
+  if(maze.cornWorld)return cornSight(maze.cornWorld,a,b,blocks);
   const steps=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.18);
   for(let i=1;i<=steps;i++){const t=i/steps,c=cellOf({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t});if(isWall(maze,c.x,c.z,blocks))return false;}
   return true;
+}
+
+export function navigationNeighbors(maze,p,blocks=[]){
+  const w=maze.cornWorld;
+  return cornNeighbors(w,cornNode(w,p),blocks,true).map(id=>({x:(id%w.width+.5)*w.size,z:(Math.floor(id/w.width)+.5)*w.size}));
 }

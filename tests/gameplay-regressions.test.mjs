@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { centerOf } from '../src/maze.js';
-import { leaveCorn } from '../src/hiding.js';
+import { hiddenInput, updateCornPresence } from '../src/hiding.js';
+import { senseZombie } from '../src/zombie-ai.js';
+import { blocksFor } from '../src/game.js';
 import { GAME_CONFIG as C, addEvidence } from '../src/game-config.js';
 import { STEP, playingScenario, nearCornScenario, hiddenScenario, advance, navigationState } from './helpers/scenarios.mjs';
 
@@ -15,54 +17,37 @@ test('checkpoint refreshes an already active disengage reason and full timer', (
   assert.ok(game.enemy.timer > 2.9);
 });
 
-for (const [name, action] of [
-  ['flashlight', { flashlight: true }],
-  ['fire', { fire: true }],
-  ['held movement', { movementIntent: true, forward: 0, strafe: 0 }],
-]) {
-  test(`corn entry plus ${name} reveals the new hiding episode immediately`, () => {
-    const game = nearCornScenario();
-    advance(game, STEP, { interact: true, ...action });
-    assert.equal(game.player.hidden, true);
-    assert.equal(game.metrics.hidesDetected, 1);
-    assert.equal(game.enemy.memory.anchorId, game.player.hideAnchorId);
-    assert.equal(game.enemy.state, 'corn_rush');
+for(const [name,action] of [
+  ['flashlight',{flashlight:true}],['fire',{fire:true}],['opposing held keys',{movementIntent:true}],
+]){
+  test(`corn ${name} creates local evidence without informing a remote enemy`,()=>{
+    const game=hiddenScenario();hiddenInput(game,action);
+    assert.equal(game.evidence.at(-1).type,'rustle');
+    senseZombie(game,blocksFor(game));
+    assert.equal(game.enemy.memory.lastKnown,null);
   });
 }
-
-test('opposing held movement keys still rustle while hidden', () => {
-  const game = hiddenScenario();
-  advance(game, STEP, { forward: 0, strafe: 0, movementIntent: true });
-  assert.equal(game.metrics.hidesDetected, 1);
-  assert.equal(game.enemy.state, 'corn_rush');
+test('mouse aiming outside corn is not replayed on a later silent entry',()=>{
+  const game=nearCornScenario();advance(game,STEP,{yaw:1,lookDelta:5});
+  assert.equal(game.metrics.hidesEntered,0);assert.equal(game.enemy.memory.lastKnown,null);
 });
-
-test('mouse aiming before corn entry is not replayed as hidden movement', () => {
-  const game = nearCornScenario();
-  advance(game, STEP, { interact: true, yaw: 1, lookDelta: 5 });
-  assert.equal(game.player.hidden, true);
-  assert.equal(game.metrics.hidesDetected, 0);
+test('unheard unseen corn exit does not change a remote enemy decision',()=>{
+  const hidden=hiddenScenario(),exited=hiddenScenario();
+  Object.assign(exited.player,centerOf(3,23));updateCornPresence(exited,{});
+  for(const game of [hidden,exited])advance(game,STEP);
+  assert.deepEqual(navigationState(exited),navigationState(hidden));
 });
-
-test('unheard unseen corn exit does not change a remote enemy decision', () => {
-  const hidden = hiddenScenario(), exited = hiddenScenario();
-  for (const game of [hidden, exited]) advance(game, STEP, { forward: 1 });
-  leaveCorn(exited, []);
-  for (const game of [hidden, exited]) advance(game, STEP);
-  assert.deepEqual(navigationState(exited), navigationState(hidden));
-});
-
-test('stagger recovery uses remembered hide evidence rather than remote current occupancy', () => {
-  const hidden = hiddenScenario(), exited = hiddenScenario();
-  for (const game of [hidden, exited]) {
-    advance(game, STEP, { forward: 1 });
-    game.enemy.state = 'staggered';
-    game.enemy.timer = STEP;
+test('stagger recovery uses remembered corn evidence regardless of remote occupancy',()=>{
+  const hidden=hiddenScenario(),exited=hiddenScenario();
+  for(const game of [hidden,exited]){
+    game.enemy.memory.lastKnown={x:game.player.x,z:game.player.z};
+    game.enemy.memory.lastHeardAt=game.elapsed;
+    game.enemy.state='staggered';game.enemy.timer=STEP;
   }
-  leaveCorn(exited, []);
-  for (const game of [hidden, exited]) advance(game, STEP);
-  assert.equal(hidden.enemy.state, 'corn_rush');
-  assert.deepEqual(navigationState(exited), navigationState(hidden));
+  Object.assign(exited.player,centerOf(3,23));updateCornPresence(exited,{});
+  for(const game of [hidden,exited])advance(game,STEP);
+  assert.equal(hidden.enemy.state,'corn_rush');
+  assert.deepEqual(navigationState(exited),navigationState(hidden));
 });
 
 test('rage predictions never overwrite the last confirmed observation', () => {
@@ -93,21 +78,14 @@ test('new audible evidence replaces a rage prediction with a confirmed target', 
   assert.equal(game.enemy.memory.lastObservation.source, 'gunshot');
 });
 
-test('an abandoned hide is discovered only when the enemy inspects its pocket', () => {
-  const game = hiddenScenario();
-  advance(game, STEP, { forward: 1 });
-  leaveCorn(game, []);
-  advance(game, STEP);
-  assert.equal(game.enemy.state, 'corn_rush');
-
-  // Fixture arrival at the physical inspection point, outside sight of the escaped player.
-  const anchor = game.maze.hideAnchors[0];
-  Object.assign(game.player, centerOf(7, 23));
-  Object.assign(game.enemy, { x: anchor.x, z: anchor.z, ingressDepth: C.hiding.pocketDepth - .1 });
-  advance(game, STEP);
-  assert.equal(game.enemy.state, 'investigate');
-  assert.equal(game.enemy.reason, 'hide_searched_empty');
-  assert.equal(game.enemy.memory.anchorId, null);
+test('arrival at stale sound starts search without reading the escaped player position',()=>{
+  const game=hiddenScenario(),known={x:game.player.x,z:game.player.z};
+  Object.assign(game.player,centerOf(29,3));updateCornPresence(game,{});
+  Object.assign(game.enemy,known,{state:'corn_rush',target:{...known}});
+  game.enemy.memory.lastKnown={...known};game.enemy.memory.lastHeardAt=game.elapsed;
+  advance(game,STEP);
+  assert.equal(game.enemy.state,'predictive_search');
+  assert.deepEqual(game.enemy.memory.lastKnown,known);
 });
 
 test('a second valid hit does not refresh the committed short stagger', () => {

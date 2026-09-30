@@ -17,8 +17,9 @@ const MOVE_KEYS = new Set([
  * @property {boolean} interact
  * @property {number} lookDelta Raw mouse travel in pixels, independent of yaw.
  */
-export function createInput({document, canvas, isPlaying, onPause, onMute,isQte=()=>false,inputTime=()=>0}) {
+export function createInput({document, canvas, isPlaying, onPause, onMute,onEscape=onPause,isPresentation=()=>false,isQte=()=>false,inputTime=()=>0}) {
   const keys = new Set();
+  const physical = new Set(), quarantined = new Set();
   const listeners = [];
   const emptyEdges = () => ({
     fire: false, flashlight: false, interact: false,
@@ -33,11 +34,14 @@ export function createInput({document, canvas, isPlaying, onPause, onMute,isQte=
   }
 
   listen(document, 'keydown', event => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target?.tagName)) return;
+    physical.add(event.code);
     if (event.code === 'Escape') {
-      onPause();
+      if(!event.repeat)onEscape();
       return;
     }
-    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target?.tagName)) return;
+    // Intro buttons keep native Space/Enter activation. Nothing reaches gameplay.
+    if(isPresentation()||quarantined.has(event.code))return;
     if (event.code.startsWith('Arrow') || event.code === 'Space') event.preventDefault();
     if (event.repeat) return;
     if (event.code === 'KeyM') onMute();
@@ -48,7 +52,7 @@ export function createInput({document, canvas, isPlaying, onPause, onMute,isQte=
     if (event.code === 'KeyF') pending.flashlight = true;
     keys.add(event.code);
   });
-  listen(document, 'keyup', event => keys.delete(event.code));
+  listen(document, 'keyup', event => {keys.delete(event.code);physical.delete(event.code);quarantined.delete(event.code);});
   listen(document, 'mousemove', event => {
     if (!isPlaying() || document.pointerLockElement !== canvas) return;
     pending.dx += event.movementX;
@@ -82,6 +86,7 @@ export function createInput({document, canvas, isPlaying, onPause, onMute,isQte=
       return input;
     },
     clearEdges(){pending=emptyEdges();stabs=[];},
+    quarantine(){for(const code of physical)quarantined.add(code);this.clear();},
     clear() {
       keys.clear();
       pending = emptyEdges();

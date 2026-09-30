@@ -61,7 +61,7 @@ export const GAME_CONFIG = {
     footstepInterval: .48,
     doorRadius: 20,
     gunshotRadius: 60,
-    rustleRadius: 100,
+    rustleRadius: 12,
     flashlightRadius: 3,
   },
 };

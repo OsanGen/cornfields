@@ -19,6 +19,7 @@ try{
       page.on('pageerror',e=>report.errors.push(String(e)));
       page.on('response',r=>{if(r.status()>=400)report.errors.push(`${r.status()} ${r.url()}`);});
       const url=new URL(base);url.searchParams.delete('test');url.searchParams.delete('controls');
+      url.searchParams.set('intro','off');
       for(const [key,value] of new URLSearchParams(query))url.searchParams.set(key,value);
       await page.goto(url.href,{waitUntil:'networkidle'});
       await page.waitForFunction(()=>!document.getElementById('start-btn').disabled);

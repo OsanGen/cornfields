@@ -6,6 +6,10 @@ The first release deployed commit `26952a98f6990504b6883df9f2ae51a75b7ab8d0`. [G
 
 ## Prepare
 
+The September 30 release packages the current weather/puddles, hands/QTE/physical-corn and psychedelic-intro work together. Its local verification passed 201 tests, syntax/lock checks, a 93-file build, and desktop/touch-emulated intro-to-gameplay browser checks. `INTRO_UPDATE.md` and `HANDS_CORN_UPDATE.md` retain the separate manual acceptance gaps.
+
+The previous successful deployment observed before this publication is `d70e4c2f9fe807ba39e3aea54ddb099b87ea7ff3`, [Actions run 36654059021](https://github.com/OsanGen/cornfields/actions/runs/36654059021). Keep it as the release rollback baseline. The exact new deployed SHA, provider run and served-file verification belong in the release receipt after the workflow succeeds.
+
 1. Run `npm ci`, `npm test`, `npm run check`, then `npm run build` with Node.js 22.
 2. Run `CORNFIELD_BASE_PATH=/cornfields/ npm run preview` and test `http://127.0.0.1:4180/cornfields/`.
 3. Run the desktop and mobile browser checks using an installed Playwright/browser. Mobile emulation is not physical-phone acceptance.

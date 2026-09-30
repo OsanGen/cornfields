@@ -6,7 +6,9 @@ import {
 import {createStepper} from './runtime-loop.js';
 import {createInput} from './input.js';
 import {createTouchInput} from './touch-input.js';
+import {normalizeAlias} from './horror-presentation.js';
 import {createUI} from './ui.js';
+import {createIntro, INTRO_ENABLED} from './intro.js';
 
 /**
  * Owns one game session and its browser lifecycle.
@@ -14,16 +16,20 @@ import {createUI} from './ui.js';
  * Importing this module has no browser or WebGL side effects.
  */
 export function createGameApp({
-  maze, view, audio, document, window,
+  maze, view, audio, weather = null, document, window,
   debug = false,
   reducedMotion = false,
   touch = false,
+  horror = true,
+  introEnabled = INTRO_ENABLED,
+  introView = null,
+  ready = null,
   now = () => performance.now(),
   requestFrame = callback => window.requestAnimationFrame(callback),
   cancelFrame = id => window.cancelAnimationFrame(id),
 }) {
   const canvas = document.getElementById('scene');
-  const ui = createUI(document, {debug, reducedMotion, touch});
+  const ui = createUI(document, {debug, reducedMotion, touch, horror});
   const listeners = [];
   let game = createGame(maze);
   let previousMode = game.mode;
@@ -34,14 +40,23 @@ export function createGameApp({
   let pointerError = null;
   let audioTicks = 0;
   let entryAttempt = 0;
+  let alias='STRANGER';
+  let coreReady = !ready, coreError = null, introAudioAttempt = 0, introEntering = false, pendingCapture = null;
+  let creditsOpen = false;
+  const intro = createIntro({enabled:introEnabled, onCue:id=>audio.introCue?.(id)});
+  if (ready) Promise.resolve(ready).then(()=>{if(!disposed){coreReady=true;present();}},error=>{
+    if(!disposed){coreError=error.message;ui.showError('The field could not load. Reload to retry.');present();}
+  });
 
   const input = (touch ? createTouchInput : createInput)({
     document,
     canvas,
-    isPlaying: () => game.mode === 'playing',
+    isPlaying: () => !intro.active && game.mode === 'playing',
     isQte:()=>game.interaction?.phase==='qte',
     inputTime:stamp=>manual?game.elapsed:game.elapsed+clock.pendingSeconds+Math.max(0,Math.min(.25,((Number.isFinite(stamp)&&stamp<1e12?stamp:now())-last)/1000)),
     onPause: pause,
+    onEscape() { if (['playing','paused'].includes(intro.phase)) skipIntro(); else pause(); },
+    isPresentation: () => intro.active,
     onMute() {
       game.caption = audio.toggleMute() ? 'Sound muted.' : 'Sound on.';
       game.captionTime = 2;
@@ -51,11 +66,15 @@ export function createGameApp({
     const previousPhase=game.interaction?.phase;
     updateGame(game, dt, controls);
     if(previousPhase!==game.interaction?.phase){input.clearEdges();game.pendingStabs.length=0;}
-    for (const event of game.events.splice(0)) {
+    const events = game.events.splice(0);
+    const weatherEvents = weather?.update(game, dt, {events, reduced: reducedMotion, muted: audio.muted}) || [];
+    for (const event of events) {
       audio.event(event, game);
       view.event?.(event);
     }
-    audio.update(game, dt);
+    audio.weatherState?.(game, weather?.state);
+    for (const event of weatherEvents) audio.weatherEvent?.(event, game);
+    audio.update(game, dt, {footsteps: !weather});
     audioTicks++;
     // Present the newly enabled action before consuming any more catch-up time.
     return previousPhase!=='qte'&&game.interaction?.phase==='qte';
@@ -82,10 +101,103 @@ export function createGameApp({
   function present(time = game.elapsed) {
     syncMode();
     ui.render(game);
-    view.render(game, time, reducedMotion);
+    ui.renderIntro(intro, {enabled:introEnabled, portrait:touch&&window.innerHeight>window.innerWidth, coreReady, coreError, entering:introEntering, pointerError, creditsOpen, muted:audio.muted, volume:audio.volume});
+    if (intro.active) {
+      try { introView?.render(intro.frame(reducedMotion)); }
+      catch { introView?.release(); introView=null; }
+    } else view.render(game, time, reducedMotion);
+  }
+
+  function cancelIntroEntry() {
+    if (!introEntering) return;
+    entryAttempt++; introEntering=false;
+    pendingCapture?.reject(new Error('Entry interrupted. Click Enter the Field to retry.'));
+    pendingCapture=null;
+  }
+
+  function introAudio(quiet=false) {
+    const attempt=++introAudioAttempt;
+    Promise.resolve(audio.prepare?.()).then(()=>{
+      if(disposed||document.hidden||intro.phase==='paused'){audio.pause();return;}
+      if(attempt!==introAudioAttempt) return;
+      if((intro.phase==='playing'||intro.phase==='ready')&&!document.hidden)audio.startIntro?.({quiet});
+      else audio.pause();
+    }).catch(()=>{/* Silent intro is a valid fallback. */});
+  }
+
+  function beginIntro(replay=false) {
+    if(!introEnabled)return;
+    if(disposed||(!replay&&intro.phase!=='preflight')||(replay&&game.mode==='playing'))return;
+    if(!intro.begin({replay}))return;
+    creditsOpen=false;input.clear();clock.reset();last=now();manual=false;
+    ui.chooseIntroFont();
+    try{introView?.start();}catch{introView?.release();introView=null;}
+    introAudio();present();ui.node('intro-skip').focus();
+  }
+
+  function finishReplay() {
+    introAudioAttempt++;audio.stopIntro?.();audio.pause();intro.finish();introView?.release();input.clear();clock.reset();last=now();
+    present();ui.focusMode(game.mode);
+    if(game.mode==='menu')ui.node('start-btn').focus();
+  }
+
+  function readyIntro() {
+    introAudioAttempt++;audio.stopIntro?.();input.clear();clock.reset();
+    if(intro.replaying){finishReplay();return;}
+    if(!document.hidden)audio.startIntro?.({quiet:true});
+    present();ui.node('intro-enter').focus();
+  }
+
+  function skipIntro() {
+    if(!intro.active||intro.phase==='ready'||disposed)return;
+    intro.skip();readyIntro();
+  }
+
+  function tickIntro(dt) {
+    const phase=intro.phase;intro.tick(dt);
+    if(phase==='playing'&&intro.phase==='ready')readyIntro();
+  }
+
+  async function enterIntro() {
+    if(disposed||intro.phase!=='ready'||!coreReady||coreError||introEntering)return;
+    if(touch&&window.innerHeight>window.innerWidth)return;
+    const attempt=++entryAttempt;introEntering=true;pointerError=null;
+    input.clear();clock.reset();
+    let timer;
+    try {
+      // Capture is requested synchronously in the button event, before any await.
+      const capture=touch?Promise.resolve():new Promise((resolve,reject)=>{
+        pendingCapture={resolve,reject};
+        const result=canvas.requestPointerLock();
+        if(result?.then)result.then(resolve,reject);
+        else if(document.pointerLockElement===canvas)resolve();
+        timer=setTimeout(()=>reject(new Error('Mouse capture timed out. Click Enter the Field to retry.')),4000);
+      });
+      introAudioAttempt++;audio.stopIntro?.();
+      const sound=Promise.resolve(audio.prepare?.()).catch(()=>{});
+      sound.then(()=>{if(disposed||document.hidden||intro.phase==='paused'||(!intro.active&&game.mode!=='playing'))audio.pause();});
+      await capture;
+      if(disposed||attempt!==entryAttempt)return;
+      if(!touch&&document.pointerLockElement!==canvas)throw new Error('Mouse capture denied. Click Enter the Field to retry.');
+      if(document.hidden)throw new Error('Return to the field and try again.');
+      alias=normalizeAlias(ui.node('player-alias').value);ui.node('player-alias').value=alias;ui.setAlias(alias);
+      intro.finish();introView?.release();input.quarantine?.();input.clear();clock.reset();last=now();manual=false;
+      startGame(game);
+      document.body.classList.toggle('intro-handoff',true);
+      sound.then(()=>{if(!disposed&&attempt===entryAttempt&&!intro.active&&game.mode==='playing')audio.startGameplay?.();});
+    } catch(error) {
+      if(!disposed&&attempt===entryAttempt){pointerError=error.message;audio.pause();}
+    } finally {
+      clearTimeout(timer);
+      if(attempt===entryAttempt){pendingCapture=null;introEntering=false;}
+      if(!disposed)present();
+    }
   }
 
   function pause() {
+    if(intro.active){
+      cancelIntroEntry();introAudioAttempt++;intro.pause();audio.pause();input.clear();clock.reset();present();return;
+    }
     input.clear();
     pauseGame(game);
     clock.reset();
@@ -94,11 +206,18 @@ export function createGameApp({
 
   async function enter(reset = false) {
     if (disposed) return;
+    if(intro.active){if(intro.phase==='preflight')beginIntro();else if(intro.phase==='ready')await enterIntro();return;}
+    if(!coreReady||coreError)return;
     if (touch && window.innerHeight > window.innerWidth) return;
     const attempt = ++entryAttempt;
+    if(game.mode==='menu'){
+      alias=normalizeAlias(ui.node('player-alias').value);
+      ui.node('player-alias').value=alias;ui.setAlias(alias);
+    }
     if (reset) {
       game = createGame(maze);
       audio.reset();
+      weather?.reset();
       view.reset?.();
       ui.reset();
       manual = false;
@@ -139,18 +258,44 @@ export function createGameApp({
     if (disposed) return;
     const dt = (time - last) / 1000;
     last = time;
-    if (!manual) clock.frame(dt, step => input.read(game.player,game.elapsed+step));
+    if (!manual) {
+      if(intro.active)tickIntro(dt);
+      else clock.frame(dt, step => input.read(game.player,game.elapsed+step));
+    }
     present(game.elapsed + (game.mode === 'menu' ? time / 1000 : 0));
     frameId = requestFrame(frame);
   }
 
   listen(ui.node('start-btn'), 'click', () => void enter());
+  listen(ui.node('preflight-skip'),'click',skipIntro);
+  listen(ui.node('intro-skip'),'click',skipIntro);
+  listen(ui.node('intro-enter'),'click',()=>void enterIntro());
+  listen(ui.node('intro-continue'),'click',()=>{
+    if(intro.phase!=='paused')return;
+    intro.resume();last=now();manual=false;introAudio();present();ui.node('intro-skip').focus();
+  });
+  for(const id of ['replay-intro','credits-replay'])listen(ui.node(id),'click',()=>beginIntro(true));
+  for(const id of ['credits-btn','pause-credits'])listen(ui.node(id),'click',()=>{creditsOpen=true;present();ui.node('credits-close').focus();});
+  listen(ui.node('credits-close'),'click',()=>{creditsOpen=false;present();ui.focusMode(game.mode);if(game.mode==='menu')ui.node('credits-btn').focus();});
+  listen(ui.node('intro-mute'),'click',()=>{
+    audio.toggleMute();if(!audio.muted&&['playing','ready'].includes(intro.phase))introAudio(intro.phase==='ready');present();
+  });
+  listen(ui.node('intro-volume'),'input',event=>{audio.setVolume(Number(event.target.value)/100);ui.node('volume').value=event.target.value;});
+  listen(ui.node('intro-motion'),'change',event=>{
+    reducedMotion=event.target.checked;ui.node('motion').checked=reducedMotion;ui.setReducedMotion(reducedMotion);present();
+  });
   listen(ui.node('resume-btn'), 'click', () => void enter());
   listen(ui.node('retry-btn'), 'click', () => void enter(true));
   listen(ui.node('restart-btn'), 'click', () => void enter(true));
+  listen(ui.node('player-alias'),'keydown',event=>{if(event.key==='Enter'){event.preventDefault();void enter();}});
+  listen(ui.node('title-btn'),'click',()=>{
+    pause();game=createGame(maze);weather?.reset();audio.reset();view.reset?.();ui.reset();input.clear();clock.reset();
+    ui.node('player-alias').value=alias;present();ui.node('player-alias').focus();
+  });
   listen(ui.node('volume'), 'input', event => audio.setVolume(Number(event.target.value) / 100));
   listen(ui.node('motion'), 'change', event => {
     reducedMotion = event.target.checked;
+    ui.node('intro-motion').checked=reducedMotion;
     ui.setReducedMotion(reducedMotion);
   });
   ui.node('fullscreen-btn').hidden = typeof ui.node('game').requestFullscreen !== 'function';
@@ -162,12 +307,18 @@ export function createGameApp({
   });
   listen(document, 'pointerlockchange', () => {
     if (touch) return;
+    if(intro.active){
+      if(document.pointerLockElement===canvas){if(introEntering)pendingCapture?.resolve();else document.exitPointerLock();}
+      else if(introEntering)pendingCapture?.reject(new Error('Mouse capture was lost. Click Enter the Field to retry.'));
+      return;
+    }
     if (document.pointerLockElement !== canvas && game.mode === 'playing') pause();
   });
   listen(document, 'pointerlockerror', () => {
     if (touch) return;
     // A delayed error from an older request must not cancel a newer capture.
     if (document.pointerLockElement === canvas) return;
+    if(intro.active){pendingCapture?.reject(new Error('Mouse capture denied. Click Enter the Field to retry.'));return;}
     pointerError ||= 'Mouse capture denied';
     pause();
   });
@@ -176,7 +327,7 @@ export function createGameApp({
     const viewportChanged = () => {
       input.clear();
       const portrait = window.innerHeight > window.innerWidth;
-      ui.node('rotate').hidden = !portrait;
+      ui.node('rotate').hidden = !portrait||intro.active;
       if (portrait) pause();
     };
     listen(window, 'resize', viewportChanged);
@@ -193,27 +344,40 @@ export function createGameApp({
   });
 
   ui.node('loading').textContent = 'FIND YOUR DAUGHTER · 2 ROUNDS · NO SAVES';
-  ui.node('start-btn').disabled = false;
+  ui.node('start-btn').disabled = !intro.active&&!coreReady;
   present();
 
   return {
     enter,
     pause,
+    introSnapshot:()=>({...intro.snapshot(),coreReady,entering:introEntering,visuals:introView?.diagnostics?.()}),
     restart: () => enter(true),
     startLoop() {
       if (frameId === null && !disposed) frameId = requestFrame(frame);
     },
-    snapshot: () => gameSnapshot(game),
+    snapshot: () => ({...gameSnapshot(game), ...(weather ? {weather: weather.snapshot()} : {})}),
+    weatherSurfaces: () => weather ? weather.state.puddles.map(p => ({...p})) : [],
+    fixture(name){
+      if(!['gate','encounter'].includes(name))throw new Error('Unknown local fixture');
+      const d=maze.hideAnchors[0];game.doorOpen=true;game.doorAmount=1;game.entered=true;game.mode='playing';
+      Object.assign(game.player,{x:d.x-d.normal.x*.7,z:d.z-d.normal.z*.7,yaw:d.entryYaw,pitch:0,flashlightOn:false});
+      Object.assign(game.enemy,{x:game.player.x-d.normal.x*(name==='encounter'?.7:10),z:game.player.z-d.normal.z*(name==='encounter'?.7:10),state:'chase',target:{x:game.player.x,z:game.player.z},visible:true,yaw:d.entryYaw+Math.PI});
+      if(name==='gate')Object.assign(game.enemy,{state:'disengage',target:null,timer:100});
+      game.grace=name==='gate'?100:0;input.clear();clock.reset();manual=true;present();
+    },
     route: () => pathTo(maze, game.player, maze.center, blocksFor(game)),
     diagnostics: () => ({
       ...gameSnapshot(game),
       audioState: audio.ctx?.state || 'uninitialized',
       audioSamples:Object.keys(audio.samples||{}),
+      weatherAudioSamples:Object.keys(audio.weatherSamples||{}),
+      weather:weather?.snapshot(),
       audioSources:audio.transients?.size||0,
       creature:view.creatureDiagnostics?.(),
       audioTicks,
       muted: audio.muted,
       reducedMotion,
+      intro:{...intro.snapshot(),coreReady,visuals:introView?.diagnostics?.()},
       controlMode: touch ? 'touch' : 'mouse',
       pointerLocked: document.pointerLockElement === canvas,
       pointerError,
@@ -226,11 +390,13 @@ export function createGameApp({
     }),
     advance(milliseconds) {
       manual = true;
-      clock.advance(milliseconds / 1000, step => input.read(game.player,game.elapsed+step));
+      if(intro.active)tickIntro(milliseconds/1000);
+      else clock.advance(milliseconds / 1000, step => input.read(game.player,game.elapsed+step));
       present();
     },
     step(seconds, controls = {}) {
       manual = true;
+      if(intro.active){tickIntro(seconds);present();return gameSnapshot(game);}
       let first = true;
       clock.advance(seconds, () => {
         const value = {...controls};
@@ -246,6 +412,7 @@ export function createGameApp({
     dispose() {
       if (disposed) return;
       disposed = true;
+      introAudioAttempt++;cancelIntroEntry();intro.dispose();introView?.dispose();audio.stopIntro?.();
       entryAttempt++;
       if (frameId !== null) cancelFrame(frameId);
       input.dispose();
