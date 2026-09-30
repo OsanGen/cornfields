@@ -4,10 +4,11 @@
 
 This source includes rain and puddles, the hands/QTE/enterable-corn update and the psychedelic intro. Publication status and deployed commit are available in the [Pages workflow runs](https://github.com/OsanGen/cornfields/actions/workflows/pages.yml).
 
-This source also includes the dynamic survival-maze update. The manual Pages
-workflow gates publication on the full tests, checks and build. See
-[SURVIVAL_UPDATE.md](SURVIVAL_UPDATE.md) for the implementation evidence and
-remaining browser, performance and human acceptance checks.
+The main game now uses spacious wooden corridors. Side doors lead into a separate,
+open cornfield for optional hiding; going deep attracts additional zombies and
+warnings to return. See [CORRIDOR_FIELD_UPDATE.md](CORRIDOR_FIELD_UPDATE.md) for the
+corrected design, verification and release gates. SURVIVAL_UPDATE.md records the
+superseded dedicated survival detour.
 
 On a phone, choose **BEGIN** or **SKIP INTRO**, then turn to landscape and tap **ENTER THE FIELD**. The left joystick moves; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
 

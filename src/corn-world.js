@@ -116,6 +116,12 @@ export function cornNeighbors(world,id,blocks=[],allowDoors=false,sound=false){
   return result;
 }
 export function cornPath(world,from,to,blocks=[],{allowDoors=false,sound=false,maxDistance=Infinity,radius=from.radius??.25}={}){
+  if(world.openField){
+    const length=Math.hypot(to.x-from.x,to.z-from.z);if(length>maxDistance)return [];
+    const projected=allowDoors?Object.assign([],{doors:blocks.doors.map(s=>({...s,amount:s.locked&&!sound?s.amount:1}))}):blocks;
+    const n=Math.max(1,Math.ceil(length/.2));for(let i=0;i<=n;i++)if(!cornOccupy(world,from.x+(to.x-from.x)*i/n,from.z+(to.z-from.z)*i/n,radius,projected))return [];
+    return [{x:from.x,z:from.z},{x:to.x,z:to.z}];
+  }
   const first=cornNode(world,from),last=cornNode(world,to);
   if(blockedNode(world,first,blocks)||blockedNode(world,last,blocks))return [];
   const physical=[...blocks];physical.physical=true;physical.radius=radius;
@@ -151,6 +157,11 @@ export function cornPath(world,from,to,blocks=[],{allowDoors=false,sound=false,m
 }
 
 export function cornOccupy(world,x,z,r,blocks=[]){
+  if(world.openField){
+    if(!Number.isFinite(x)||!Number.isFinite(z))return false;
+    const d=world.doors[world.activeDoor],leaf=doorLeaf(d,doorAmount(blocks,d.index)*(blocks.doors?.[d.index]?.swing||1));
+    return sqDistance({x,z},leaf.a,leaf.b)>=(r+.035)**2;
+  }
   if(x-r<0||z-r<0||x+r>=world.width*world.size||z+r>=world.height*world.size)return false;
   const size=world.size,p={x,z};
   for(let iz=Math.floor((z-r)/size);iz<=Math.floor((z+r)/size);iz++)for(let ix=Math.floor((x-r)/size);ix<=Math.floor((x+r)/size);ix++){
@@ -166,11 +177,12 @@ export function cornOccupy(world,x,z,r,blocks=[]){
 
 export function cornSight(world,a,b,blocks=[]){
   const distance=Math.hypot(b.x-a.x,b.z-a.z),steps=Math.max(1,Math.ceil(distance/.035));
+  if(world.openField&&distance>5)return false;
   let foliage=0;
   for(let i=1;i<=steps;i++){
     const p={x:a.x+(b.x-a.x)*i/steps,z:a.z+(b.z-a.z)*i/steps};
     if(!cornOccupy(world,p.x,p.z,.005,blocks))return false;
-    if(world.corn[cornNode(world,p)])foliage+=distance/steps;
+    if(!world.openField&&world.corn[cornNode(world,p)])foliage+=distance/steps;
     if(foliage>2.8)return false;
   }
   return true;
@@ -180,6 +192,7 @@ export function gateAt(game){
   const p=game.player,w=game.maze.cornWorld,blocks=game.blocks||[];
   let chosen=null,best=Infinity;
   for(const door of w.doors){
+    if(w.openField&&door.index!==w.activeDoor)continue;
     const dx=door.x-p.x,dz=door.z-p.z,d=Math.hypot(dx,dz);
     if(d>1.55||d<.02||(-Math.sin(p.yaw)*dx-Math.cos(p.yaw)*dz)/d<.45)continue;
     const near={x:door.x-dx/d*.13,z:door.z-dz/d*.13};
@@ -202,7 +215,8 @@ export function requestDoor(game,door,open,actor='player'){
   if(open&&state.amount<.01){
     const body=actor==='enemy'?game.enemy:game.player;
     const preferred=(body.x-door.x)*door.normal.x+(body.z-door.z)*door.normal.z>0?-1:1;
-    state.swing=game.interaction?.landing?.swings?.[door.index]||safeDoorSwing(door,[game.player,game.enemy],preferred)||preferred;
+    const bodies=[game.player,...(game.enemies?.filter(e=>e.active&&e.zone===game.player.zone)||[game.enemy])];
+    state.swing=game.interaction?.landing?.swings?.[door.index]||safeDoorSwing(door,bodies,preferred)||preferred;
   }
   state.target=open?1:0;state.requestedBy=actor;return true;
 }
@@ -214,7 +228,8 @@ export function advanceDoors(game,dt){
     if(state.requestedBy==='enemy'&&game.interaction?.phase==='recovery')continue;
     if(state.amount===state.target){game.movingDoors.delete(index);continue;}
     const amount=state.amount+Math.sign(state.target-state.amount)*Math.min(dt*3,Math.abs(state.target-state.amount));
-    const leaf=doorLeaf(door,amount*(state.swing||1)),blocked=[game.player,game.enemy].some(body=>
+    if(world.openField&&index!==world.activeDoor)continue;
+    const leaf=doorLeaf(door,amount*(state.swing||1)),blocked=[game.player,...(game.enemies?.filter(e=>e.active&&e.zone===game.player.zone)||[game.enemy])].some(body=>
       sqDistance(body,leaf.a,leaf.b)<(body.radius+.05)**2);
     if(blocked){state.target=state.amount;game.movingDoors.delete(index);continue;}
     const was=state.amount>=.96;state.amount=amount;

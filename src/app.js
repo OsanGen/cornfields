@@ -359,6 +359,17 @@ export function createGameApp({
     snapshot: (diagnostic=false) => ({...gameSnapshot(game,{diagnostic}), ...(weather ? {weather: weather.snapshot()} : {})}),
     weatherSurfaces: () => weather ? weather.state.puddles.map(p => ({...p})) : [],
     fixture(name){
+      if(game.corridorRun){
+        if(name==='eligible'){Object.assign(game.corridorRun,{elapsed:180,distance:120});return;}
+        if(name==='gate'||name==='encounter'){
+          const d=game.maze.cornDoors.find(d=>d.fieldEntrance);
+          game.mode='playing';game.entered=true;game.corridorRun.started=true;
+          const at=name==='gate'?{x:d.x,z:d.z+1.3}:game.maze.corridorLayout.sections[1].anchor;
+          Object.assign(game.player,at,{yaw:0,pitch:0,flashlightOn:false,zone:'corridor'});
+          Object.assign(game.enemy,{x:at.x,z:at.z-(name==='encounter'?.7:10),state:name==='encounter'?'chase':'observe',timer:100,visible:true,zone:'corridor',target:{...at},yaw:Math.PI});
+          game.grace=name==='gate'?100:0;input.clear();clock.reset();manual=true;present();return;
+        }
+      }
       if(name==='eligible'&&game.cornSurvival?.state==='active_survival'){
         Object.assign(game.cornSurvival,{elapsed:180,distance:120,movementQualified:true});return;
       }
@@ -381,6 +392,7 @@ export function createGameApp({
     },
     route: (target=game.maze.center) => pathTo(game.maze, game.player, target, blocksFor(game)),
     survivalLayout:()=>structuredClone(game.maze.survivalLayout),
+    corridorLayout:()=>structuredClone(game.maze.corridorLayout),
     diagnostics: () => ({
       ...gameSnapshot(game,{diagnostic:true}),
       audioState: audio.ctx?.state || 'uninitialized',

@@ -10,7 +10,7 @@ export function updateDirector(game, dt) {
   threat.directorIntent = threat.quietWindow > 0 ? 'withdraw' :
     game.progress.escalationTier === 2 ? 'intercept' :
     game.progress.escalationTier === 1 ? 'circle' : 'investigate';
-  const pursuing = ['chase', 'rage_chase', 'corn_rush'].includes(game.enemy.state);
+  const pursuing = (!game.enemies||game.enemy.zone===game.player.zone)&&['chase', 'rage_chase', 'corn_rush'].includes(game.enemy.state);
   threat.pressure = clamp(threat.pressure + (pursuing ? dt * .1 : -dt * .04), 0, 1);
 }
 
@@ -18,6 +18,7 @@ export function updateFeedback(game, dt) {
   const threat = game.threat;
   const enemy = game.enemy;
   const player = game.player;
+  if(game.enemies&&enemy.zone!==player.zone){threat.proximityTier=0;threat.intensity=0;threat.activeMessage=null;return;}
   const from = actorPosition(game, 'player');
   const to = actorPosition(game, 'enemy');
   const d = distance(from, to);

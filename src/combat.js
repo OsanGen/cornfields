@@ -3,11 +3,13 @@ import { GAME_CONFIG as C, distance, addEvidence, emitEvent } from './game-confi
 import { actorPosition, localIngressVisible } from './hiding.js';
 import { transition } from './enemy-state.js';
 import {beginTackle,interactionLocked} from './grapple.js';
+import {activeEnemies,withEnemy} from './corridor-run.js';
 
 /** Deterministic aim capsule; animated bones never decide whether a shot lands. */
 export function shotHits(game, blocks) {
   const player = game.player;
   const enemy = game.enemy;
+  if(game.enemies&&enemy.zone!==player.zone)return false;
   const from = actorPosition(game, 'player');
   const to = actorPosition(game, 'enemy');
   const dx = to.x - from.x;
@@ -41,11 +43,15 @@ export function fireGun(game, blocks) {
   addEvidence(game, 'gunshot', actorPosition(game, 'player'), C.hearing.gunshotRadius, 4,
     player.hidden ? { anchorId: player.hideAnchorId } : {});
   emitEvent(game, 'shot', '', actorPosition(game, 'player'));
-  if (!shotHits(game, blocks)) return false;
+  const hit=activeEnemies(game).filter(e=>withEnemy(game,e,()=>shotHits(game,blocks)))
+    .sort((a,b)=>distance(a,player)-distance(b,player))[0];
+  if(!hit)return false;
 
-  if(!['staggered','post_qte_recovery'].includes(game.enemy.state))transition(game, 'staggered', 'shot_hit',
+  withEnemy(game,hit,()=>{
+  if(!['staggered','post_qte_recovery'].includes(hit.state))transition(game, 'staggered', 'shot_hit',
     C.zombie.staggerSecondsByTier[game.progress.escalationTier]);
   else emitEvent(game,'hit','',actorPosition(game,'enemy'));
+  });
   game.metrics.shotsHit++;
   return true;
 }

@@ -14,6 +14,16 @@ export function sweptClear(maze,a,b,r,blocks=[]){
 
 /** Reserve an actual nearby route before contact. No wall crossing or distant warp. */
 export function findCornLanding(game,blocks=[]){
+  if(game.corridorRun){
+    const from=point(game.player),yaw=Math.atan2(from.x-game.enemy.x,from.z-game.enemy.z);
+    for(const offset of [0,.5,-.5,1,-1,Math.PI/2,-Math.PI/2,Math.PI]){
+      const p={x:from.x+Math.sin(yaw+offset)*1.7,z:from.z+Math.cos(yaw+offset)*1.7};
+      // Zone changes are voluntary doorway crossings, never scripted throws.
+      const nearDoor=game.maze.cornDoors.some(d=>distance(d,p)<1.2||distance(d,from)<.5);
+      if(!nearDoor&&sweptClear(game.maze,from,p,game.player.radius,blocks))return {anchor:{id:game.player.zone==='field'?'open-field':null,pocket:p},route:[from,p],length:1.7,doors:[]};
+    }
+    return null;
+  }
   const from=point(game.player),r=game.player.radius,w=game.maze.cornWorld,start=cornNode(w,from),owner=w.owner[start],candidates=[];
   const owners=new Set([owner,...w.doors.filter(d=>w.owner[d.corridorNode]===owner).map(d=>d.stage)]);
   for(let z=Math.floor((from.z-3.2)/w.size);z<=Math.floor((from.z+3.2)/w.size);z++)for(let x=Math.floor((from.x-3.2)/w.size);x<=Math.floor((from.x+3.2)/w.size);x++){
@@ -65,7 +75,7 @@ export function beginTackle(game,blocks=[]){
   game.interaction={id:++game.interactionSerial,phase:'tackle',startedAt:game.elapsed,
     phaseStartedAt:game.elapsed,until:game.elapsed+C.grapple.tackleSeconds,
     presses:0,targetPresses:C.grapple.targetPresses,landing,origin:point(p),yaw:p.yaw,
-    enemyOrigin:enemyAt,enemyContact:contact};
+    enemyOrigin:enemyAt,enemyContact:contact,enemyId:game.enemy.id};
   for(const index of landing.doors)openDoor(game,game.maze.cornDoors[index],'player');
   game.metrics.hitsTaken++;
   transition(game,'tackle','close_contact');

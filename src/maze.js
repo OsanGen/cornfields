@@ -1,5 +1,6 @@
 import {buildCornWorld,cornNode,cornPath,cornOccupy,cornSight,cornNeighbors} from './corn-world.js';
 import {installSurvivalLayout} from './corn-layout.js';
+import {installCorridorLayout} from './corridor-layout.js';
 export const CELL = 2.35;
 export const WIDTH = 33;
 export const HEIGHT = 35;
@@ -25,7 +26,7 @@ const SIDE_PATHS = [
   [[19,23],[19,25],[15,25],[15,23]],
 ];
 
-export function createMaze({survival=false}={}) {
+export function createMaze({survival=false,corridors=false}={}) {
   const grid = Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(1));
   const carve = (points) => {
     for (let i = 1; i < points.length; i++) {
@@ -79,7 +80,7 @@ export function createMaze({survival=false}={}) {
     const owner=maze.cornWorld.owner[i];
     if(!maze.cornRegions.has(owner))maze.cornRegions.set(owner,{id:`corn-region-${owner}`,stage:owner,walkable:true});
   }
-  return survival?installSurvivalLayout(maze):maze;
+  return corridors?installCorridorLayout(maze):survival?installSurvivalLayout(maze):maze;
 }
 
 export function inCornBay(zone,x,z,r=0){
@@ -89,6 +90,7 @@ export function inCornBay(zone,x,z,r=0){
   return along>=-.7+r&&along<=2.05-r&&Math.abs(across)<=.78-r;
 }
 export function cornZoneAt(maze,p){
+  if(maze.cornWorld.openField)return {id:'open-field',stage:0,walkable:true};
   if(maze.cornWorld){const id=cornNode(maze.cornWorld,p);return maze.cornWorld.corn[id]?maze.cornRegions.get(maze.cornWorld.owner[id]):null;}
   if(!isWall(maze,cellOf(p).x,cellOf(p).z))return null;
   return maze.landingZoneCells?.get(key(cellOf(p).x,cellOf(p).z))?.find(zone=>inCornBay(zone,p.x,p.z))||null;
@@ -154,5 +156,6 @@ export function lineOfSight(maze,a,b,blocks=[]) {
 
 export function navigationNeighbors(maze,p,blocks=[]){
   const w=maze.cornWorld;
+  if(w.openField)return [[3,0],[-3,0],[0,3],[0,-3]].map(([x,z])=>({x:p.x+x,z:p.z+z})).filter(q=>cornOccupy(w,q.x,q.z,.25,blocks));
   return cornNeighbors(w,cornNode(w,p),blocks,true).map(id=>({x:(id%w.width+.5)*w.size,z:(Math.floor(id/w.width)+.5)*w.size}));
 }

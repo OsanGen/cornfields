@@ -11,6 +11,7 @@ export function installDebugHooks(app, window, maze, parameters) {
       anchors: () => structuredClone(maze.hideAnchors),
       route: app.route,
       survival:app.survivalLayout,
+      corridors:app.corridorLayout,
       puddles: app.weatherSurfaces,
       doors:()=>structuredClone(maze.cornDoors),
       fixture:app.fixture,

@@ -1,5 +1,12 @@
 # Updating Cornfield
 
+The production corridor/field update is described in CORRIDOR_FIELD_UPDATE.md.
+`corridor-layout.js` owns wide wooden paths and protected recycling;
+`corridor-run.js` owns the hidden corridor-only clock, zone transitions, field
+pressure and per-enemy dispatch; `corridor-view.js` owns their distinct views.
+The original `corn-survival` modules below remain historical test fixtures.
+Normal startup selects `createMaze({corridors:true})`.
+
 The opening is a separate presentation controller in `intro.js`, driven by the existing `app.js` frame loop. `intro-visuals.js` owns a small scene/camera and composer, borrowing the renderer and ready corn geometry through `scene.introCorn`. It disposes only owned staging/effect resources. `main.js` starts the shell immediately while `view.ready` resolves; entry is gated on core readiness. The timeline and all gameplay ticks are separate, including test stepping.
 
 `FieldAudio.prepare()` creates/resumes the shared context without starting game loops. Intro cues use a separate gain and source set. `startGameplay()` activates game ambience once; the legacy `unlock()` remains prepare plus startGameplay. Intro entry requests pointer lock before awaiting anything and starts the simulation only after capture succeeds. Retrying capture leaves the ready title and simulation unchanged.

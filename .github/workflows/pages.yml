@@ -2,6 +2,11 @@ name: Publish playtest to GitHub Pages
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish after verification (false builds and captures evidence only)
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -13,6 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,10 +29,30 @@ jobs:
       - run: npm test
       - run: npm run check
       - run: npm run build
+      - name: Install isolated browser verifier
+        run: |
+          npm install --prefix "$RUNNER_TEMP/corn-browser" --no-save --package-lock=false playwright@1.58.2
+          "$RUNNER_TEMP/corn-browser/node_modules/.bin/playwright" install --with-deps chromium
+          ln -s "$RUNNER_TEMP/corn-browser/node_modules/playwright" node_modules/playwright
+      - name: Verify corridor and field in desktop and touch browsers
+        run: node tests/corridor-field-browser.mjs
+      - name: Run shared game client
+        run: |
+          CORNFIELD_BASE_PATH=/cornfields/ CORNFIELD_SESSION_SECONDS=90 node scripts/preview-dist.mjs &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          node scripts/verification/web-game-client.mjs --url 'http://127.0.0.1:4180/cornfields/?intro=off' --click-selector '#start-btn' --actions-json '{"steps":[{"buttons":[],"frames":5},{"buttons":["up"],"frames":30}]}' --iterations 1 --screenshot-dir output/corridor-field/client
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: corridor-field-verification
+          path: output/corridor-field/
+          retention-days: 7
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
   deploy:
+    if: inputs.publish
     needs: build
     runs-on: ubuntu-latest
     permissions:

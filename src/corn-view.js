@@ -35,5 +35,5 @@ export function createCornView(scene,maze){
     if(changed)for(const mesh of [leaf,rails,handles])mesh.instanceMatrix.needsUpdate=true;
   }
   update();
-  return {update,setMaterials(materials){for(const key of ['map','normalMap','roughnessMap'])wood[key]=materials.wood[key];wood.needsUpdate=true;},stats:{doors:doors.length,structuralExclusions:w.exclusions.length,cornNodes:w.corn.reduce((a,b)=>a+b,0)}};
+  return {update,setVisible(value){group.visible=value;},setMaterials(materials){for(const key of ['map','normalMap','roughnessMap'])wood[key]=materials.wood[key];wood.needsUpdate=true;},stats:{doors:doors.length,structuralExclusions:w.exclusions.length,cornNodes:w.corn.reduce((a,b)=>a+b,0)}};
 }

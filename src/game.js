@@ -7,6 +7,8 @@ import { createEnemy, updateZombie, checkpointDisengage } from './zombie-ai.js';
 import { updateDirector, updateFeedback } from './threat-director.js';
 import {interactionLocked,updateInteraction} from './grapple.js';
 import {cloneSurvivalMaze} from './corn-layout.js';
+import {cloneCorridorMaze} from './corridor-layout.js';
+import {initializeCorridorRun,advanceCorridorRun,corridorMovement,updateCorridorEnemies,activeEnemies,withEnemy} from './corridor-run.js';
 import {createCornSurvival,initializeCornSurvival,advanceCornSurvival,survivalLocomotion,finishCornSurvival,survivalSnapshot} from './corn-survival.js';
 let nextRunId=0;
 
@@ -77,7 +79,7 @@ function createMetrics() {
 
 /** Every run owns fresh mutable state; the authored maze is shared read-only. */
 export function createGame(maze) {
-  maze=cloneSurvivalMaze(maze);
+  maze=cloneCorridorMaze(cloneSurvivalMaze(maze));
   const game={
     maze,
     cornSurvival:createCornSurvival(maze),
@@ -129,6 +131,7 @@ export function createGame(maze) {
     metrics: createMetrics(),
   };
   initializeCornSurvival(game);
+  initializeCorridorRun(game);
   return game;
 }
 
@@ -153,6 +156,7 @@ export function blocksFor(game) {
 }
 
 export function nearDoor(game) {
+  if(game.corridorRun)return false;
   return (!game.cornSurvival||game.cornSurvival.complete)&&!game.doorOpen &&
     distance(game.player, centerOf(game.maze.door.x, game.maze.door.z)) < 3.2;
 }
@@ -257,6 +261,7 @@ function resolvePlayerInput(game, dt, input) {
   }
   const moved = distance(player, before);
   survivalLocomotion(game,moved);
+  corridorMovement(game,before,moved);
   updateCornPresence(game,input,wasInCorn);
   player.moving = moved > .0001;
   player.sprinting = false;
@@ -266,6 +271,10 @@ function resolvePlayerInput(game, dt, input) {
 
 function updateProgress(game, blocks) {
   const player = game.player;
+  if(game.corridorRun){
+    if(player.zone==='corridor'&&game.entered)checkpoints(game,blocks);
+    return;
+  }
   if(game.cornSurvival&&!game.cornSurvival.complete)return;
   const cell = cellOf(player);
   if (game.doorOpen && cell.z < 30 && !game.entered) {
@@ -303,6 +312,7 @@ function tick(game, dt, input) {
   game.doorAmount = Math.min(1, game.doorAmount + (game.doorOpen ? dt * 1.2 : 0));
   advanceDoors(game,dt);blocksFor(game);
   advanceCornSurvival(game,dt);
+  advanceCorridorRun(game,dt);
 
   const stabTimes=game.pendingStabs.filter(at=>at<=game.elapsed+1e-9);
   game.pendingStabs=game.pendingStabs.filter(at=>at>game.elapsed+1e-9);
@@ -313,7 +323,8 @@ function tick(game, dt, input) {
     return;
   }
 
-  const blocks = resolvePlayerInput(game, dt, input);
+  resolvePlayerInput(game, dt, input);
+  const blocks=blocksFor(game);
   game.footstepTimer -= dt;
   if (player.moving && game.footstepTimer <= 0) {
     addEvidence(game, 'footsteps', player, C.hearing.footstepRadius, 2);
@@ -323,21 +334,25 @@ function tick(game, dt, input) {
   updateProgress(game, blocks);
 
   // Daughter contact wins over an enemy attack scheduled for this same substep.
-  if ((!game.cornSurvival||game.cornSurvival.complete)&&game.entered && !player.hidden && distance(player, game.maze.daughter) < C.progress.daughterRadius) {
+  if ((!game.corridorRun||(game.corridorRun.ready&&player.zone==='corridor'))&&(!game.cornSurvival||game.cornSurvival.complete)&&game.entered && !player.hidden && distance(player, game.maze.daughter) < C.progress.daughterRadius) {
+    if(game.corridorRun)game.corridorRun.complete=true;
     win(game);
     return;
   }
   updateDirector(game, dt);
   // Recovery records legitimate perception, but cannot navigate or attack.
   if(game.interaction?.phase==='recovery'){
-    updateZombie(game,dt,blocks);
+    updateCorridorEnemies(game,dt,blocks);
     updateInteraction(game,dt);
     updateFeedback(game,dt);
     finishCornSurvival(game);
     return;
   }
-  updateZombie(game, dt, blocks);
-  attackPlayer(game, blocks);
+  updateCorridorEnemies(game, dt, blocks);
+  for(const enemy of activeEnemies(game)){
+    withEnemy(game,enemy,()=>attackPlayer(game,blocks));
+    if(game.interaction){game.enemy=enemy;break;}
+  }
   updateFeedback(game, dt);
   game.metrics.chaseSeconds += ['chase', 'rage_chase', 'corn_rush'].includes(game.enemy.state) ? dt : 0;
   game.metrics.proximitySeconds[game.threat.proximityTier] += dt;
@@ -378,6 +393,8 @@ export function gameSnapshot(game,{diagnostic=false}={}) {
     coordinates: 'meters; +x east, +z south; yaw 0 looks north (-z)',
     mode: game.mode,
     ...(diagnostic?{cornSurvival:survivalSnapshot(game)}:{}),
+    ...(game.corridorRun?{zone:player.zone,enemies:activeEnemies(game).map(e=>({id:e.id,x:e.x,z:e.z,state:e.state,visible:e.visible})),
+      ...(diagnostic?{corridorRun:game.corridorRun,fieldTrip:game.fieldTrip}:{} )}:{}),
     interaction:game.interaction,skyRedUntil:game.skyRedUntil,
     elapsed: +game.elapsed.toFixed(2),
     player: {

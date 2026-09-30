@@ -199,5 +199,5 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
       }
     }
   }
-  update();return {update,stats,materials:{wood,wire:wireMaterial},introCorn:[0,1,2].map(i=>({geometry:kit[`corn_near_${i}`].geometry,material:kit[`corn_near_${i}`].material}))};
+  update();return {update,setVisible(value){group.visible=value;},stats,materials:{wood,wire:wireMaterial},introCorn:[0,1,2].map(i=>({geometry:kit[`corn_near_${i}`].geometry,material:kit[`corn_near_${i}`].material}))};
 }

@@ -87,11 +87,12 @@ export function senseZombie(game, blocks) {
   let heard = null;
 
   for (const event of game.evidence) {
+    if(game.enemies&&event.zone&&event.zone!==enemy.zone)continue;
     if (game.elapsed - event.at > 1 || distance(enemy, event.position) > event.radius) continue;
     if(event.type==='rustle'&&!cornPath(game.maze.cornWorld,enemy,event.position,blocks,{allowDoors:true,sound:true,maxDistance:event.radius}).length)continue;
     if (!heard || event.priority >= heard.priority) heard = event;
   }
-  game.evidence.length = 0;
+  if(!game.enemies)game.evidence.length = 0;
 
   if (seen) {
     const previous = memory.lastSeen;
@@ -218,6 +219,11 @@ function move(game, dt, target, speed, blocks) {
 export function predictionCandidates(game, blocks) {
   const enemy = game.enemy;
   const origin = enemy.memory.lastKnown || enemy;
+  if(game.maze.cornWorld.openField)return navigationNeighbors(game.maze,origin,blocks);
+  if(game.corridorRun){
+    const points=game.maze.corridorLayout.sections.map(s=>s.anchor).filter(p=>cornPath(game.maze.cornWorld,enemy,p,blocks,{allowDoors:true}).length);
+    return points.length?points.sort((a,b)=>distance(origin,a)-distance(origin,b)).slice(0,C.zombie.maxCandidates):[point(enemy)];
+  }
   if(game.cornSurvival&&!game.cornSurvival.complete){
     const candidates=game.maze.survivalLayout.sections.map(s=>s.anchor)
       .filter(p=>cornPath(game.maze.cornWorld,enemy,p,blocks,{allowDoors:true}).length)

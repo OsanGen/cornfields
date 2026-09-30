@@ -100,6 +100,7 @@ export function addEvidence(game, type, position, radius, priority, extra = {}) 
     at: game.elapsed,
     radius,
     priority,
+    ...(game.player.zone?{zone:game.player.zone}:{}),
     ...extra,
   });
   if (game.evidence.length > 32) game.evidence.shift();

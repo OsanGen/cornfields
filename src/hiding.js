@@ -7,6 +7,7 @@ export const hideAnchor=(game,id=game.player.hideAnchorId)=>game.maze.cornDoors.
 export const nearestHideAnchor=game=>game.entered?gateAt(game):null;
 
 export function seesPlayer(game,blocks,ignoreHidden=false){
+  if(game.enemies&&game.enemy.zone!==game.player.zone)return false;
   const e=game.enemy,p=game.player,d=distance(e,p),wide=['chase','rage_chase','corn_rush'].includes(e.state);
   if(p.hidden&&!ignoreHidden&&d>1.25)return false;
   const facing=d<.01?1:(-Math.sin(e.yaw)*(p.x-e.x)-Math.cos(e.yaw)*(p.z-e.z))/d;
@@ -37,5 +38,6 @@ export function updateCornPresence(game,input,alreadyNoisy=false){
 }
 
 export function localIngressVisible(game){
+  if(game.enemies&&game.enemy.zone!==game.player.zone)return false;
   return !!cornZoneAt(game.maze,game.player)&&distance(game.enemy,game.player)<1.5&&lineOfSight(game.maze,game.enemy,game.player,game.blocks||[]);
 }

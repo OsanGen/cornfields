@@ -12,6 +12,7 @@ import {installHands} from './hands.js';
 import {strugglePose,nightmareState} from './horror-presentation.js';
 import {createCornView} from './corn-view.js';
 import {createSurvivalView} from './corn-survival-view.js';
+import {createCorridorFieldView} from './corridor-view.js';
 
 function seeded(seed=719){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 const material=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
@@ -166,6 +167,10 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const visuals={mode,status:mode==='legacy'?'legacy':'loading',error:null,stats:null,
     sky:{status:skyEnabled?'loading':'off',error:null,stats:null}};
   visuals.hands=hands.stats;
+  const worldObjects=scene.children.filter(o=>o!==camera&&o!==enemy&&o!==dust&&!o.isHemisphereLight&&!o.isDirectionalLight);
+  const originalVisible=new Map(worldObjects.map(o=>[o,o.visible]));
+  const extraGroups=maze.corridorLayout?Array.from({length:3},()=>{const group=enemy.clone();scene.add(group);return group;}):[];
+  const corridorView=createCorridorFieldView(scene,maze,floor.material,{touch});visuals.corridors=corridorView.stats;
   const weatherView=weather?createWeatherView(scene,weather):null;
   const cornView=createCornView(scene,maze);visuals.corn=cornView.stats;
   const survivalView=createSurvivalView(scene,maze);
@@ -178,6 +183,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
       fieldVisuals=result;visuals.status='ready';visuals.stats=result.stats;
       cornView.setMaterials(result.materials);
       survivalView.setCorn(result.introCorn);
+      corridorView.setAssets(result.introCorn,result.materials);
       if(detailsEnabled)reuseFieldMaterials({wood,darkWood,bands:barrelBands},result.materials);
     }).catch(error=>{visuals.status='fallback';visuals.error=error.message;console.warn('Field visuals unavailable; using original scene.',error.message);});
   let nightSky=null;
@@ -189,7 +195,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   }):Promise.resolve();
   let zombie=null;
   visuals.zombie={status:'loading',error:null};
-  const zombieReady=installZombie(enemy).then(result=>{
+  const zombieReady=installZombie(enemy,extraGroups).then(result=>{
     zombie=result;visuals.zombie.status='ready';
   }).catch(error=>{visuals.zombie.status='fallback';visuals.zombie.error=error.message;console.warn('Zombie unavailable; using original enemy.',error.message);});
   visuals.details={status:detailsEnabled?'loading':'off'};
@@ -206,12 +212,13 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     const playerAt=actorPosition(g,'player'),enemyAt=actorPosition(g,'enemy');
     const q=g.interaction,locked=interactionLocked(g),inCorn=g.player.hidden||g.player.cornZoneId;
     scene.fog.density=inCorn?.30:g.cornSurvival&&!g.cornSurvival.complete&&g.player.z>84?.22:.096;pocket.visible=false;
+    if(g.corridorRun)scene.fog.density=g.player.zone==='field'?.29:.075;
     if(pocket.visible){const anchor=maze.landingZones.find(a=>a.id===g.player.cornZoneId);pocket.position.set(anchor?.pocket.x??playerAt.x,0,anchor?.pocket.z??playerAt.z);}
     gun.visible=g.mode==='playing'&&!locked;muzzle.visible=shotFlash>0;
     gun.position.set(-.035,.02,-.20+(reduced?0:gunRecoil*.32));
     if(g.mode==='menu'){
       camera.position.set(maze.spawn.x+1.9,1.66,maze.spawn.z+1.7);
-      const entrance=maze.survivalLayout?maze.cornWorld.doors[maze.survivalLayout.outer]:doorPos;
+      const entrance=maze.corridorLayout?maze.cornDoors[maze.corridorLayout.entrance]:maze.survivalLayout?maze.cornWorld.doors[maze.survivalLayout.outer]:doorPos;
       camera.lookAt(entrance.x-.25,1.7,entrance.z);flashlight.intensity=15;
     }else{
       const bob=reduced||!g.player.moving?0:Math.sin(g.steps*7)*.021;
@@ -226,10 +233,17 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
       flashlight.intensity=g.player.flashlightOn?38:0;
     }
     door.rotation.y=-g.doorAmount*1.68;
-    enemy.visible=g.enemy.visible;enemy.position.set(enemyAt.x,reduced?0:Math.sin(time*3)*.025,enemyAt.z);enemy.rotation.y=(g.enemy.yaw||0)+Math.PI;
+    enemy.visible=g.enemy.visible&&(!g.enemies||(g.enemy.active&&g.enemy.zone===g.player.zone));enemy.position.set(enemyAt.x,reduced?0:Math.sin(time*3)*.025,enemyAt.z);enemy.rotation.y=(g.enemy.yaw||0)+Math.PI;
     if(!zombie){enemy.rotation.z=g.enemy.state==='staggered'?-1.15:g.enemy.state==='flashlight_recoil'?.3:0;}
     if(!reduced)limbs.forEach((l,i)=>l.rotation.x=Math.sin(g.enemy.step*4+i*Math.PI)*.12);
     zombie?.update(g,time);
+    if(g.enemies){
+      const others=g.enemies.filter(e=>e!==g.enemy&&e.active&&e.zone===g.player.zone);
+      extraGroups.forEach((group,i)=>{const e=others[i];group.visible=!!e;if(!e)return;
+        group.position.set(e.x,0,e.z);group.rotation.set(0,(e.yaw||0)+Math.PI,0);
+        zombie?.copies?.[i]?.update({...g,enemy:e,interaction:null},time);
+      });
+    }
     knife.visible=locked&&['tackle','qte','stab'].includes(q.phase);
     if(knife.visible){
       const worldEye=zombie?.getEyeWorld?.('left',eyeTarget);
@@ -258,7 +272,15 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     for(const {ring,id}of rewardRings)ring.visible=!g.progress.activatedCheckpoints.includes(id);
     dust.position.set(camera.position.x,0,camera.position.z);dust.rotation.y=reduced?0:Math.sin(time*.018)*.1;
     dust.visible=!weather?.state.enabled;
-    hands.update(g);cornView.update(g);survivalView.update(g);fieldVisuals?.update(g);nightSky?.update(red,flash);weatherView?.update(camera,g,nightmare);renderer.render(scene,camera);
+    hands.update(g);cornView.update(g);survivalView.update(g);fieldVisuals?.update(g);nightSky?.update(red,flash);weatherView?.update(camera,g,nightmare);
+    if(g.corridorRun){
+      const field=g.player.zone==='field';
+      for(const o of worldObjects)o.visible=!field&&originalVisible.get(o);
+      for(const o of [walls,stalks,leaves,ears,straw,door,...entranceObjects,pocket])o.visible=false;
+      for(const {ring,id}of rewardRings)ring.visible=!field&&!g.progress.activatedCheckpoints.includes(id);
+      cornView.setVisible(!field);fieldVisuals?.setVisible(!field);corridorView.update(g);
+    }
+    renderer.render(scene,camera);
   }
   return {renderer,scene,camera,render,resize,ready,visuals,
     introCorn:()=>fieldVisuals?.introCorn||null,

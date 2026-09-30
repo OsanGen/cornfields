@@ -19,7 +19,9 @@ try {
     maxTouchPoints:navigator.maxTouchPoints})==='touch';
   document.body.classList.toggle('touch', touch);
   node('rotate').hidden = !touch || innerWidth >= innerHeight;
-  const maze = createMaze({survival:!(parameters.has('test')&&parameters.get('survival')==='off')});
+  const legacy=parameters.has('test')&&parameters.get('survival')==='off';
+  const previous=parameters.has('test')&&parameters.get('layout')==='survival';
+  const maze = createMaze({corridors:!legacy&&!previous,survival:previous});
   const weather = createWeather(maze, {touch, enabled: parameters.get('weather') !== 'off'});
   const view = createScene(node('scene'), maze, {touch, weather});
   const audio = new FieldAudio({weatherEnabled: weather.state.enabled});

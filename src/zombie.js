@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {optionalAsset, stripRootTravel} from './asset-safety.js';
 import {createZombiePoses} from './zombie-poses.js';
 
@@ -106,9 +107,10 @@ export function attachZombieModel(enemy, gltf) {
   };
 }
 
-export async function installZombie(enemy) {
+export async function installZombie(enemy,additional=[]) {
   const gltf = await optionalAsset(new GLTFLoader().loadAsync(
     new URL('../assets/field/zombie.glb', import.meta.url).href), 8000,
   late => disposeModel(late.scene));
-  return attachZombieModel(enemy, gltf);
+  const copies=additional.map(group=>attachZombieModel(group,{...gltf,scene:cloneSkeleton(gltf.scene)}));
+  return {...attachZombieModel(enemy,gltf),copies};
 }

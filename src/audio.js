@@ -196,6 +196,7 @@ export class FieldAudio {
     if(!this.ctx||g.mode!=='playing')return;
     if(footsteps&&g.player.moving&&!g.player.hidden&&g.steps-this.lastStep>1.55){this.lastStep=g.steps;this.sound({noise:true,duration:.16,gain:.32,filter:1100});this.sound({freq:75,end:35,duration:.13,gain:.11});}
     const player={...actorPosition(g,'player'),yaw:g.player.yaw},enemy=actorPosition(g,'enemy'),d=Math.hypot(player.x-enemy.x,player.z-enemy.z);
+    if(g.enemies&&g.enemy.zone!==g.player.zone)return;
     if(g.enemy.visible&&d<18&&g.enemy.step-this.lastEnemyStep>1.4){this.lastEnemyStep=g.enemy.step;this.sound({freq:65,end:25,duration:.23,gain:Math.max(.04,.55*(1-d/18)),pan:this.pan(enemy,player)});}
     const intensity=g.threat?.intensity||0;this.threatGain?.gain.setTargetAtTime(intensity*.18,this.ctx.currentTime,.35);
     this.pulse-=dt;if(['chase','rage_chase','corn_rush'].includes(g.enemy.state)&&this.pulse<=0){this.pulse=g.enemy.state==='chase'?.55:.4;this.sound({freq:53,end:31,duration:.22,gain:.20});this.sound({freq:48,end:26,duration:.16,gain:.13,delay:.2});}
