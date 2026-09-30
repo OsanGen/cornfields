@@ -13,7 +13,7 @@ export function createCorridorFieldView(scene,maze,floor,{touch=false}={}){
   for(const x of [-.8,.8]){const post=new THREE.Mesh(new THREE.BoxGeometry(.12,2.65,.15),wood);post.position.set(x,1.325,0);fieldGroup.add(post);}
   const lantern=new THREE.Mesh(new THREE.BoxGeometry(.16,.25,.16),new THREE.MeshStandardMaterial({color:0xf3c56d,emissive:0xe8a44e,emissiveIntensity:3}));lantern.position.set(.95,2.2,0);fieldGroup.add(lantern);
   const light=new THREE.PointLight(0xf3c56d,10,7);light.position.copy(lantern.position);fieldGroup.add(light);
-  const patchSize=12,grid=5,perPatch=touch?95:145,capacity=grid*grid*perPatch;
+  const patchSize=12,grid=3,perPatch=touch?95:145,capacity=grid*grid*perPatch;
   let plants=[],materials=null,revision=-1,runId=null,patchKey='';
   const stats={enabled:true,wallInstances:0,cornCapacity:capacity,activeZone:'corridor',extraZombieCap:3};
   function setPlants(assets){
@@ -34,14 +34,16 @@ export function createCorridorFieldView(scene,maze,floor,{touch=false}={}){
     panels.count=count;rails.count=count*2;panels.instanceMatrix.needsUpdate=true;rails.instanceMatrix.needsUpdate=true;stats.wallInstances=count;
   }
   function refreshCorn(p){
-    const cx=Math.floor(p.x/patchSize),cz=Math.floor(p.z/patchSize),next=`${cx}:${cz}`;if(next===patchKey)return;patchKey=next;
+    const cx=Math.floor(p.x/patchSize),cz=Math.floor(p.z/patchSize),next=`${Math.floor(p.x/2)}:${Math.floor(p.z/2)}`;if(next===patchKey)return;patchKey=next;
     const counts=plants.map(()=>0);
-    for(let z=cz-2;z<=cz+2;z++)for(let x=cx-2;x<=cx+2;x++){
+    for(let z=cz-1;z<=cz+1;z++)for(let x=cx-1;x<=cx+1;x++){
       let seed=(Math.imul(x,73856093)^Math.imul(z,19349663))>>>0;
       const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
       for(let i=0;i<perPatch;i++){
-        const px=(x+random())*patchSize,pz=(z+random())*patchSize;if(Math.hypot(px,pz)<1.5)continue;
-        const variant=i%plants.length;matrix.position.set(px,0,pz);matrix.rotation.set(0,random()*Math.PI*2,0);matrix.scale.setScalar(.9+random()*.3);matrix.updateMatrix();plants[variant].setMatrixAt(counts[variant]++,matrix.matrix);
+        const px=(x+random())*patchSize,pz=(z+random())*patchSize,yaw=random()*Math.PI*2,scale=.9+random()*.3;
+        // Keep placement stable while excluding geometry well beyond the fog.
+        if(Math.hypot(px,pz)<1.5||Math.hypot(px-p.x,pz-p.z)>12)continue;
+        const variant=i%plants.length;matrix.position.set(px,0,pz);matrix.rotation.set(0,yaw,0);matrix.scale.setScalar(scale);matrix.updateMatrix();plants[variant].setMatrixAt(counts[variant]++,matrix.matrix);
       }
     }
     plants.forEach((mesh,i)=>{mesh.count=counts[i];mesh.instanceMatrix.needsUpdate=true;});

@@ -363,13 +363,14 @@ export function createGameApp({
     fixture(name){
       if(game.corridorRun){
         if(name==='eligible'){Object.assign(game.corridorRun,{elapsed:180,distance:120});return;}
-        if(name==='gate'||name==='encounter'){
+        if(['gate','encounter','corridor'].includes(name)){
           const d=game.maze.cornDoors.find(d=>d.fieldEntrance);
           game.mode='playing';game.entered=true;game.corridorRun.started=true;
           const at=name==='gate'?{x:d.x,z:d.z+1.3}:game.maze.corridorLayout.sections[1].anchor;
           Object.assign(game.player,at,{yaw:0,pitch:0,flashlightOn:false,zone:'corridor'});
+          game.chapter='THE WOODEN ROWS';game.objective='FIND YOUR DAUGHTER';
           Object.assign(game.enemy,{x:at.x,z:at.z-(name==='encounter'?.7:10),state:name==='encounter'?'chase':'observe',timer:100,visible:true,zone:'corridor',target:{...at},yaw:Math.PI});
-          game.grace=name==='gate'?100:0;input.clear();clock.reset();manual=true;present();return;
+          game.grace=name==='encounter'?0:100;input.clear();clock.reset();manual=true;present();return;
         }
       }
       if(name==='eligible'&&game.cornSurvival?.state==='active_survival'){

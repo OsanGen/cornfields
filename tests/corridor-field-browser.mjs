@@ -17,10 +17,13 @@ try{
   const action=async type=>{if(touch)await page.locator(type==='interact'?'#touch-interact':'#touch-stab').tap();else await page.keyboard.press(type==='interact'?'KeyE':'Space');await page.evaluate(()=>window.advanceTime(17));};
   await page.goto(preview.url+'?test=1&intro=off',{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__test?.intro().coreReady);
   await page.bringToFront();await step(0);
+  await page.waitForFunction(()=>window.__test.diagnostics().visuals.zombie.status!=='loading');
+  assert.equal((await page.evaluate(()=>window.__test.diagnostics())).visuals.zombie.status,'ready');
   await page.locator('#start-btn')[touch?'tap':'click']();await step(0);
   assert.equal((await state()).mode,'playing');assert.equal((await page.evaluate(()=>window.__test.diagnostics())).controlMode,touch?'touch':'mouse');
   if(!touch)assert.equal(await page.evaluate(()=>document.pointerLockElement?.id),'scene');
   await shot('01-start');
+  await page.evaluate(()=>window.__test.fixture('corridor'));await step(.02,{yaw:Math.PI});await shot('01b-wide-corridors');
   await page.evaluate(()=>window.__test.fixture('gate'));await shot('02-corridor-door');
   await action('interact');await step(.5);await step(.8,{forward:1});
   assert.equal((await state()).zone,'field');await shot('03-open-field');
