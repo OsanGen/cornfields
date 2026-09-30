@@ -6,14 +6,14 @@ const output='output/corridor-field/browser';await mkdir(output,{recursive:true}
 const preview=await startPreview({port:4180,basePath:'/cornfields/',seconds:240});
 const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const report={errors:[],devices:[],method:'Real desktop/touch startup and gate actions, deterministic movement. Fixtures only position gate/QTE scenarios and arm exit eligibility.'};
-const deadline=setTimeout(()=>browser.close(),200000);
+const deadline=setTimeout(()=>browser.close(),300000);
 try{
  for(const touch of [false,true]){
-  const kind=touch?'touch':'desktop',page=await browser.newPage({viewport:touch?{width:844,height:390}:{width:1280,height:720},isMobile:touch,hasTouch:touch,deviceScaleFactor:1});
+  const kind=touch?'touch':'desktop',page=await browser.newPage({viewport:touch?{width:844,height:390}:{width:960,height:540},isMobile:touch,hasTouch:touch,deviceScaleFactor:1});
   page.setDefaultTimeout(15000);page.on('pageerror',e=>report.errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')report.errors.push(m.text());});
   const state=()=>page.evaluate(()=>window.__test.state());
   const step=(seconds,input={})=>page.evaluate(({seconds,input})=>window.__test.step(seconds,input),{seconds,input});
-  const shot=async name=>{await page.screenshot({path:`${output}/${kind}-${name}.png`});};
+  const shot=async name=>{const d=await page.evaluate(()=>window.__test.diagnostics());console.log(kind,name,JSON.stringify({drawCalls:d.drawCalls,triangles:d.triangles,mode:d.mode,zone:d.zone}));await page.screenshot({path:`${output}/${kind}-${name}.png`,timeout:30000,animations:'disabled'});};
   const action=async type=>{if(touch)await page.locator(type==='interact'?'#touch-interact':'#touch-stab').tap();else await page.keyboard.press(type==='interact'?'KeyE':'Space');await page.evaluate(()=>window.advanceTime(17));};
   await page.goto(preview.url+'?test=1&intro=off',{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__test?.intro().coreReady);
   await page.locator('#start-btn')[touch?'tap':'click']();await step(0);

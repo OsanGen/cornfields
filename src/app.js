@@ -263,7 +263,9 @@ export function createGameApp({
       if(intro.active)tickIntro(dt);
       else clock.frame(dt, step => input.read(game.player,game.elapsed+step));
     }
-    present(game.elapsed + (game.mode === 'menu' ? time / 1000 : 0));
+    // Explicit test stepping renders once per step. Repainting identical manual
+    // frames can starve software-rendered browser captures without advancing play.
+    if(!manual)present(game.elapsed + (game.mode === 'menu' ? time / 1000 : 0));
     frameId = requestFrame(frame);
   }
 

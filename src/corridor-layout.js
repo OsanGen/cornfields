@@ -62,7 +62,7 @@ export function installCorridorLayout(maze){
 }
 export function cloneCorridorMaze(maze){
   if(!maze.corridorLayout)return maze;
-  return {...maze,cornWorld:{...maze.cornWorld,walk:maze.cornWorld.walk.slice()},
+  return {...maze,cornWorld:{...maze.cornWorld,walk:maze.cornWorld.walk.slice(),owner:maze.cornWorld.owner.slice()},
     corridorLayout:{...maze.corridorLayout,sections:maze.corridorLayout.sections.map(s=>({...s,ports:[...s.ports]}))}};
 }
 export function corridorSection(maze,p){const w=maze.cornWorld;return maze.corridorLayout.sections.find(s=>p.x>=s.x*w.size&&p.x<(s.x+SIZE)*w.size&&p.z>=s.z*w.size&&p.z<(s.z+SIZE)*w.size);}

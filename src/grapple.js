@@ -19,7 +19,8 @@ export function findCornLanding(game,blocks=[]){
     for(const offset of [0,.5,-.5,1,-1,Math.PI/2,-Math.PI/2,Math.PI]){
       const p={x:from.x+Math.sin(yaw+offset)*1.7,z:from.z+Math.cos(yaw+offset)*1.7};
       // Zone changes are voluntary doorway crossings, never scripted throws.
-      const nearDoor=game.maze.cornDoors.some(d=>distance(d,p)<1.2||distance(d,from)<.5);
+      const nearDoor=game.maze.cornDoors.some(d=>distance(d,p)<1.2||
+        ((from.z-d.z)*(p.z-d.z)<=0&&Math.min(Math.abs(from.x-d.x),Math.abs(p.x-d.x))<d.width/2+.3));
       if(!nearDoor&&sweptClear(game.maze,from,p,game.player.radius,blocks))return {anchor:{id:game.player.zone==='field'?'open-field':null,pocket:p},route:[from,p],length:1.7,doors:[]};
     }
     return null;

@@ -102,7 +102,9 @@ function followAcrossDoor(g,e,dt){
   if(to){const length=distance(e,to),step=Math.min(length,dt*C.zombie.investigateSpeed),x=e.x+(to.x-e.x)/length*step,z=e.z+(to.z-e.z)/length*step;
     if(cornOccupy(maze.cornWorld,x,z,e.radius,blocks)){e.yaw=Math.atan2(e.x-x,e.z-z);e.x=x;e.z=z;e.step+=step;}}
   if(distance(e,target)>.2||g.cornDoors[d.index].amount<.96)return;
-  Object.assign(e,fromField?{x:d.x,z:d.z+1.15,zone:'corridor'}:{x:0,z:1.15,zone:'field'});
+  const arrival=fromField?{x:d.x,z:d.z+.3,zone:'corridor'}:{x:0,z:.3,zone:'field'};
+  if([g.player,...g.enemies.filter(other=>other!==e&&other.active)].some(other=>other.zone===arrival.zone&&distance(other,arrival)<e.radius+other.radius+.03))return;
+  Object.assign(e,arrival);
   e.followDoor=null;e.path=[];e.target=null;e.state='investigate';e.memory.lastKnown={x:e.x,z:e.z};e.memory.lastObservation={source:'doorway',position:{...e.memory.lastKnown},at:g.elapsed};
 }
 export function updateCorridorEnemies(g,dt,blocks){

@@ -88,3 +88,16 @@ test('a real three-minute corridor circuit qualifies and leads to the daughter',
   for(let i=0;i<1800&&g.mode==='playing';i++)walk(g.maze.daughter);
   assert.equal(g.mode,'won');assert.equal(g.progress.daughterFound,true);
 });
+test('standing beside a field door is not a tackle immunity spot',()=>{
+  const g=setup(),d=g.maze.cornDoors.find(d=>d.fieldEntrance);
+  Object.assign(g.player,{x:d.x,z:d.z+.4});Object.assign(g.enemy,{x:d.x,z:d.z+1.05,state:'chase'});g.grace=0;
+  assert.equal(beginTackle(g,blocksFor(g)),true);
+  assert.ok(g.interaction.landing.anchor.pocket.z>d.z);
+});
+test('a pursuer follows only a known open doorway and retains independent state',()=>{
+  const g=setup(),d=g.maze.cornDoors.find(d=>d.fieldEntrance),e=g.enemies[0];
+  Object.assign(e,{x:d.x,z:d.z+1.8,state:'chase'});e.memory.lastKnown={x:d.x,z:d.z+1};
+  field(g);Object.assign(g.player,{x:0,z:3});
+  updateGame(g,1.5,{});assert.equal(e.zone,'field');assert.equal(e.id,'pursuer');assert.ok(e.z>=.3);
+  assert.equal(g.enemies[1].memory.lastKnown,null);
+});

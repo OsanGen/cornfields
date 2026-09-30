@@ -33,7 +33,7 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
   if (touch) {
     text('control-summary', 'LEFT THUMB MOVE · RIGHT SIDE LOOK');
     text('device-label', 'PHONE / LANDSCAPE');
-    text('controls-help', 'Left stick: move · Drag right side: look · Buttons: fire, light, interact. Grabbed? Repeatedly tap STAB before your health runs out. Hidden? Stay completely still, including your aim.');
+    text('controls-help', 'Left stick: move · Drag right side: look · Buttons: fire, light, interact. Find your daughter in the corridors. Side doors lead to corn for hiding; going deep attracts more creatures. Grabbed? Tap STAB repeatedly. Hidden? Stay still, including your aim.');
     text('light-label', 'LIGHT');
   }
 
