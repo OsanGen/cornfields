@@ -7,6 +7,7 @@ import {fireGun} from '../src/combat.js';
 import {beginTackle} from '../src/grapple.js';
 import {addEvidence} from '../src/game-config.js';
 import {senseZombie} from '../src/zombie-ai.js';
+import {createHarness} from './helpers/browser.mjs';
 
 function setup(){const g=createGame(createMaze({corridors:true}));startGame(g);g.entered=true;g.corridorRun.started=true;Object.assign(g.player,g.maze.corridorLayout.sections[1].anchor);g.grace=1000;blocksFor(g);return g;}
 function field(g){const d=g.maze.cornDoors.find(d=>d.fieldEntrance);Object.assign(g.cornDoors[d.index],{amount:1,target:1});Object.assign(g.player,{x:d.x,z:d.z-.9});assert.equal(enterOpenField(g,d),true);blocksFor(g);return d;}
@@ -100,4 +101,10 @@ test('a pursuer follows only a known open doorway and retains independent state'
   field(g);Object.assign(g.player,{x:0,z:3});
   updateGame(g,1.5,{});assert.equal(e.zone,'field');assert.equal(e.id,'pursuer');assert.ok(e.z>=.3);
   assert.equal(g.enemies[1].memory.lastKnown,null);
+});
+test('application retry clears field enemies, trip state and corridor qualification',async()=>{
+  const h=createHarness({corridors:true,touch:true,weather:true});await h.app.enter();h.app.fixture('gate');h.app.step(.5,{interact:true});h.app.step(.8,{forward:1});
+  assert.equal(h.app.snapshot(true).zone,'field');h.app.step(11,{forward:1,yaw:Math.PI});h.app.step(18);
+  assert.ok(h.app.snapshot(true).enemies.length>0);await h.app.restart();
+  const s=h.app.snapshot(true);assert.equal(s.zone,'corridor');assert.equal(s.fieldTrip.active,false);assert.equal(s.corridorRun.elapsed,0);assert.equal(s.corridorRun.ready,false);assert.equal(s.enemies.length,1);h.app.dispose();
 });

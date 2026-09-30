@@ -4,7 +4,7 @@ import {chromium} from '../scripts/browser-runtime.mjs';
 import {startPreview} from '../scripts/preview-dist.mjs';
 const output='output/corridor-field/browser';await mkdir(output,{recursive:true});
 const preview=await startPreview({port:4180,basePath:'/cornfields/',seconds:240});
-const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+const browser=await chromium.launch({headless:process.env.CORNFIELD_HEADED!=='1',args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const report={errors:[],devices:[],method:'Real desktop/touch startup and gate actions, deterministic movement. Fixtures only position gate/QTE scenarios and arm exit eligibility.'};
 const deadline=setTimeout(()=>browser.close(),300000);
 try{
