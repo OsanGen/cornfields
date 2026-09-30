@@ -1,5 +1,9 @@
 # CORNFIELD
 
+**[Play on your phone](https://osangen.github.io/cornfields/?controls=touch)** · [Play with keyboard and mouse](https://osangen.github.io/cornfields/?controls=mouse)
+
+On a phone, turn to landscape and tap **ENTER THE FIELD**. The left joystick moves; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
+
 For future changes, start with [ARCHITECTURE.md](ARCHITECTURE.md). It maps mechanics, input, UI, AI, visuals and audio to their files and verification commands.
 
 A lean browser horror prototype for desktop and landscape phones. Find your daughter in the center of the corn maze while an unkillable stalker listens, searches and predicts your route. Two rounds buy time. Hiding only works if you enter unseen and stay completely still.

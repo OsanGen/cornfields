@@ -1,6 +1,8 @@
 # GitHub Pages playtest
 
-The approved target is the public repository `OsanGen/cornfields`, with the expected project URL `https://osangen.github.io/cornfields/`. Confirm the actual URL from the successful GitHub Pages deployment. The user authorized repository creation, the first push and publication on September 29, 2026.
+The public repository is [OsanGen/cornfields](https://github.com/OsanGen/cornfields). The live game is [osangen.github.io/cornfields](https://osangen.github.io/cornfields/). The user authorized repository creation, the first push and publication on September 29, 2026.
+
+The first release deployed commit `26952a98f6990504b6883df9f2ae51a75b7ab8d0`. [GitHub Actions run 36649088718](https://github.com/OsanGen/cornfields/actions/runs/36649088718) passed both build and deployment. Public HTML, runtime modules and assets matched the local package. The hosted game passed a complete Chromium touch-emulation run, with all art ready and no application errors or failed requests. Physical-phone frame rate and comfort remain user playtest checks.
 
 ## Prepare
 
