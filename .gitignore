@@ -1,0 +1,8 @@
+node_modules/
+.cache/
+output/
+dist/
+.DS_Store
+._*
+art/
+progress.md

@@ -1,0 +1,13 @@
+{
+  "name": "Zombie",
+  "author": "Pixelhouse",
+  "license": "CC-BY-3.0",
+  "source": "https://opengameart.org/content/zombie",
+  "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+  "download": "https://opengameart.org/sites/default/files/zombie.zip",
+  "sourceSha256": "062733d16d1ac3146fd82de55ffadb71ab09fcad119c2f8002edae50b9d2a880",
+  "changes": "Blender conversion, desaturated sickly texture grade, 2K color and 1K normal, walk animation",
+  "triangles": 3573,
+  "bytes": 1251972,
+  "sha256": "6296c3f586e5695b0f3ddd52b3c1da135e56356a984a2b3896d3ab709b70ef74"
+}

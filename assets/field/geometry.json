@@ -1,0 +1,49 @@
+{
+  "blender": "5.2.1 LTS",
+  "objects": {
+    "corn_near_0": {
+      "triangles": 398,
+      "vertices": 359
+    },
+    "corn_far_0": {
+      "triangles": 132,
+      "vertices": 136
+    },
+    "corn_near_1": {
+      "triangles": 398,
+      "vertices": 359
+    },
+    "corn_far_1": {
+      "triangles": 132,
+      "vertices": 136
+    },
+    "corn_near_2": {
+      "triangles": 398,
+      "vertices": 359
+    },
+    "corn_far_2": {
+      "triangles": 132,
+      "vertices": 136
+    },
+    "litter_0": {
+      "triangles": 20,
+      "vertices": 18
+    },
+    "litter_1": {
+      "triangles": 20,
+      "vertices": 18
+    },
+    "entrance_door": {
+      "triangles": 440,
+      "vertices": 240
+    },
+    "entrance_frame": {
+      "triangles": 176,
+      "vertices": 96
+    },
+    "entrance_hardware": {
+      "triangles": 396,
+      "vertices": 216
+    }
+  }
+}

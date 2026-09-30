@@ -1,0 +1,41 @@
+{
+  "licenseUrl": "https://polyhaven.com/license",
+  "files": [
+    {
+      "file": "hessian_380_diff_1k.jpg",
+      "bytes": 944914,
+      "sha256": "5727302df3a9c845e6320ff186ac13fc7d0f1ffcd6fda71667e808e09379fe6f",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/hessian_380/hessian_380_diff_1k.jpg",
+      "source": "https://polyhaven.com/a/hessian_380",
+      "author": "Rico Cilliers (processing), colormass (photography)",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "hessian_380_nor_gl_1k.jpg",
+      "bytes": 1076074,
+      "sha256": "3994fd74148cb413892edd08155976497b3e7e15a403a182f07325a6b1e7be1a",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/hessian_380/hessian_380_nor_gl_1k.jpg",
+      "source": "https://polyhaven.com/a/hessian_380",
+      "author": "Rico Cilliers (processing), colormass (photography)",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "blue_metal_plate_diff_1k.jpg",
+      "bytes": 395923,
+      "sha256": "a0162bffce47d4a35613a12af22571b28c18412dc5805cbb69eac343554ef750",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_diff_1k.jpg",
+      "source": "https://polyhaven.com/a/blue_metal_plate",
+      "author": "Rob Tuytel",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "blue_metal_plate_rough_1k.jpg",
+      "bytes": 402450,
+      "sha256": "37168cf57144db28dd0743dab47fbebc09147fac919d5e2b5610b069c0b13a46",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/blue_metal_plate/blue_metal_plate_rough_1k.jpg",
+      "source": "https://polyhaven.com/a/blue_metal_plate",
+      "author": "Rob Tuytel",
+      "license": "CC0-1.0"
+    }
+  ]
+}

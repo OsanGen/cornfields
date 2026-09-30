@@ -1,0 +1,30 @@
+{
+  "asset": "Solitude Night",
+  "author": "Andreas Mischok",
+  "license": "CC0-1.0",
+  "source": "https://polyhaven.com/a/solitude_night",
+  "licenseUrl": "https://polyhaven.com/license",
+  "downloadUrl": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/solitude_night_2k.hdr",
+  "sourceFile": "art/reference/solitude_night_2k.hdr",
+  "sourceSha256": "8dbd0abf5e9fbe19ecf0d6a1c461754a1b63713d96a0b99375dc56d7077749bb",
+  "generator": "scripts/build-night-sky.py",
+  "generatorSha256": "f0df060265af79e11ab0e270d0681d0a383118f079f9a4435302c5f2e0cff400",
+  "blenderVersion": "5.2.1 LTS",
+  "outputFile": "assets/field/night-sky.jpg",
+  "outputSha256": "b1a9c3b603e0519fad0db6ae9fe292f53d7a2ceb3c4ae93a0f6f61a465c99c3a",
+  "bytes": 76936,
+  "width": 2048,
+  "height": 1024,
+  "horizonMaskDegrees": [
+    16,
+    33
+  ],
+  "retouchedSilhouettes": [
+    "building",
+    "tree",
+    "sapling"
+  ],
+  "referenceLuminance": 0.07064227759838104,
+  "exposureMultiplier": 1.2032454627701303,
+  "runtime": "One static unlit sphere; existing renderer tone mapping; no environment lighting"
+}

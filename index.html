@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101713">
+  <title>CORNFIELD · Find your daughter</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23101713'/%3E%3Cpath d='M20 35V5M20 15L10 8M20 22L30 12M20 28L10 20' stroke='%23c3c598' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./src/style.css">
+  <script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <main id="game" aria-label="Cornfield first-person horror game">
+    <canvas id="scene" aria-label="Three-dimensional corn maze"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div id="danger" aria-hidden="true"></div>
+    <header class="masthead"><span class="brand"><span class="brand-mark">╱╱╱</span> FIELD STUDY <span class="muted">/ 001</span></span><span class="edition">A SHORT HORROR EXPERIENCE</span></header>
+    <section id="menu" class="panel">
+      <div class="intro">
+        <p class="eyebrow"><span class="status-dot"></span> SOMETHING IS IN THE ROWS</p>
+        <h1>CORN<br>FIELD<span class="title-period">.</span></h1>
+        <p class="intro-copy">Your daughter is somewhere in the middle.<br>Something else is listening.</p>
+        <button id="start-btn" class="primary">ENTER THE FIELD <span>↗</span></button>
+        <p id="loading" class="small-note">Loading the field...</p>
+        <p class="small-note">Zombie model: <a href="https://opengameart.org/content/zombie" target="_blank" rel="noopener noreferrer" style="color:inherit">Pixelhouse</a> · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer" style="color:inherit">CC BY 3.0</a> · modified in Blender</p>
+      </div>
+      <div class="field-note"><span class="note-number">01 /</span><p>2 rounds. They only buy time.<br>Hide unseen. Stay completely still.<br>Light makes it angry.</p><span class="note-rule"></span><p class="muted">Two landmarks restore health and ammo.<br>Find her. End the nightmare.</p></div>
+      <footer class="menu-footer"><span>HEADPHONES RECOMMENDED</span><span id="control-summary">WASD <i>MOVE</i> &nbsp; CLICK <i>FIRE</i> &nbsp; F <i>LIGHT</i> &nbsp; E <i>INTERACT</i></span><span id="device-label">DESKTOP / KEYBOARD + MOUSE</span></footer>
+    </section>
+    <div id="hud" hidden>
+      <div class="objective"><span id="chapter">THE THRESHOLD</span><p id="objective">Open the CORNFIELD door</p></div>
+      <span class="crosshair" aria-hidden="true"></span>
+      <div id="prompt" hidden><kbd>E</kbd><span id="prompt-copy">OPEN DOOR</span></div>
+      <div class="survival-hud"><div id="health-meter"><span>HEALTH</span><strong id="health">100</strong><i></i></div><div><span>ROUNDS</span><strong id="ammo">2</strong></div><div><span id="light-label">LIGHT / F</span><strong id="flashlight-state">ON</strong></div></div>
+      <p id="hide-status" hidden>DO NOT MOVE. IT CAN HEAR YOU.</p>
+      <div id="threat-card" hidden aria-live="off"></div>
+      <p id="caption" role="status" aria-live="polite"></p>
+      <div class="hud-footer"><span id="landmark">TRUST THE LANDMARKS</span><span>CLICK <i>FIRE</i> &nbsp; F <i>LIGHT</i> &nbsp; E <i>HIDE / EXIT</i> &nbsp; ESC <i>PAUSE</i></span></div>
+    </div>
+    <div id="touch-controls" hidden aria-label="Touch controls">
+      <div id="look-zone" aria-label="Drag to look"><span>DRAG TO LOOK</span></div>
+      <div id="move-stick" aria-label="Movement joystick"><span id="move-knob"></span><span class="stick-label">MOVE</span></div>
+      <button id="touch-fire" class="touch-button" aria-label="Fire one round">FIRE</button>
+      <button id="touch-interact" class="touch-button" hidden>INTERACT</button>
+      <button id="touch-light" class="touch-button" aria-label="Toggle flashlight" aria-pressed="true">LIGHT</button>
+      <button id="touch-pause" class="touch-button" aria-label="Pause game">Ⅱ</button>
+    </div>
+    <section id="pause" class="modal" hidden>
+      <p class="eyebrow">A MOMENT BETWEEN THE ROWS</p><h2>Hold your breath.</h2><p>The field is paused.</p>
+      <button id="resume-btn" class="primary">CONTINUE <span>↗</span></button>
+      <label class="volume">Sound <input id="volume" aria-label="Sound volume" type="range" min="0" max="100" value="55"></label>
+      <label class="check"><input id="motion" type="checkbox"> Reduce camera motion and flicker</label>
+      <p id="controls-help" class="controls">WASD move · Mouse look · Click fire · E interact / hide / exit<br>F flashlight · Esc pause · M mute<br>Hidden? Any movement or mouse look gives you away.</p>
+      <button id="fullscreen-btn" class="text-button">TOGGLE FULLSCREEN</button>
+      <button id="restart-btn" class="text-button">START OVER</button>
+    </section>
+    <section id="result" class="modal" hidden>
+      <p id="result-label" class="eyebrow">THE FIELD REMEMBERS</p><h2 id="result-title">You were found.</h2><p id="result-copy">Listen for footsteps. Break its line of sight. Run.</p>
+      <button id="retry-btn" class="primary">TRY AGAIN <span>↗</span></button>
+      <p id="result-time" class="small-note"></p>
+    </section>
+    <section id="rotate" class="modal" hidden><p class="eyebrow">CORNFIELD / TOUCH CONTROLS</p><h2>Turn your phone.</h2><p>Play in landscape.<br>Left thumb moves. Drag the right side to look.</p></section>
+    <section id="error" class="modal" hidden><p class="eyebrow">UNABLE TO ENTER</p><h2>The field could not load.</h2><p id="error-copy">Reload in a browser with WebGL enabled.</p></section>
+    <pre id="debug" hidden></pre>
+  </main>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

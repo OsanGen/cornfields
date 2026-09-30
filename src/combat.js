@@ -1,0 +1,63 @@
+import { lineOfSight } from './maze.js';
+import { GAME_CONFIG as C, distance, addEvidence, emitEvent } from './game-config.js';
+import { actorPosition, localIngressVisible } from './hiding.js';
+import { transition } from './enemy-state.js';
+
+/** Deterministic aim capsule; animated bones never decide whether a shot lands. */
+export function shotHits(game, blocks) {
+  const player = game.player;
+  const enemy = game.enemy;
+  const from = actorPosition(game, 'player');
+  const to = actorPosition(game, 'enemy');
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  if (!enemy.visible || distance(from, to) > C.gun.maxRange) return false;
+  const projection = dx * -Math.sin(player.yaw) + dz * -Math.cos(player.yaw);
+  const lateral = Math.abs(dx * Math.cos(player.yaw) - dz * Math.sin(player.yaw));
+  const height = C.player.eyeHeight + Math.tan(player.pitch) * projection;
+  if (projection < 0 || lateral > C.gun.hitRadius ||
+      Math.abs(height - C.gun.targetHeight) > C.gun.targetHalfHeight) return false;
+  return localIngressVisible(game) || (!player.hidden && lineOfSight(game.maze, from, to, blocks));
+}
+
+export function fireGun(game, blocks) {
+  const player = game.player;
+  if (player.shotCooldown > 0) return false;
+  if (player.ammo <= 0) {
+    emitEvent(game, 'empty');
+    player.shotCooldown = .2;
+    return false;
+  }
+  player.ammo--;
+  player.shotCooldown = C.player.shotCooldown;
+  player.muzzleFlash = C.gun.muzzleFlashSeconds;
+  game.metrics.shotsFired++;
+  addEvidence(game, 'gunshot', actorPosition(game, 'player'), C.hearing.gunshotRadius, 4,
+    player.hidden ? { anchorId: player.hideAnchorId } : {});
+  emitEvent(game, 'shot', '', actorPosition(game, 'player'));
+  if (!shotHits(game, blocks)) return false;
+
+  transition(game, 'staggered', 'shot_hit',
+    C.zombie.staggerSecondsByTier[game.progress.escalationTier], { refresh: true });
+  game.metrics.shotsHit++;
+  return true;
+}
+
+export function attackPlayer(game, blocks) {
+  const player = game.player;
+  const enemy = game.enemy;
+  if (game.grace > 0 || player.damageCooldown > 0 || enemy.attackCooldown > 0 ||
+      !['chase', 'rage_chase', 'corn_rush'].includes(enemy.state)) return false;
+  const from = actorPosition(game, 'enemy');
+  const to = actorPosition(game, 'player');
+  if (distance(from, to) > C.zombie.attackRange) return false;
+  if (player.hidden ? !localIngressVisible(game) : !lineOfSight(game.maze, from, to, blocks)) return false;
+
+  player.health = Math.max(0, player.health - C.zombie.attackDamage);
+  player.damageCooldown = C.zombie.attackCooldown;
+  enemy.attackCooldown = C.zombie.attackCooldown;
+  game.metrics.damageTaken += C.zombie.attackDamage;
+  game.metrics.hitsTaken++;
+  emitEvent(game, 'damage', 'KEEP MOVING.', from);
+  return true;
+}
