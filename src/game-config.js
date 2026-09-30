@@ -1,4 +1,6 @@
 export const GAME_CONFIG = {
+  grapple:{targetPresses:8,inputReadyGrace:.2,fullHealthSeconds:3,tackleSeconds:.3,
+    stabSeconds:.2,throwSeconds:.5,recoverySeconds:10,redSkySeconds:3,retackleGrace:1},
   player: {
     moveSpeed: 3.8,
     maxHealth: 100,
@@ -17,8 +19,6 @@ export const GAME_CONFIG = {
   },
   zombie: {
     attackRange: .82,
-    attackDamage: 34,
-    attackCooldown: .8,
     stalkSpeed: 2.15,
     investigateSpeed: 2.65,
     chaseSpeedByTier: [3.6, 3.85, 4.05],
@@ -71,7 +71,7 @@ export const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 /** Presentation events are drained by the runtime after each authoritative tick. */
 export function emitEvent(game, type, text = '', position = null, extra = {}) {
-  game.events.push({ type, text, position, ...extra });
+  game.events.push({ type, text, position,...extra,runId:game.runId,id:++game.eventId,at:game.elapsed });
   if (game.events.length > 128) game.events.splice(0, game.events.length - 128);
   if (text) {
     game.caption = text;

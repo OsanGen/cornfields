@@ -6,6 +6,7 @@ import {installZombie} from './zombie.js';
 import {installPropDetails,reuseFieldMaterials,tilePropUV} from './prop-details.js';
 import {actorPosition} from './hiding.js';
 import {GAME_CONFIG} from './game-config.js';
+import {interactionLocked} from './grapple.js';
 
 function seeded(seed=719){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 const material=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
@@ -15,6 +16,7 @@ export function createScene(canvas,maze,{touch=false}={}){
   renderer.setPixelRatio(Math.min(devicePixelRatio,touch?1:1.5));renderer.setSize(innerWidth,innerHeight,false);
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;
   const scene=new THREE.Scene();scene.background=new THREE.Color(0x111d19);scene.fog=new THREE.FogExp2(0x111d19,.096);
+  const baseBackground=scene.background.clone(),redBackground=new THREE.Color(0x631d18);
   const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.065,90);camera.rotation.order='YXZ';scene.add(camera);
   scene.add(new THREE.HemisphereLight(0xabb9aa,0x4c4329,1.35));
   const moon=new THREE.DirectionalLight(0xadc1b1,1.4);moon.position.set(-30,50,10);scene.add(moon);
@@ -35,7 +37,8 @@ export function createScene(canvas,maze,{touch=false}={}){
   let si=0,li=0;
   wallCells.forEach((c,i)=>{
     const p=centerOf(c.x,c.z),height=2.65+random()*.28;
-    dummy.position.set(p.x,height/2,p.z);dummy.rotation.set(0,0,0);dummy.scale.set(CELL,height,CELL);dummy.updateMatrix();walls.setMatrixAt(i,dummy.matrix);walls.setColorAt(i,new THREE.Color().setHSL(.18+random()*.05,.20,.17+random()*.07));
+    const bay=maze.landingZoneCells?.has(`${c.x},${c.z}`);
+    dummy.position.set(p.x,height/2,p.z);dummy.rotation.set(0,0,0);dummy.scale.set(bay?0:CELL,height,CELL);dummy.updateMatrix();walls.setMatrixAt(i,dummy.matrix);walls.setColorAt(i,new THREE.Color().setHSL(.18+random()*.05,.20,.17+random()*.07));
     for(let j=0;j<7;j++){
       const x=p.x+(random()-.5)*CELL,z=p.z+(random()-.5)*CELL,h=2.9+random()*.6;
       dummy.position.set(x,h/2,z);dummy.rotation.set((random()-.5)*.08,0,(random()-.5)*.08);dummy.scale.set(1,h,1);dummy.updateMatrix();stalks.setMatrixAt(si,dummy.matrix);
@@ -119,6 +122,16 @@ export function createScene(canvas,maze,{touch=false}={}){
   box(.025,.016,.025,metal,.20,-.095,-.50,gun);
   const muzzle=new THREE.Mesh(new THREE.SphereGeometry(.06,5,3),new THREE.MeshBasicMaterial({color:0xffd89b}));muzzle.position.set(.20,-.14,-.55);gun.add(muzzle);muzzle.visible=false;
   let shotFlash=0,gunRecoil=0,lastRenderTime=0;
+  const knife=new THREE.Group();camera.add(knife);knife.visible=false;
+  const handMaterial=material(0x9b7861,.9);
+  box(.085,.095,.13,handMaterial,0,-.025,.08,knife);
+  box(.065,.065,.20,darkWood,0,0,.025,knife);
+  box(.12,.025,.025,gunMetal,0,0,-.08,knife);
+  const blade=new THREE.Mesh(new THREE.ConeGeometry(.027,.29,4),gunMetal);
+  blade.rotation.x=-Math.PI/2;blade.scale.x=.48;blade.position.z=-.225;knife.add(blade);
+  const forearm=box(.085,.09,.34,handMaterial,.02,-.055,.29,knife);forearm.rotation.x=-.12;
+  const bracingHand=box(.09,.085,.14,handMaterial,-.065,-.055,.08,knife);
+  const knifeStart=new THREE.Vector3(.18,-.23,-.40),eyeTarget=new THREE.Vector3(),knifeEnd=new THREE.Vector3(),knifeDirection=new THREE.Vector3(),knifeForward=new THREE.Vector3(0,0,-1);
   // One reusable local foliage pocket. All anchors share its geometry/materials.
   const pocket=new THREE.Group();scene.add(pocket);pocket.visible=false;
   const pocketStalks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.015,.03,2.8,4),material(0x828651),100);
@@ -172,15 +185,23 @@ export function createScene(canvas,maze,{touch=false}={}){
     const renderDt=Math.max(0,Math.min(.05,time-lastRenderTime));lastRenderTime=time;
     shotFlash=Math.max(0,shotFlash-renderDt);gunRecoil=Math.max(0,gunRecoil-renderDt);
     const playerAt=actorPosition(g,'player'),enemyAt=actorPosition(g,'enemy');
-    scene.fog.density=g.player.hidden?.42:.096;pocket.visible=!!g.player.hidden;
-    if(pocket.visible)pocket.position.set(playerAt.x,0,playerAt.z);
-    gun.visible=g.mode==='playing';muzzle.visible=shotFlash>0;
+    const q=g.interaction,locked=interactionLocked(g),inCorn=g.player.hidden||g.player.cornZoneId;
+    scene.fog.density=inCorn?.30:.096;pocket.visible=!!inCorn;
+    if(pocket.visible){const anchor=maze.landingZones.find(a=>a.id===g.player.cornZoneId);pocket.position.set(anchor?.pocket.x??playerAt.x,0,anchor?.pocket.z??playerAt.z);}
+    gun.visible=g.mode==='playing'&&!locked;muzzle.visible=shotFlash>0;
     gun.position.z=reduced?0:gunRecoil*.32;
     if(g.mode==='menu'){
       camera.position.set(maze.spawn.x+1.9,1.66,maze.spawn.z+1.7);camera.lookAt(doorPos.x-.25,1.7,doorPos.z);flashlight.intensity=15;
     }else{
       const bob=reduced||!g.player.moving?0:Math.sin(g.steps*7)*.021;
       camera.position.set(playerAt.x,GAME_CONFIG.player.eyeHeight+bob,playerAt.z);camera.rotation.set(g.player.pitch,g.player.yaw,0,'YXZ');
+      if(locked){
+        const t=Math.max(0,time-q.phaseStartedAt);
+        const lowered=q.phase==='tackle'?Math.min(1,t/GAME_CONFIG.grapple.tackleSeconds):1;
+        camera.position.y=q.phase==='throw'?.48+(GAME_CONFIG.player.eyeHeight-.48)*Math.min(1,t/GAME_CONFIG.grapple.throwSeconds):GAME_CONFIG.player.eyeHeight-(GAME_CONFIG.player.eyeHeight-.48)*lowered;
+        camera.rotation.x=q.phase==='throw'?-.04:.15;
+        camera.rotation.z=reduced?0:q.phase==='tackle'?Math.sin(lowered*Math.PI)*.035:0;
+      }
       flashlight.intensity=g.player.flashlightOn?38:0;
     }
     door.rotation.y=-g.doorAmount*1.68;
@@ -188,9 +209,30 @@ export function createScene(canvas,maze,{touch=false}={}){
     if(!zombie){enemy.rotation.z=g.enemy.state==='staggered'?-1.15:g.enemy.state==='flashlight_recoil'?.3:0;}
     if(!reduced)limbs.forEach((l,i)=>l.rotation.x=Math.sin(g.enemy.step*4+i*Math.PI)*.12);
     zombie?.update(g,time);
+    knife.visible=locked&&['tackle','qte','stab'].includes(q.phase);
+    if(knife.visible){
+      const worldEye=zombie?.getEyeWorld?.('left',eyeTarget);
+      if(!worldEye)eyeTarget.set(enemyAt.x,.93,enemyAt.z);
+      // Keep the actual animated face in view from the lowered struggle camera.
+      const rise=eyeTarget.y-camera.position.y;
+      const run=Math.hypot(eyeTarget.x-camera.position.x,eyeTarget.z-camera.position.z);
+      camera.rotation.x=Math.atan2(rise,Math.max(.1,run))-.09;
+      camera.updateMatrixWorld(true);
+      camera.worldToLocal(eyeTarget);
+      const progress=q.phase==='stab'?.83+.17*Math.min(1,(time-q.phaseStartedAt)/GAME_CONFIG.grapple.stabSeconds):q.presses/q.targetPresses*.83;
+      knifeDirection.copy(eyeTarget).sub(knifeStart).normalize();
+      knifeEnd.copy(eyeTarget).addScaledVector(knifeDirection,-.37);
+      knife.position.copy(knifeStart).lerp(knifeEnd,progress);
+      knife.quaternion.setFromUnitVectors(knifeForward,knifeDirection);
+      bracingHand.position.x=-.065-.025*progress;
+    }
+    const red=g.skyRedUntil>g.elapsed?Math.max(0,Math.min(1,(g.elapsed-g.skyRedStartedAt)/.2,(g.skyRedUntil-g.elapsed)/.2)):0;
+    scene.background.copy(baseBackground).lerp(redBackground,red);
     for(const {ring,id}of rewardRings)ring.visible=!g.progress.activatedCheckpoints.includes(id);
     dust.position.set(camera.position.x,0,camera.position.z);dust.rotation.y=reduced?0:Math.sin(time*.018)*.1;
-    fieldVisuals?.update();nightSky?.update();renderer.render(scene,camera);
+    fieldVisuals?.update();nightSky?.update(red);renderer.render(scene,camera);
   }
-  return {renderer,scene,camera,render,resize,ready,visuals,event(event){if(event.type==='shot'){shotFlash=GAME_CONFIG.gun.muzzleFlashSeconds;gunRecoil=.16;}},reset(){shotFlash=0;gunRecoil=0;lastRenderTime=0;}};
+  return {renderer,scene,camera,render,resize,ready,visuals,
+    creatureDiagnostics:()=>zombie?.diagnostics(),
+    event(event){if(event.type==='shot'){shotFlash=GAME_CONFIG.gun.muzzleFlashSeconds;gunRecoil=.16;}},reset(){shotFlash=0;gunRecoil=0;lastRenderTime=0;}};
 }

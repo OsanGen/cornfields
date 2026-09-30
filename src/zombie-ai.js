@@ -54,14 +54,14 @@ function random(enemy) {
   return enemy.rng / 4294967296;
 }
 
-function recordObservation(game, source, position, anchorId = null) {
+function recordObservation(game, source, position, anchorId = null, at = game.elapsed) {
   const memory = game.enemy.memory;
   memory.lastKnown = point(position);
   memory.anchorId = anchorId;
   memory.lastObservation = {
     source,
     position: point(position),
-    at: game.elapsed,
+    at,
     anchorId,
   };
 }
@@ -110,9 +110,9 @@ export function senseZombie(game, blocks) {
 
   if (heard) {
     memory.lastHeard = point(heard.position);
-    memory.lastHeardAt = game.elapsed;
+    memory.lastHeardAt = heard.at;
     const knownHide = hiddenSounds.has(heard.type) ? heard.anchorId || null : null;
-    recordObservation(game, heard.type, heard.position, knownHide);
+    recordObservation(game, heard.type, heard.position, knownHide, heard.at);
   }
 
   const from = actorPosition(game, 'player');
@@ -125,6 +125,7 @@ export function senseZombie(game, blocks) {
     facing > Math.cos(C.zombie.flashlightCone) &&
     Math.abs(player.pitch) < .55 &&
     lineOfSight(game.maze, from, to, blocks);
+  const noticed=!player.hidden&&d<16&&facing>.88&&Math.abs(player.pitch)<.65&&lineOfSight(game.maze,from,to,blocks);
 
   if (beam) {
     memory.lastBeam = point(player);
@@ -149,11 +150,11 @@ export function senseZombie(game, blocks) {
 
   // Finding a pocket empty requires physically reaching its local inspection point.
   const anchor = hideAnchor(game, enemy.rushAnchorId);
-  const canInspect = anchor && distance(enemy, anchor) < .12 &&
-    enemy.ingressDepth >= C.hiding.pocketDepth - .15;
+  const canInspect = anchor && (anchor.walkable?distance(enemy,anchor.pocket)<.35:
+    distance(enemy, anchor) < .12 && enemy.ingressDepth >= C.hiding.pocketDepth - .15);
   const inspectedHide = canInspect ? {
     anchorId: anchor.id,
-    occupied: player.hidden && player.hideAnchorId === anchor.id,
+    occupied: anchor.walkable?player.cornZoneId===anchor.id:player.hidden && player.hideAnchorId === anchor.id,
   } : null;
   const escapeEligible = distance(enemy, player) >= C.zombie.rageEscapeDistance &&
     !lineOfSight(game.maze, enemy, player, blocks);
@@ -166,12 +167,13 @@ export function senseZombie(game, blocks) {
     inspectedHide,
     certainty: seen ? 'visual' : beam ? 'beam' : heard ? 'sound' : memory.lastKnown ? 'memory' : 'uncertain',
   };
-  return { seen, heard, beam, observed: seen || beam || !!heard, escapeEligible, inspectedHide };
+  return { seen, heard, beam, noticed, observed: seen || beam || !!heard, escapeEligible, inspectedHide };
 }
 
 function move(game, dt, target, speed, blocks) {
   const enemy = game.enemy;
   if (!target) return false;
+  if(enemy.contactSince!=null&&aggressive.has(enemy.state))return false;
   enemy.repath -= dt;
   const targetCell = cellOf(target);
   const targetKey = key(targetCell.x, targetCell.z);
@@ -332,7 +334,10 @@ function updateCornRush(game, dt, blocks, sensed) {
     enemy.target = sensed.seen ? enemy.memory.lastSeen : anchor ? point(anchor) : enemy.memory.lastKnown;
     return;
   }
-  if (distance(enemy, anchor) > .12) {
+  if(enemy.contactSince!=null)return;
+  if(anchor.walkable){
+    move(game,dt,anchor.pocket,C.zombie.cornRushSpeedByTier[game.progress.escalationTier],blocks);
+  }else if (distance(enemy, anchor) > .12) {
     move(game, dt, anchor, C.zombie.cornRushSpeedByTier[game.progress.escalationTier], blocks);
   } else {
     enemy.ingressDepth = Math.min(C.hiding.pocketDepth,
@@ -355,6 +360,7 @@ export function updateZombie(game, dt, blocks) {
   enemy.timer = Math.max(0, enemy.timer - dt);
   enemy.attackCooldown = Math.max(0, enemy.attackCooldown - dt);
   enemy.decision = Math.max(0, enemy.decision - dt);
+  if(game.interaction||enemy.state==='post_qte_recovery')return;
 
   if (enemy.state === 'staggered') {
     if (enemy.timer <= 0) resumeAfterStagger(game);
@@ -399,6 +405,15 @@ export function updateZombie(game, dt, blocks) {
     }
     return;
   }
+  if(enemy.state==='detection_tell'){
+    if(enemy.timer<=0){transition(game,'chase','discovery_complete');enemy.target=memory.lastSeen;}
+    return;
+  }
+  if(enemy.state==='noticed_retreat'){
+    if(move(game,dt,enemy.target,C.zombie.chaseSpeedByTier[tier],blocks)||enemy.timer<=0)
+      transition(game,'observe','retreated',1.1);
+    return;
+  }
   if (enemy.state === 'rage_chase') {
     enemy.rageEscapeTimer = sensed.escapeEligible ? enemy.rageEscapeTimer + dt : 0;
     if (enemy.rageEscapeTimer >= C.zombie.rageEscapeHoldSeconds) {
@@ -416,7 +431,17 @@ export function updateZombie(game, dt, blocks) {
     return;
   }
 
+  if(sensed.noticed&&!sensed.beam&&!aggressive.has(enemy.state)){
+    const retreat=(game.maze.landingZones||[]).filter(a=>distance(a,enemy)<4&&
+      !lineOfSight(game.maze,game.player,a.pocket,blocks)&&pathTo(game.maze,enemy,a.pocket,blocks).length>0)
+      .sort((a,b)=>distance(b.pocket,game.player)-distance(a.pocket,game.player))[0];
+    if(retreat){transition(game,'noticed_retreat','noticed',2);enemy.target=point(retreat.pocket);emitEvent(game,'retreat','',enemy);return;}
+  }
   if (sensed.seen) {
+    if(!aggressive.has(enemy.state)){
+      transition(game,'detection_tell','confirmed_discovery',.25);enemy.target=point(memory.lastSeen);
+      emitEvent(game,'detection','',enemy);return;
+    }
     transition(game, 'chase', 'visual_contact');
     enemy.target = point(memory.lastSeen);
     enemy.lost = 0;

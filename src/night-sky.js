@@ -23,7 +23,8 @@ export async function installNightSky({scene,camera}){
   // Place the photographed moon in the existing moonlight's western quadrant.
   sky.rotation.y=-Math.PI/4;
   scene.add(sky);
-  const update=()=>sky.position.copy(camera.position);
+  const normal=material.color.clone(),red=new THREE.Color(0xff3020);
+  const update=(amount=0)=>{sky.position.copy(camera.position);material.color.copy(normal).lerp(red,amount);};
   update();
   return {update,stats:{source:'Solitude Night',width:texture.image.width,height:texture.image.height,
     drawCalls:1,triangles:geometry.index.count/3,animated:false,environmentLighting:false}};

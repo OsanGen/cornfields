@@ -1,8 +1,8 @@
-import { lineOfSight, canOccupy } from './maze.js';
+import { lineOfSight, canOccupy,cornZoneAt,inCornBay } from './maze.js';
 import { GAME_CONFIG as C, distance, addEvidence, emitEvent } from './game-config.js';
 
 export function hideAnchor(game, id = game.player.hideAnchorId) {
-  return game.maze.hideAnchors.find(anchor => anchor.id === id);
+  return game.maze.hideAnchors.find(anchor => anchor.id === id)||game.maze.landingZones?.find(anchor=>anchor.id===id);
 }
 
 /**
@@ -18,6 +18,7 @@ export function actorPosition(game, who) {
   }
   const enemy = game.enemy;
   const anchor = hideAnchor(game, enemy.rushAnchorId);
+  if(anchor?.walkable)return enemy;
   return anchor && enemy.ingressDepth > 0 ? {
     x: anchor.x + anchor.cornSide.x * enemy.ingressDepth,
     z: anchor.z + anchor.cornSide.z * enemy.ingressDepth,
@@ -33,9 +34,11 @@ export function seesPlayer(game, blocks, ignoreHidden = false) {
   const wide = ['chase', 'rage_chase', 'corn_rush'].includes(enemy.state);
   const facing = d < .01 ? 1 :
     (-Math.sin(enemy.yaw) * (player.x - enemy.x) - Math.cos(enemy.yaw) * (player.z - enemy.z)) / d;
+  const corn=cornZoneAt(game.maze,player);
+  const localCorn=corn&&d<1.1&&inCornBay(corn,enemy.x,enemy.z);
   return d < C.zombie.visionDistance &&
     facing > Math.cos(wide ? C.zombie.chaseHalfAngle : C.zombie.visionHalfAngle) &&
-    lineOfSight(game.maze, enemy, player, blocks);
+    (localCorn||lineOfSight(game.maze, enemy, player, blocks));
 }
 
 export function nearestHideAnchor(game, blocks = []) {
@@ -108,6 +111,8 @@ export function hiddenInput(game, input) {
 }
 
 export function localIngressVisible(game) {
+  const corn=cornZoneAt(game.maze,game.player);
+  if(corn&&inCornBay(corn,game.enemy.x,game.enemy.z)&&distance(game.enemy,game.player)<1.5)return true;
   const anchor = hideAnchor(game);
   if (!game.player.hidden || !anchor) return false;
   return game.enemy.rushAnchorId === anchor.id && distance(game.enemy, anchor) < .8;

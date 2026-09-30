@@ -38,6 +38,10 @@ License: https://creativecommons.org/licenses/by/3.0/
 Original archive: https://opengameart.org/sites/default/files/zombie.zip
 Modified in Blender: texture grading and resizing, material setup, GLB conversion.
 Runtime adaptation: scale/ground alignment and removal of horizontal root motion.
+Original local runtime choreography adds the articulated backward arch, curled
+stagger/recovery, recoil, struggle and throw poses, plus head-attached eye geometry.
+The existing Pixelhouse lurch remains the only imported animation clip. No Denys,
+Mixamo or Quaternius animation files are included in this build.
 Attribution is also linked on the game's title screen. Exact source and output
 hashes, asset size and geometry count are recorded in zombie-source.json.
 
@@ -50,3 +54,9 @@ Additional CC0-1.0 prop surfaces from Poly Haven:
 Only four 1K JPEGs are used: hessian color/normal and blue metal color/roughness.
 Exact files, source URLs, sizes and SHA-256 hashes are in prop-sources.json.
 Timber props, barrel bands and entrance iron reuse the existing field materials.
+# Creature vocal recordings
+
+`assets/audio/distress.wav` and `assets/audio/scream.wav` are selected, unmodified
+recordings from artisticdude's [Zombies Sound Pack](https://opengameart.org/content/zombies-sound-pack),
+released under CC0. Source filenames and SHA-256 hashes are in `assets/audio/sources.json`.
+Playback gain, rate, spatial position and fade are controlled by the game.

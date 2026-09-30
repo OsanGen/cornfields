@@ -1,5 +1,6 @@
 import {interactionPrompt} from './game.js';
 import {GAME_CONFIG} from './game-config.js';
+import {interactionLocked} from './grapple.js';
 
 /** Presentation only: it never advances gameplay, captures the mouse or plays audio. */
 export function createUI(document, {debug = false, reducedMotion = false, touch = false} = {}) {
@@ -16,13 +17,14 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
   let readableUntil = 0;
   let previousMessageAt = null;
   let previousResult = null;
+  let previousSeconds=null,glitchUntil=0;
   node('debug').hidden = !debug;
   node('motion').checked = reducedMotion;
   document.body.classList.toggle('reduced-motion', reducedMotion);
   if (touch) {
     text('control-summary', 'LEFT THUMB MOVE · RIGHT SIDE LOOK');
     text('device-label', 'PHONE / LANDSCAPE');
-    text('controls-help', 'Left stick: move · Drag right side: look · Buttons: fire, light, interact. Hidden? Stay completely still, including your aim.');
+    text('controls-help', 'Left stick: move · Drag right side: look · Buttons: fire, light, interact. Grabbed? Repeatedly tap STAB before your health runs out. Hidden? Stay completely still, including your aim.');
     text('light-label', 'LIGHT');
   }
 
@@ -37,6 +39,7 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
       readableUntil = 0;
       previousMessageAt = null;
       previousResult = null;
+      previousSeconds=null;glitchUntil=0;
     },
     focusMode(mode) {
       if (mode === 'paused') node('resume-btn').focus();
@@ -50,6 +53,17 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
       const {mode, player} = game;
       const playing = mode === 'playing';
       const ended = mode === 'dead' || mode === 'won';
+      const locked=interactionLocked(game),qte=game.interaction?.phase==='qte';
+      const recovering=game.interaction?.phase==='recovery';
+      document.body.classList.toggle('grappling',locked);
+      node('qte-prompt').hidden=!playing||!qte;
+      text('qte-copy',touch?'TAP STAB - BREAK FREE':'SPAM SPACE - STAB');
+      node('recovery-timer').hidden=!playing||!recovering;
+      const seconds=recovering?Math.max(1,Math.ceil(game.interaction.recoveryDeadline-game.elapsed-1e-9)):0;
+      text('recovery-number',seconds);
+      if(seconds!==previousSeconds){previousSeconds=seconds;if([7,4,2].includes(seconds))glitchUntil=game.elapsed+.10;}
+      node('recovery-timer').classList?.toggle('glitch',recovering&&!reducedMotion&&game.elapsed<glitchUntil);
+      node('recovery-timer').classList?.toggle('urgent',seconds<=3);
       node('menu').hidden = mode !== 'menu';
       node('hud').hidden = !playing;
       node('touch-controls').hidden = !touch || !playing;
@@ -68,12 +82,15 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
       node('prompt').hidden = !prompt || !playing;
       text('prompt-copy', prompt.replace(/^E - /, ''));
       if (touch) {
+        node('touch-stab').hidden=!playing||!qte;
+        for(const id of ['touch-fire','touch-light','look-zone'])node(id).hidden=locked;
         node('touch-interact').hidden = !prompt || !playing;
         text('touch-interact', prompt.replace(/^E - /, ''));
         node('touch-light').setAttribute?.('aria-pressed', String(player.flashlightOn));
         node('touch-fire').disabled = player.ammo <= 0;
       }
-      node('hide-status').hidden = !player.hidden;
+      node('hide-status').hidden = !player.hidden||locked;
+      node('caption').hidden=locked||recovering;
       text('hide-status', 'DO NOT MOVE. IT CAN HEAR YOU.');
 
       const message = game.threat.activeMessage;
@@ -86,7 +103,7 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
         ? (game.elapsed < readableUntil ? readableThreat : '')
         : (typeof message === 'string' ? message : message?.text || '');
       text('threat-card', visibleMessage);
-      node('threat-card').hidden = !playing || !visibleMessage;
+      node('threat-card').hidden = !playing || !visibleMessage||locked||recovering;
       node('danger').style.opacity = playing
         ? String(Math.min(0.7, (100 - player.health) / 170 + game.threat.intensity * 0.13))
         : '0';

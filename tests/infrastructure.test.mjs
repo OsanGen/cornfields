@@ -33,3 +33,9 @@ test('real frames and explicit stepping use the same tick and continuous audio p
   clock.frame(.1,()=>({}));clock.advance(.1,()=>({}));
   assert.equal(ticks,12);assert.equal(audioTicks,12);
 });
+test('a newly enabled critical prompt yields catch-up until it can be presented',()=>{
+  let ticks=0;const clock=createStepper(()=>++ticks===1);
+  clock.frame(.25,()=>({}));assert.equal(ticks,1);assert.equal(clock.pendingSeconds,0);
+  assert.ok(Math.abs(clock.droppedSeconds-(.25-1/60))<1e-8);
+  clock.frame(1/60,()=>({}));assert.equal(ticks,2);
+});

@@ -2,6 +2,7 @@ import { lineOfSight } from './maze.js';
 import { GAME_CONFIG as C, distance, addEvidence, emitEvent } from './game-config.js';
 import { actorPosition, localIngressVisible } from './hiding.js';
 import { transition } from './enemy-state.js';
+import {beginTackle,interactionLocked} from './grapple.js';
 
 /** Deterministic aim capsule; animated bones never decide whether a shot lands. */
 export function shotHits(game, blocks) {
@@ -15,13 +16,18 @@ export function shotHits(game, blocks) {
   const projection = dx * -Math.sin(player.yaw) + dz * -Math.cos(player.yaw);
   const lateral = Math.abs(dx * Math.cos(player.yaw) - dz * Math.sin(player.yaw));
   const height = C.player.eyeHeight + Math.tan(player.pitch) * projection;
+  const low=['chase','rage_chase','corn_rush','tackle'].includes(enemy.state);
+  const curled=['staggered','post_qte_recovery'].includes(enemy.state);
+  const targetHeight=curled?.5:low?.8:C.gun.targetHeight;
+  const targetHalfHeight=curled?.48:low?.65:C.gun.targetHalfHeight;
   if (projection < 0 || lateral > C.gun.hitRadius ||
-      Math.abs(height - C.gun.targetHeight) > C.gun.targetHalfHeight) return false;
+      Math.abs(height - targetHeight) > targetHalfHeight) return false;
   return localIngressVisible(game) || (!player.hidden && lineOfSight(game.maze, from, to, blocks));
 }
 
 export function fireGun(game, blocks) {
   const player = game.player;
+  if(interactionLocked(game))return false;
   if (player.shotCooldown > 0) return false;
   if (player.ammo <= 0) {
     emitEvent(game, 'empty');
@@ -37,8 +43,9 @@ export function fireGun(game, blocks) {
   emitEvent(game, 'shot', '', actorPosition(game, 'player'));
   if (!shotHits(game, blocks)) return false;
 
-  transition(game, 'staggered', 'shot_hit',
-    C.zombie.staggerSecondsByTier[game.progress.escalationTier], { refresh: true });
+  if(!['staggered','post_qte_recovery'].includes(game.enemy.state))transition(game, 'staggered', 'shot_hit',
+    C.zombie.staggerSecondsByTier[game.progress.escalationTier]);
+  else emitEvent(game,'hit','',actorPosition(game,'enemy'));
   game.metrics.shotsHit++;
   return true;
 }
@@ -46,18 +53,15 @@ export function fireGun(game, blocks) {
 export function attackPlayer(game, blocks) {
   const player = game.player;
   const enemy = game.enemy;
-  if (game.grace > 0 || player.damageCooldown > 0 || enemy.attackCooldown > 0 ||
+  if (game.interaction||game.grace > 0 || player.damageCooldown > 0 || enemy.attackCooldown > 0 ||
       !['chase', 'rage_chase', 'corn_rush'].includes(enemy.state)) return false;
   const from = actorPosition(game, 'enemy');
   const to = actorPosition(game, 'player');
-  if (distance(from, to) > C.zombie.attackRange) return false;
-  if (player.hidden ? !localIngressVisible(game) : !lineOfSight(game.maze, from, to, blocks)) return false;
+  if (distance(from, to) > C.zombie.attackRange){enemy.contactSince=null;return false;}
+  if(!localIngressVisible(game)&&!lineOfSight(game.maze,from,to,blocks))return false;
 
-  player.health = Math.max(0, player.health - C.zombie.attackDamage);
-  player.damageCooldown = C.zombie.attackCooldown;
-  enemy.attackCooldown = C.zombie.attackCooldown;
-  game.metrics.damageTaken += C.zombie.attackDamage;
-  game.metrics.hitsTaken++;
-  emitEvent(game, 'damage', 'KEEP MOVING.', from);
-  return true;
+  enemy.contactSince??=game.elapsed;
+  if(game.elapsed-enemy.contactSince<.22)return false;
+  enemy.contactSince=null;
+  return beginTackle(game,blocks);
 }

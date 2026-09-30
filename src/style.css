@@ -22,6 +22,19 @@
 #touch-fire{right:max(24px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));width:76px;height:76px;border-radius:50%;background:#424b30d9}
 #touch-light{right:max(36px,env(safe-area-inset-right));bottom:112px}
 #touch-light[aria-pressed=false]{opacity:.65}
+#qte-prompt{position:absolute;left:50%;bottom:14%;transform:translateX(-50%);text-align:center;color:#fff5df;text-shadow:0 2px 8px #000;width:max-content;max-width:90%;pointer-events:none}
+#qte-prompt span,#recovery-timer span{display:block;font-size:10px;letter-spacing:.24em;margin-bottom:8px}
+#qte-prompt strong{font-size:clamp(18px,3vw,30px);letter-spacing:.07em}
+#recovery-timer{position:absolute;left:50%;top:12%;transform:translateX(-50%);text-align:center;color:#e4d8bd;text-shadow:2px 0 #6c1c1c,-1px 0 #17231a;pointer-events:none}
+#recovery-number{display:block;font-size:clamp(32px,6vh,56px);line-height:1; font-variant-numeric:tabular-nums}
+#recovery-timer.urgent{color:#e79d87}
+.grappling .crosshair,.grappling .objective,.grappling .hud-footer{visibility:hidden}
+.grappling #move-stick{opacity:.15}
+#touch-stab{right:max(26px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));width:112px;height:88px;border-color:#d4a391;color:#fff1df;background:#502b27e8;font-size:23px;letter-spacing:.12em}
+.touch #qte-prompt{bottom:20%;max-width:58%;left:48%}
+.touch #qte-prompt strong{font-size:17px}
+.touch #recovery-timer{top:23%}
+.reduced-motion #recovery-timer{text-shadow:0 2px 6px #000}
 #touch-interact{right:116px;bottom:max(34px,env(safe-area-inset-bottom));max-width:150px;min-width:96px}
 #touch-pause{right:max(12px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));font-size:20px}
 .touch .objective{top:max(18px,env(safe-area-inset-top));left:max(24px,env(safe-area-inset-left));max-width:48%}
@@ -56,3 +69,4 @@
   .touch .objective p{font-size:12px}
   .touch .survival-hud{gap:10px}
 }
+#recovery-timer.glitch{transform:translateX(calc(-50% + 1px));text-shadow:-1px 0 #5b2820,1px 0 #dbc7a0}

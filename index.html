@@ -34,6 +34,8 @@
       <div id="prompt" hidden><kbd>E</kbd><span id="prompt-copy">OPEN DOOR</span></div>
       <div class="survival-hud"><div id="health-meter"><span>HEALTH</span><strong id="health">100</strong><i></i></div><div><span>ROUNDS</span><strong id="ammo">2</strong></div><div><span id="light-label">LIGHT / F</span><strong id="flashlight-state">ON</strong></div></div>
       <p id="hide-status" hidden>DO NOT MOVE. IT CAN HEAR YOU.</p>
+      <div id="qte-prompt" hidden><span>BREAK ITS HOLD</span><strong id="qte-copy">SPAM SPACE - STAB</strong></div>
+      <div id="recovery-timer" hidden><span>IT RISES IN</span><strong id="recovery-number">10</strong></div>
       <div id="threat-card" hidden aria-live="off"></div>
       <p id="caption" role="status" aria-live="polite"></p>
       <div class="hud-footer"><span id="landmark">TRUST THE LANDMARKS</span><span>CLICK <i>FIRE</i> &nbsp; F <i>LIGHT</i> &nbsp; E <i>HIDE / EXIT</i> &nbsp; ESC <i>PAUSE</i></span></div>
@@ -45,13 +47,14 @@
       <button id="touch-interact" class="touch-button" hidden>INTERACT</button>
       <button id="touch-light" class="touch-button" aria-label="Toggle flashlight" aria-pressed="true">LIGHT</button>
       <button id="touch-pause" class="touch-button" aria-label="Pause game">Ⅱ</button>
+      <button id="touch-stab" class="touch-button" hidden aria-label="Tap repeatedly to stab and escape">STAB</button>
     </div>
     <section id="pause" class="modal" hidden>
       <p class="eyebrow">A MOMENT BETWEEN THE ROWS</p><h2>Hold your breath.</h2><p>The field is paused.</p>
       <button id="resume-btn" class="primary">CONTINUE <span>↗</span></button>
       <label class="volume">Sound <input id="volume" aria-label="Sound volume" type="range" min="0" max="100" value="55"></label>
       <label class="check"><input id="motion" type="checkbox"> Reduce camera motion and flicker</label>
-      <p id="controls-help" class="controls">WASD move · Mouse look · Click fire · E interact / hide / exit<br>F flashlight · Esc pause · M mute<br>Hidden? Any movement or mouse look gives you away.</p>
+      <p id="controls-help" class="controls">WASD move · Mouse look · Click fire · E interact / hide / exit<br>F flashlight · Esc pause · M mute<br>Grabbed? Repeatedly press Space to stab. Your health drains.<br>Hidden? Any movement or mouse look gives you away.</p>
       <button id="fullscreen-btn" class="text-button">TOGGLE FULLSCREEN</button>
       <button id="restart-btn" class="text-button">START OVER</button>
     </section>

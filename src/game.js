@@ -1,9 +1,11 @@
-import { cellOf, key, centerOf, moveBody, lineOfSight } from './maze.js';
+import { cellOf, key, centerOf, moveBody, lineOfSight, cornZoneAt } from './maze.js';
 import { GAME_CONFIG as C, distance, emitEvent, addEvidence } from './game-config.js';
 import { nearestHideAnchor, enterCorn, leaveCorn, hiddenInput, actorPosition } from './hiding.js';
 import { fireGun, attackPlayer } from './combat.js';
 import { createEnemy, updateZombie, checkpointDisengage } from './zombie-ai.js';
 import { updateDirector, updateFeedback } from './threat-director.js';
+import {interactionLocked,updateInteraction} from './grapple.js';
+let nextRunId=0;
 
 export { actorPosition };
 export const WALK_SPEED = C.player.moveSpeed;
@@ -15,7 +17,7 @@ export const emit = emitEvent;
  * @typedef {object} GameInput
  * @property {number} [forward] Net movement axis, independent of held-key intent.
  * @property {number} [strafe]
- * @property {number} [yaw] Absolute desired view; ignored while hidden.
+ * @property {number} [yaw] Absolute desired view; deliberate hidden look still rustles.
  * @property {number} [pitch]
  * @property {boolean} [fire] One-shot edge.
  * @property {boolean} [flashlight] One-shot edge.
@@ -74,6 +76,7 @@ function createMetrics() {
 export function createGame(maze) {
   return {
     maze,
+    runId:++nextRunId,eventId:0,interaction:null,interactionSerial:0,pendingStabs:[],skyRedUntil:0,
     mode: 'menu',
     elapsed: 0,
     player: createPlayer(maze.spawn),
@@ -128,6 +131,7 @@ export function startGame(game) {
 export function pauseGame(game) {
   if (game.mode !== 'playing') return;
   game.mode = 'paused';
+  game.pendingStabs.length=0;
   game.player.moving = false;
   game.player.sprinting = false;
 }
@@ -146,6 +150,7 @@ export function nearDoor(game) {
 }
 
 export function interactionPrompt(game) {
+  if(interactionLocked(game))return '';
   if (game.player.hidden) return 'E - LEAVE CORN';
   if (nearDoor(game)) return 'E - OPEN DOOR';
   if (nearestHideAnchor(game, blocksFor(game))) return 'E - ENTER CORN';
@@ -153,7 +158,7 @@ export function interactionPrompt(game) {
 }
 
 export function interact(game) {
-  if (game.mode !== 'playing') return;
+  if (game.mode !== 'playing'||interactionLocked(game)) return;
   const blocks = blocksFor(game);
   if (game.player.hidden) {
     leaveCorn(game, blocks);
@@ -174,6 +179,7 @@ export function interact(game) {
 }
 
 function finishMetrics(game, outcome) {
+  game.interaction=null;game.pendingStabs.length=0;game.skyRedUntil=0;
   game.metrics.outcome = outcome;
   game.metrics.completionTime = game.elapsed;
   game.metrics.ammoRemaining = game.player.ammo;
@@ -218,17 +224,15 @@ function checkpoints(game, blocks) {
     game.chapter = checkpoint.index === 0 ? 'BEYOND THE WATCHMAN' : 'THE INNER ROWS';
     checkpointDisengage(game, blocks);
     emit(game, 'checkpoint', 'HEALTH RESTORED. +' + (game.player.ammo - previousAmmo) + ' ROUNDS.',
-      checkpoint, { id: checkpoint.id, tier: game.progress.escalationTier });
+      checkpoint, { checkpointId: checkpoint.id, tier: game.progress.escalationTier });
   }
 }
 
 function resolvePlayerInput(game, dt, input) {
   const player = game.player;
   const wasHidden = player.hidden;
-  if (!wasHidden) {
-    if (Number.isFinite(input.yaw)) player.yaw = input.yaw;
-    if (Number.isFinite(input.pitch)) player.pitch = Math.max(-1.25, Math.min(1.25, input.pitch));
-  }
+  if (Number.isFinite(input.yaw)) player.yaw = input.yaw;
+  if (Number.isFinite(input.pitch)) player.pitch = Math.max(-1.25, Math.min(1.25, input.pitch));
 
   // Existing hidden input is heard before exit. On entry, pre-entry mouse look
   // has already been consumed; subsequent actions and held keys belong to the new hide.
@@ -254,6 +258,13 @@ function resolvePlayerInput(game, dt, input) {
       blocks);
   }
   const moved = distance(player, before);
+  const corn=cornZoneAt(game.maze,player);
+  player.cornZoneId=corn?.id||null;
+  if(corn&&(input.movementIntent||length||Math.abs(input.lookDelta||0)>C.hiding.mouseMovementThresholdPixels||input.fire||input.flashlight)){
+    addEvidence(game,'rustle',player,C.hearing.rustleRadius,5,{anchorId:corn.id});
+    if(!player.cornNoisy)emit(game,'rustle','IT HEARD YOU.',player);
+    player.cornNoisy=true;
+  }else if(!corn)player.cornNoisy=false;
   player.moving = moved > .0001;
   player.sprinting = false;
   game.steps += moved;
@@ -297,6 +308,15 @@ function tick(game, dt, input) {
   player.muzzleFlash = Math.max(0, player.muzzleFlash - dt);
   game.doorAmount = Math.min(1, game.doorAmount + (game.doorOpen ? dt * 1.2 : 0));
 
+  const stabTimes=game.pendingStabs.filter(at=>at<=game.elapsed+1e-9);
+  game.pendingStabs=game.pendingStabs.filter(at=>at>game.elapsed+1e-9);
+  if(interactionLocked(game)){
+    player.moving=false;
+    updateInteraction(game,dt,{stabTimes,stab:input.stab});
+    if(player.health<=0)fail(game);
+    return;
+  }
+
   const blocks = resolvePlayerInput(game, dt, input);
   game.footstepTimer -= dt;
   if (player.moving && game.footstepTimer <= 0) {
@@ -312,6 +332,13 @@ function tick(game, dt, input) {
     return;
   }
   updateDirector(game, dt);
+  // Recovery records legitimate perception, but cannot navigate or attack.
+  if(game.interaction?.phase==='recovery'){
+    updateZombie(game,dt,blocks);
+    updateInteraction(game,dt);
+    updateFeedback(game,dt);
+    return;
+  }
   updateZombie(game, dt, blocks);
   attackPlayer(game, blocks);
   updateFeedback(game, dt);
@@ -330,9 +357,11 @@ function tick(game, dt, input) {
  */
 export function updateGame(game, dt, input = {}) {
   if (game.mode !== 'playing' || !Number.isFinite(dt) || dt <= 0) return;
+  game.pendingStabs.push(...(input.stabTimes||[]).filter(Number.isFinite));
+  game.pendingStabs=game.pendingStabs.slice(-64).sort((a,b)=>a-b);
   let remaining = dt;
   let first = true;
-  const continuous = { ...input, fire: false, flashlight: false, interact: false, lookDelta: 0 };
+  const continuous = { ...input, fire: false, flashlight: false, interact: false, lookDelta: 0,stab:false,stabTimes:[] };
   while (remaining > 1e-9 && game.mode === 'playing') {
     const substep = Math.min(remaining, 1 / 60);
     tick(game, substep, first ? input : continuous);
@@ -350,6 +379,7 @@ export function gameSnapshot(game) {
   return JSON.parse(JSON.stringify({
     coordinates: 'meters; +x east, +z south; yaw 0 looks north (-z)',
     mode: game.mode,
+    interaction:game.interaction,skyRedUntil:game.skyRedUntil,
     elapsed: +game.elapsed.toFixed(2),
     player: {
       ...player,

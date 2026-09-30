@@ -22,7 +22,14 @@ export function fieldLayout(maze){
       if(maze.grid[z+dz]?.[x+dx]!==0)continue;
       edges++;
       const hideOpening=maze.hideAnchors?.some(a=>a.corridorCell.x===x+dx&&a.corridorCell.z===z+dz&&a.cornSide.x===-dx&&a.cornSide.z===-dz);
-      if(!hideOpening)fences.push({x:p.x+dx*(CELL/2-.09),z:p.z+dz*(CELL/2-.09),yaw:Math.atan2(dx,dz),variant:(x*7+z*3)%3});
+      const landingOpening=maze.landingZones?.some(a=>a.corridorCell.x===x+dx&&a.corridorCell.z===z+dz&&a.cornSide.x===-dx&&a.cornSide.z===-dz);
+      if(!hideOpening){
+        const panel={x:p.x+dx*(CELL/2-.09),z:p.z+dz*(CELL/2-.09),yaw:Math.atan2(dx,dz),variant:(x*7+z*3)%3};
+        if(landingOpening){
+          const width=CELL/2-.78,offset=.78+width/2;
+          for(const side of [-1,1])fences.push({...panel,x:panel.x+Math.cos(panel.yaw)*offset*side,z:panel.z-Math.sin(panel.yaw)*offset*side,scale:width/CELL});
+        }else fences.push(panel);
+      }
       for(let row=0;row<2;row++)for(let i=0;i<5;i++){
         const along=(i-2)*.43+(random()-.5)*.10;
         const inset=.50+row*.47+random()*.10;
@@ -121,7 +128,7 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
       for(const [name,geometry,material]of [['Wooden fence',panelGeometry,fenceMaterial],['Fence posts',postGeometry,fenceMaterial],['Barbed wire',wireGeometry,wireMaterial]]){
         const mesh=new THREE.InstancedMesh(geometry,material,chunk.fences.length);mesh.name=name;
         chunk.fences.forEach((p,i)=>{
-          dummy.position.set(p.x,0,p.z);dummy.rotation.set(0,p.yaw,0);dummy.scale.set(1,name==='Wooden fence'?1-p.variant*.012:1,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+          dummy.position.set(p.x,0,p.z);dummy.rotation.set(0,p.yaw,0);dummy.scale.set(p.scale||1,name==='Wooden fence'?1-p.variant*.012:1,1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
           tint.setScalar(.84+p.variant*.065);mesh.setColorAt(i,tint);
         });mesh.computeBoundingSphere();group.add(mesh);chunk.objects.push(mesh);
       }

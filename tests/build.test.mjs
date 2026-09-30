@@ -45,6 +45,9 @@ test('package follows runtime and vendor imports, includes credits, and replaces
   assert(result.files.includes('vendor/three/examples/jsm/utils/Helper.js'));
   assert(result.files.includes('vendor/three/LICENSE'));
   assert(result.files.includes('assets/field/LICENSES.md'));
+  assert(result.files.includes('assets/audio/distress.wav'));
+  assert(result.files.includes('assets/audio/scream.wav'));
+  assert(result.files.includes('assets/audio/sources.json'));
   assert(result.files.includes('.nojekyll'));
   assert(!result.files.some(file => /(?:node_modules|private|unused|stale|\._)/.test(file)));
   assert(!((await readdir(result.directory)).includes('stale.txt')));

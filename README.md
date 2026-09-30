@@ -27,6 +27,7 @@ Open <http://127.0.0.1:4173>. Click **ENTER THE FIELD** to enable mouse look and
 | E | Open the door, enter corn, or leave corn |
 | Esc | Pause and release the mouse |
 | F | Toggle flashlight |
+| Space, repeatedly while grabbed | Drive the knife forward and break free |
 | M | Mute or unmute |
 
 Movement always uses the fast speed; Shift is unnecessary. The pause menu includes volume, reduced motion, fullscreen and restart. Switching away pauses the simulation. Headphones are recommended. Death restarts at the entrance; checkpoints are one-time rewards, not saved respawn points.
@@ -34,6 +35,11 @@ Movement always uses the fast speed; Shift is unnecessary. The pause menu includ
 ## Phone controls
 
 On a phone, turn to landscape and tap ENTER THE FIELD to start sound and play. The left joystick moves; drag the right side to look. FIRE spends one round per tap. LIGHT toggles the flashlight. The contextual button opens the door, enters corn or exits. The top-right pause button opens settings and restart. Fullscreen is optional and appears only when supported.
+
+When grabbed, repeatedly tap the contextual **STAB** button. Eight fresh taps free you;
+holding it does not count. Existing health drains during the struggle. After a successful
+eye stab, you land in nearby corn with free movement and a ten-second escape window.
+Its final scream briefly turns the sky red. No health is restored by escaping.
 
 Rotation to portrait or switching away pauses the game and clears held controls. Return to landscape and tap CONTINUE. Action buttons never count as looking. Genuine joystick movement and looking still reveal a hiding player. Touch mode caps rendering pixel ratio at 1.
 
@@ -59,7 +65,19 @@ The manual `Publish playtest to GitHub Pages` workflow installs locked dependenc
 5. The Broken Watchman and Water Barrels each restore health and grant up to two rounds once. Each reward escalates the hunt.
 6. Reach your daughter in the center to win immediately.
 
-Close attacks remove 34 health with a 0.8-second cooldown; movement remains available. Six marked fence openings lead into local corn pockets. While hidden, movement keys, mouse movement above the jitter threshold, shooting or toggling the light disclose the pocket. A detected hide causes a visible rush, not instant death. E always allows an exit attempt. Stagger interrupts that rush.
+Close contact has a short interruptible windup before a tackle and knife struggle.
+The struggle needs eight fresh Space presses or STAB taps, with a brief input grace
+before health drains at one full health bar per three active seconds. A successful
+escape follows a collision-checked route into a nearby shallow corn bay. Both actors
+can walk into and out of these bays; they do not connect otherwise separated corridors.
+The zombie remains incapacitated for exactly ten seconds after landing, then screams
+once and resumes hunting from legitimate observations. Extra shots cannot reset an
+active gun stagger or the escape recovery timer. A shot outside recovery buys the
+original 3 / 2.5 / 2 seconds, depending on checkpoint progress.
+
+Six marked openings still offer voluntary hiding. While hidden, movement, deliberate
+looking, shooting or toggling the light discloses the pocket. A detected hide causes
+a visible rush and the same tackle. E allows an exit attempt before the struggle.
 
 ## Lean implementation
 
@@ -68,7 +86,7 @@ Close attacks remove 34 health with a 0.8-second cooldown; movement remains avai
 - Grid-based circle collision, bounded movement substeps and breadth-first enemy routing.
 - One explicit evidence-based zombie state machine plus a small threat director. Perception, decaying memory, seeded prediction and bounded searches drive navigation; unseen hidden coordinates do not guide prediction.
 - Instanced corn, a rigged zombie with a primitive fallback, authored landmarks, fog and a toggleable flashlight.
-- Original Web Audio placeholders for wind, rustling, footsteps, impacts, pursuit and the final scare. Stereo direction and distance gain; no audio files to download.
+- Local CC0 creature vocal recordings with original synthesized wind, rustling, footsteps and impacts. Stereo direction and distance gain; optional audio-load failure retains synthesized fallback.
 - A tiny allowlisted local static server. App resources are served locally after installation. No telemetry, accounts, cookies or persistence.
 
 ## Files
@@ -77,10 +95,12 @@ Close attacks remove 34 health with a 0.8-second cooldown; movement remains avai
 - `src/game.js`: deterministic state, ordered simulation and progression.
 - `src/game-config.js`: gameplay tuning values.
 - `src/combat.js`, `src/hiding.js`: shooting, damage and authored corn pockets.
+- `src/grapple.js`: tackle, timestamped knife input, health drain, safe throw and recovery deadlines.
+- `src/zombie-poses.js`: original per-bone choreography over the existing Pixelhouse rig.
 - `src/zombie-ai.js`, `src/threat-director.js`: perception, memory, prediction and pressure.
 - `src/runtime-loop.js`: shared bounded real-time and test stepping.
 - `src/scene.js`: Three.js presentation and lighting.
-- `src/audio.js`: synthesized sound.
+- `src/audio.js`: bounded, prioritized local vocals and synthesized environmental sound.
 - `src/main.js`: startup wiring only.
 - `src/app.js`: importable session lifecycle, shared stepping, and event dispatch.
 - `src/input.js`, `src/touch-input.js` and `src/ui.js`: browser input and HUD/menu presentation.
@@ -110,11 +130,11 @@ contains reusable near/far plants, fallen leaves and the entrance assembly.
 Soil, wood and rust use local 1K CC0 Poly Haven maps. See `assets/field/LICENSES.md`
 and `assets/field/sources.json` for provenance and download hashes.
 
-The default scene uses wooden fencing on both sides of corridors, with six marked hiding openings,
+The default scene uses wooden fencing on both sides of corridors, with six marked hiding openings and shallow walkable landing bays,
 two strands of barbed wire and dense corn behind the boards. It reuses the
 Blender-authored boards as instanced fence panels; wire/barbs use 264 triangles
 per panel, with a free photographed rust material. There are no green backing
-boxes in this mode. Collision and enemy visibility use the unchanged maze grid.
+boxes in this mode. The authored maze route remains unchanged; bounded corn bays extend collision and navigation only at their corridor entrances.
 
 `?visuals=field` and the old `?visuals=sample` URL both show the complete field.
 `?visuals=legacy` is an explicit reload-based rollback. Missing assets preserve
@@ -211,13 +231,22 @@ The gameplay update drives animation from the new AI states. Only the skeleton r
 model load retains the original enemy after a bounded deadline and cannot block Start. Credits appear on the title screen and in
 `assets/field/LICENSES.md`.
 
+Original per-bone animation now adds painful searching, a four-limb inverted chase,
+face-shielding recoil, fetal collapse and a lowered knife struggle. Eye meshes attach
+to the head and obey depth testing. No additional lights, bloom, ragdoll solver,
+animation library or imported stock clips are used. Denys, Mixamo and Quaternius
+clips were not integrated: current download or license access could not be verified.
+The two local vocals are artisticdude's CC0 Zombies Sound Pack selections, with
+source filenames and hashes in `assets/audio/sources.json`.
+
 ## Pacing and remaining human acceptance
 
 The updated target is a 4-7-minute unfamiliar first run. The shortest route to the daughter is about 517 meters, approximately 136 seconds at the single fast speed before stops and encounters. Skilled known-route runs can be shorter. **First-play duration, fear, fairness and sensory comfort require human playtesting.** No waiting period pads the route.
 
 Next human playtest: use three unfamiliar players without coaching after the entrance tutorial. Record completion time, shots, checkpoint timing, damage, hiding comprehension, fear and fairness ratings. Check that light recoil communicates the coming rage, hiding feels fair, and rewards never cause unavoidable damage. Tune behavior and sound before expanding art or map scope.
 
-Saving, multiplayer, generated mazes and polished animation remain future work. Mobile controls and static hosting preparation are implemented; a successful provider deployment and physical-phone acceptance are separate verification steps.
+Saving, multiplayer and generated mazes remain future work. Browser emulation,
+provider deployment and physical-phone acceptance remain separate verification steps.
 
 ## Reversibility
 

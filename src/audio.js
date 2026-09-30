@@ -1,7 +1,7 @@
 import {actorPosition} from './hiding.js';
-// Original synthesized placeholders: no external samples or network requests.
+// Local CC0 vocal recordings plus original synthesized environmental effects.
 export class FieldAudio {
-  constructor(){this.ctx=null;this.volume=.55;this.muted=false;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.sources=[];}
+  constructor(){this.ctx=null;this.volume=.55;this.muted=false;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.sources=[];this.transients=new Set();this.samples={};this.voice=null;this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;}
   async unlock(){
     if(!this.ctx){
       const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
@@ -15,22 +15,56 @@ export class FieldAudio {
       for(const freq of [58,61,116]){const tone=this.ctx.createOscillator(),level=this.ctx.createGain();tone.type='sine';tone.frequency.value=freq;level.gain.value=freq===116?.25:.5;tone.connect(level).connect(this.threatGain);tone.start();this.sources.push(tone);}
     }
     await this.ctx.resume();this.applyVolume();
+    this.samplesReady ||= Promise.all(['distress','scream'].map(async name=>{
+      const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
+      try{const response=await fetch(new URL(`../assets/audio/${name}.wav`,import.meta.url),{signal:abort.signal});if(!response.ok)throw new Error('Optional vocal unavailable');this.samples[name]=await this.ctx.decodeAudioData(await response.arrayBuffer());}
+      catch{/* The game remains playable with synthesized fallback. */}finally{clearTimeout(timer);}
+    }));
   }
   applyVolume(){if(this.ctx)this.master.gain.setTargetAtTime(this.muted?0:this.volume*.48,this.ctx.currentTime,.05);}
   setVolume(v){this.volume=v;this.applyVolume();}
-  toggleMute(){this.muted=!this.muted;this.applyVolume();return this.muted;}
+  toggleMute(){this.muted=!this.muted;if(this.muted)this.stopCues();this.applyVolume();return this.muted;}
   pause(){if(this.ctx?.state==='running')void this.ctx.suspend();}
   sound({noise=false,freq=100,end=45,duration=.3,gain=.3,pan=0,filter=900,type='sine',delay=0}={}){
-    if(!this.ctx||this.ctx.state!=='running'||this.muted)return;
+    if(!this.ctx||this.ctx.state!=='running'||this.muted||this.transients.size>=16)return;
     const t=this.ctx.currentTime+delay,source=noise?this.ctx.createBufferSource():this.ctx.createOscillator();
     if(noise)source.buffer=this.noise;else{source.type=type;source.frequency.setValueAtTime(freq,t);source.frequency.exponentialRampToValueAtTime(Math.max(10,end),t+duration);}
     const f=this.ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=filter;
     const g=this.ctx.createGain();g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(Math.max(.002,gain),t+.018);g.gain.exponentialRampToValueAtTime(.001,t+duration);
     const p=this.ctx.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));source.connect(f).connect(g).connect(p).connect(this.master);source.start(t);source.stop(t+duration+.05);
-    source.onended=()=>{source.disconnect();f.disconnect();g.disconnect();p.disconnect();};
+    this.transients.add(source);
+    source.onended=()=>{this.transients.delete(source);source.disconnect();f.disconnect();g.disconnect();p.disconnect();};
+  }
+  stopCues(){for(const source of this.transients){try{source.stop();}catch{}}this.transients.clear();this.voice=null;}
+  vocal(kind,g,position,priority=1,duration=1.4){
+    if(!this.ctx||this.ctx.state!=='running'||this.muted||this.transients.size>=16)return;
+    if(this.voice&&this.voice.priority>priority)return;
+    if(this.lastVoiceAt===g.elapsed&&priority<3)return;
+    if(this.voice){try{this.voice.source.stop();}catch{}}
+    const player={...actorPosition(g,'player'),yaw:g.player.yaw},where=position||actorPosition(g,'enemy');
+    const d=Math.hypot(where.x-player.x,where.z-player.z),gain=(kind==='scream'?.62:.30)*Math.max(.06,1/(1+d*.12));
+    const buffer=this.samples[kind];this.lastVoiceAt=g.elapsed;
+    if(!buffer){this.sound({freq:kind==='scream'?175:135,end:55,duration,gain,type:'sawtooth',filter:650,pan:this.pan(where,player)});return;}
+    const source=this.ctx.createBufferSource(),volume=this.ctx.createGain(),pan=this.ctx.createStereoPanner();
+    source.buffer=buffer;source.playbackRate.value=kind==='scream'?.86:.9;
+    const time=this.ctx.currentTime,length=Math.min(duration,buffer.duration/source.playbackRate.value);
+    volume.gain.setValueAtTime(.001,time);volume.gain.linearRampToValueAtTime(gain,time+.04);volume.gain.setValueAtTime(gain,time+Math.max(.04,length-.12));volume.gain.linearRampToValueAtTime(.001,time+length);
+    pan.pan.value=this.pan(where,player);source.connect(volume).connect(pan).connect(this.master);
+    this.voice={source,priority};this.transients.add(source);source.start();source.stop(time+length);
+    source.onended=()=>{this.transients.delete(source);if(this.voice?.source===source)this.voice=null;source.disconnect();volume.disconnect();pan.disconnect();};
   }
   event(event,g){
+    if(event.runId!==undefined){if(this.eventRun!==event.runId){this.stopCues();this.eventRun=event.runId;this.eventId=0;}if(event.id<=this.eventId)return;this.eventId=event.id;}
     const e=event.type,pan=this.pan(event.position||actorPosition(g,'enemy'),{...actorPosition(g,'player'),yaw:g.player.yaw});
+    if(['death','win'].includes(e))this.stopCues();
+    if(e==='detection'){this.stopCues();return;}
+    if(['retreat','recoil'].includes(e)){this.vocal('distress',g,event.position,1,e==='recoil'?.6:1.1);return;}
+    if(['rage','corn_rush','chase','stagger','eye_stab','hunt_resume'].includes(e)){
+      if(e==='hunt_resume')this.stopCues();
+      this.vocal('scream',g,event.position,e==='hunt_resume'?3:2,e==='eye_stab'?.7:1.4);return;
+    }
+    if(e==='tackle'||e==='landing'){this.sound({noise:true,duration:.22,gain:.45,filter:550});return;}
+    if(e==='stab_press'){this.sound({noise:true,duration:.07,gain:.1,filter:950});return;}
     if(e==='door'){this.sound({noise:true,duration:1.1,gain:.5,filter:380});this.sound({freq:130,end:50,duration:.7,gain:.15,type:'sawtooth'});}
     if(['sound','false','near'].includes(e))this.sound({noise:true,duration:1.5,gain:.8,filter:1800,pan});
     if(e==='glimpse'){this.sound({noise:true,duration:.8,gain:.45,pan});this.sound({freq:190,end:65,duration:1.4,gain:.12});}
@@ -56,7 +90,7 @@ export class FieldAudio {
     if(g.enemy.visible&&d<18&&g.enemy.step-this.lastEnemyStep>1.4){this.lastEnemyStep=g.enemy.step;this.sound({freq:65,end:25,duration:.23,gain:Math.max(.04,.55*(1-d/18)),pan:this.pan(enemy,player)});}
     const intensity=g.threat?.intensity||0;this.threatGain?.gain.setTargetAtTime(intensity*.18,this.ctx.currentTime,.35);
     this.pulse-=dt;if(['chase','rage_chase','corn_rush'].includes(g.enemy.state)&&this.pulse<=0){this.pulse=g.enemy.state==='chase'?.55:.4;this.sound({freq:53,end:31,duration:.22,gain:.20});this.sound({freq:48,end:26,duration:.16,gain:.13,delay:.2});}
-    this.breath-=dt;if(g.enemy.visible&&d<10&&this.breath<=0){this.breath=2.2-(g.progress?.escalationTier||0)*.35;this.sound({noise:true,duration:.85,gain:.2*(1-d/12),filter:550,pan:this.pan(enemy,player)});}
+    this.breath-=dt;if(g.enemy.visible&&d<14&&this.breath<=0&&!g.interaction&&['concealed_stalk','observe','investigate','predictive_search'].includes(g.enemy.state)){this.breath=4.2;this.vocal('distress',g,enemy,0,1.3);}
   }
-  reset(){this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;if(this.ctx){this.master.gain.cancelScheduledValues(this.ctx.currentTime);this.applyVolume();}}
+  reset(){this.stopCues();this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;if(this.ctx){this.master.gain.cancelScheduledValues(this.ctx.currentTime);this.applyVolume();}}
 }

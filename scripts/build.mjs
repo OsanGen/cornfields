@@ -15,7 +15,7 @@ export const runtimeAssets = [
   'hessian_380_diff_1k.jpg', 'hessian_380_nor_gl_1k.jpg',
   'blue_metal_plate_diff_1k.jpg', 'blue_metal_plate_rough_1k.jpg',
   'LICENSES.md', 'sources.json', 'sky-source.json', 'zombie-source.json', 'prop-sources.json',
-].map(name => `assets/field/${name}`);
+].map(name => `assets/field/${name}`).concat(['distress.wav','scream.wav','sources.json'].map(name=>`assets/audio/${name}`));
 
 // The game's static ES-module imports, including multiline import/export lists.
 export function moduleImports(source) {

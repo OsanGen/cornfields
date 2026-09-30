@@ -9,7 +9,17 @@ The first release deployed commit `26952a98f6990504b6883df9f2ae51a75b7ab8d0`. [G
 1. Run `npm ci`, `npm test`, `npm run check`, then `npm run build` with Node.js 22.
 2. Run `CORNFIELD_BASE_PATH=/cornfields/ npm run preview` and test `http://127.0.0.1:4180/cornfields/`.
 3. Run the desktop and mobile browser checks using an installed Playwright/browser. Mobile emulation is not physical-phone acceptance.
-4. Review the source and asset list before the first commit. Include index.html, src/, assets/field/, scripts/, tests/, package files, public docs and .github/. Exclude editable art, local output, caches, node_modules, generated dist, backups and local work logs.
+4. Review the source and asset list before the first commit. Include index.html, src/, assets/field/, assets/audio/, scripts/, tests/, package files, public docs and .github/. Exclude editable art, local output, caches, node_modules, generated dist, backups and local work logs.
+
+For the horror/QTE release, also run `node tests/horror-browser.mjs` against the
+packaged preview. It walks to a real hide, provokes an encounter, taps STAB through
+the actual input adapter, verifies the throw and recovery, checks the red sky,
+then verifies failure and retry. `CORNFIELD_DESKTOP=1` runs the same scenario with
+mouse capture and Space key presses. No test bypasses pointer-lock permission.
+`node tests/horror-performance.mjs` compares fixed views to the current committed
+HEAD using the same assets; run it before committing the candidate. Retain its
+baseline SHA and method alongside the result. Emulation and fixed-view timings
+do not certify physical-device performance or subjective animation/audio quality.
 
 ## Publish after target confirmation
 

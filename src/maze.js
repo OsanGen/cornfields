@@ -51,7 +51,36 @@ export function createMaze() {
     const at=centerOf(x,z),cornSide={x:sx,z:sz};
     return {id:`hide-${i+1}`,...at,corridorCell:{x,z},cornSide,entryYaw:Math.atan2(sx,sz),pocket:{x:at.x+sx*1.65,z:at.z+sz*1.65}};
   });
+  // Shallow corn bays keep an intact strip through every separating wall.
+  // They add local walking space, never another connection between corridors.
+  maze.landingZones=[];
+  for(let z=1;z<30;z++)for(let x=1;x<WIDTH-1;x++){
+    if(grid[z][x])continue;
+    for(const [sx,sz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      if(grid[z+sz]?.[x+sx]!==1)continue;
+      const at=centerOf(x,z),cornSide={x:sx,z:sz};
+      maze.landingZones.push({id:`corn-${x}-${z}-${sx}-${sz}`,...at,corridorCell:{x,z},cornSide,
+        walkable:true,entryYaw:Math.atan2(sx,sz),pocket:{x:at.x+sx*1.72,z:at.z+sz*1.72}});
+    }
+  }
+  maze.landingZoneCells=new Map();
+  for(const a of maze.landingZones)for(const offset of [0,1]){
+    const id=key(a.corridorCell.x+a.cornSide.x*offset,a.corridorCell.z+a.cornSide.z*offset);
+    if(!maze.landingZoneCells.has(id))maze.landingZoneCells.set(id,[]);
+    maze.landingZoneCells.get(id).push(a);
+  }
   return maze;
+}
+
+export function inCornBay(zone,x,z,r=0){
+  const dx=x-zone.x,dz=z-zone.z;
+  const along=dx*zone.cornSide.x+dz*zone.cornSide.z;
+  const across=dx*zone.cornSide.z-dz*zone.cornSide.x;
+  return along>=-.7+r&&along<=2.05-r&&Math.abs(across)<=.78-r;
+}
+export function cornZoneAt(maze,p){
+  if(!isWall(maze,cellOf(p).x,cellOf(p).z))return null;
+  return maze.landingZoneCells?.get(key(cellOf(p).x,cellOf(p).z))?.find(zone=>inCornBay(zone,p.x,p.z))||null;
 }
 
 export function isWall(maze,x,z,blocks=[]) {
@@ -69,7 +98,8 @@ export function flood(maze, start, blocks=[]) {
   return result;
 }
 export function pathTo(maze,from,to,blocks=[]) {
-  const start=cellOf(from), goal=cellOf(to), first=key(start.x,start.z), last=key(goal.x,goal.z);
+  const fromBay=cornZoneAt(maze,from),toBay=cornZoneAt(maze,to);
+  const start=fromBay?.corridorCell||cellOf(from), goal=toBay?.corridorCell||cellOf(to), first=key(start.x,start.z), last=key(goal.x,goal.z);
   if(isWall(maze,goal.x,goal.z,blocks))return [];
   const queue=[start], previous=new Map([[first,null]]);
   for(let i=0;i<queue.length;i++) {
@@ -79,9 +109,14 @@ export function pathTo(maze,from,to,blocks=[]) {
   if(!previous.has(last))return [];
   const path=[];let cursor=last;
   while(cursor!==null){const [x,z]=cursor.split(',').map(Number);path.push(centerOf(x,z));cursor=previous.get(cursor);}
-  return path.reverse();
+  path.reverse();
+  if(fromBay)path.unshift({x:from.x,z:from.z});
+  if(toBay)path.push({x:to.x,z:to.z});
+  return path;
 }
 export function canOccupy(maze,x,z,r=.24,blocks=[]) {
+  if(maze.landingZoneCells?.get(key(Math.floor(x/CELL),Math.floor(z/CELL)))?.some(zone=>inCornBay(zone,x,z,r))&&
+      !blocks.some(b=>x+r>b.x*CELL&&x-r<(b.x+1)*CELL&&z+r>b.z*CELL&&z-r<(b.z+1)*CELL))return true;
   for(let gz=Math.floor((z-r)/CELL);gz<=Math.floor((z+r)/CELL);gz++)for(let gx=Math.floor((x-r)/CELL);gx<=Math.floor((x+r)/CELL);gx++){
     if(!isWall(maze,gx,gz,blocks))continue;
     const dx=x-Math.max(gx*CELL,Math.min(x,(gx+1)*CELL));

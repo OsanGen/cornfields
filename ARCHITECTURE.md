@@ -14,6 +14,8 @@ This is a JavaScript/Three.js game with desktop and landscape touch input. It ha
 | HUD, menus, readable threat text | src/ui.js; index.html; src/style.css | Runtime tests and browser screenshots |
 | Checkpoints, objectives, action ordering | src/game.js | Gameplay scenarios |
 | Shooting, hits, damage | src/combat.js | Combat and timed recovery scenarios |
+| Tackle, QTE, corn throws and recovery | src/grapple.js; src/maze.js | tests/grapple.test.mjs |
+| Rigged creature presentation and eyes | src/zombie-poses.js; src/zombie.js | tests/zombie-poses.test.mjs; browser screenshots |
 | Hiding and entry/exit evidence | src/hiding.js | Hidden-input and information-boundary scenarios |
 | AI perception, memory, navigation | src/zombie-ai.js | Whole-AI regression scenarios |
 | AI state initialization | src/enemy-state.js | Same-state refresh and combat regressions |
@@ -46,6 +48,11 @@ The simulation never imports DOM, WebGL or Web Audio modules. The UI never advan
 - Confirmed observations and predicted navigation targets are different facts. AI decisions must use perception and memory; private player state is not a remote sensor.
 - State re-entry can explicitly refresh initialization without duplicating entry sounds or counters.
 - Events carry presentation effects; gameplay state remains authoritative.
+- Interaction phase and active-time deadlines own the QTE. Timestamped fresh presses are processed before the current tick boundary; an exact lethal timestamp wins over a final press. Presentation cannot heal, advance progress or extend incapacitation.
+- Real-time stepping yields its remaining catch-up when the QTE first activates so the new action can be presented before damage starts. Deterministic stepping can explicitly advance through that boundary.
+- Recovery starts at the physical landing and lasts ten active seconds. Legitimate perception may update memory, but movement and other AI transitions cannot cancel it.
+- Event IDs are numeric and monotonic within a run. Checkpoint identity belongs in checkpointId; audio deduplicates by run and event identity and bounds simultaneous sources.
+- Creature pose updates read authoritative state and time without mutating gameplay. getEyeWorld supplies the knife target from the actual animated head.
 - Restart creates a fresh game through the real application path and clears pending input and presentation state.
 - Audio mute, volume and reduced-motion preferences persist across runs.
 - app.dispose removes controller listeners and stops its frame loop. It does not destroy the supplied scene or AudioContext, whose lifetime belongs to their owner.

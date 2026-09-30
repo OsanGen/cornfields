@@ -1,5 +1,5 @@
 /** Touch controls implement the same PlayerInput contract as keyboard/mouse. */
-export function createTouchInput({document, isPlaying, onPause}) {
+export function createTouchInput({document, isPlaying, onPause,isQte=()=>false,inputTime=()=>0}) {
   const pointers = new Map();
   const listeners = [];
   const node = id => document.getElementById(id);
@@ -7,6 +7,7 @@ export function createTouchInput({document, isPlaying, onPause}) {
   let forward = 0, strafe = 0;
   const empty = () => ({fire: false, flashlight: false, interact: false, moved: false, dx: 0, dy: 0, lookDelta: 0});
   let pending = empty();
+  let stabs=[];
 
   function listen(target, type, fn) {
     target.addEventListener(type, fn);
@@ -39,6 +40,7 @@ export function createTouchInput({document, isPlaying, onPause}) {
     for (const id of [...pointers.keys()]) release(id);
     centerStick();
     pending = empty();
+    stabs=[];
   }
   function bind(target, role) {
     listen(target, 'pointerdown', event => {
@@ -54,6 +56,7 @@ export function createTouchInput({document, isPlaying, onPause}) {
       pointers.set(event.pointerId, owner);
       target.setPointerCapture?.(event.pointerId);
       if (role === 'pause') onPause();
+      else if(role==='stab'&&isQte()){stabs.push(inputTime(event.timeStamp));if(stabs.length>32)stabs.shift();}
       else if (['fire', 'interact', 'flashlight'].includes(role)) pending[role] = true;
     });
     listen(target, 'pointermove', event => {
@@ -75,20 +78,24 @@ export function createTouchInput({document, isPlaying, onPause}) {
   bind(stick, 'move');
   bind(node('look-zone'), 'look');
   for (const [id, role] of [['touch-fire', 'fire'], ['touch-interact', 'interact'], ['touch-light', 'flashlight'], ['touch-pause', 'pause']]) bind(node(id), role);
+  if(node('touch-stab'))bind(node('touch-stab'),'stab');
 
   return {
-    read(player) {
+    read(player,until=Infinity) {
       const value = {
         forward, strafe, movementIntent: pending.moved || Boolean(forward || strafe),
         yaw: player.yaw - pending.dx * 0.004,
         pitch: Math.max(-1.25, Math.min(1.25, player.pitch - pending.dy * 0.004)),
         fire: pending.fire, flashlight: pending.flashlight, interact: pending.interact,
         lookDelta: pending.lookDelta,
+        stabTimes:stabs.filter(at=>at<=until+1e-9),
       };
       pending = empty();
+      stabs=stabs.filter(at=>at>until+1e-9);
       return value;
     },
     clear,
+    clearEdges(){pending=empty();stabs=[];},
     dispose() { clear(); for (const remove of listeners) remove(); },
   };
 }

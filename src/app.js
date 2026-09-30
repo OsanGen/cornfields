@@ -39,6 +39,8 @@ export function createGameApp({
     document,
     canvas,
     isPlaying: () => game.mode === 'playing',
+    isQte:()=>game.interaction?.phase==='qte',
+    inputTime:stamp=>manual?game.elapsed:game.elapsed+clock.pendingSeconds+Math.max(0,Math.min(.25,((Number.isFinite(stamp)&&stamp<1e12?stamp:now())-last)/1000)),
     onPause: pause,
     onMute() {
       game.caption = audio.toggleMute() ? 'Sound muted.' : 'Sound on.';
@@ -46,13 +48,17 @@ export function createGameApp({
     },
   });
   const clock = createStepper((dt, controls) => {
+    const previousPhase=game.interaction?.phase;
     updateGame(game, dt, controls);
+    if(previousPhase!==game.interaction?.phase){input.clearEdges();game.pendingStabs.length=0;}
     for (const event of game.events.splice(0)) {
       audio.event(event, game);
       view.event?.(event);
     }
     audio.update(game, dt);
     audioTicks++;
+    // Present the newly enabled action before consuming any more catch-up time.
+    return previousPhase!=='qte'&&game.interaction?.phase==='qte';
   });
 
   function listen(target, type, handler) {
@@ -133,7 +139,7 @@ export function createGameApp({
     if (disposed) return;
     const dt = (time - last) / 1000;
     last = time;
-    if (!manual) clock.frame(dt, () => input.read(game.player));
+    if (!manual) clock.frame(dt, step => input.read(game.player,game.elapsed+step));
     present(game.elapsed + (game.mode === 'menu' ? time / 1000 : 0));
     frameId = requestFrame(frame);
   }
@@ -202,6 +208,9 @@ export function createGameApp({
     diagnostics: () => ({
       ...gameSnapshot(game),
       audioState: audio.ctx?.state || 'uninitialized',
+      audioSamples:Object.keys(audio.samples||{}),
+      audioSources:audio.transients?.size||0,
+      creature:view.creatureDiagnostics?.(),
       audioTicks,
       muted: audio.muted,
       reducedMotion,
@@ -217,7 +226,7 @@ export function createGameApp({
     }),
     advance(milliseconds) {
       manual = true;
-      clock.advance(milliseconds / 1000, () => input.read(game.player));
+      clock.advance(milliseconds / 1000, step => input.read(game.player,game.elapsed+step));
       present();
     },
     step(seconds, controls = {}) {
@@ -226,7 +235,7 @@ export function createGameApp({
       clock.advance(seconds, () => {
         const value = {...controls};
         if (!first) Object.assign(value, {
-          fire: false, flashlight: false, interact: false, lookDelta: 0,
+          fire: false, flashlight: false, interact: false, lookDelta: 0,stab:false,stabTimes:[],
         });
         first = false;
         return value;

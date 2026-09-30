@@ -19,9 +19,12 @@ import { actorPosition } from './hiding.js';
  */
 export function transition(game, state, reason, timer = 0, { refresh = false } = {}) {
   const enemy = game.enemy;
+  if(game.interaction?.phase==='recovery'&&game.elapsed+1e-9<game.interaction.recoveryDeadline&&state!=='post_qte_recovery')return false;
   if (enemy.state === state && !refresh) return false;
 
   enemy.state = state;
+  enemy.stateStartedAt=game.elapsed;
+  enemy.contactSince=null;
   enemy.reason = reason;
   enemy.timer = timer;
   enemy.repath = 0;

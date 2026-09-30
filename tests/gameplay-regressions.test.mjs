@@ -110,14 +110,17 @@ test('an abandoned hide is discovered only when the enemy inspects its pocket', 
   assert.equal(game.enemy.memory.anchorId, null);
 });
 
-test('a second valid hit refreshes the full stagger through the shared transition', () => {
+test('a second valid hit does not refresh the committed short stagger', () => {
   const game = playingScenario();
   advance(game, STEP, { fire: true });
   advance(game, 1);
+  const remaining=game.enemy.timer;
+  game.player.pitch=Math.atan2(.5-C.player.eyeHeight,Math.hypot(game.enemy.x-game.player.x,game.enemy.z-game.player.z));
   advance(game, STEP, { fire: true });
   assert.equal(game.enemy.reason, 'shot_hit');
-  assert.ok(game.enemy.timer > C.zombie.staggerSecondsByTier[0] - .02);
-  advance(game, C.zombie.staggerSecondsByTier[0] - .05);
+  assert.ok(Math.abs(game.enemy.timer-(remaining-STEP))<1e-7);
+  assert.equal(game.metrics.shotsHit,2);
+  advance(game, remaining-STEP-.05);
   assert.equal(game.enemy.state, 'staggered');
   advance(game, .08);
   assert.notEqual(game.enemy.state, 'staggered');

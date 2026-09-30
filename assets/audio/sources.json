@@ -1,0 +1,18 @@
+[
+  {
+    "file": "distress.wav",
+    "original": "zombies/zombie-12.wav",
+    "sha256": "2b1984e3485715642a1195393fd35227eadc27b8f7eeb968956e18f4e8cb9400",
+    "license": "CC0-1.0",
+    "author": "artisticdude",
+    "source": "https://opengameart.org/content/zombies-sound-pack"
+  },
+  {
+    "file": "scream.wav",
+    "original": "zombies/zombie-17.wav",
+    "sha256": "c954b6173399ed574c1c1350b8da4a5b465e0454cc810d6e49779fe121fafa34",
+    "license": "CC0-1.0",
+    "author": "artisticdude",
+    "source": "https://opengameart.org/content/zombies-sound-pack"
+  }
+]

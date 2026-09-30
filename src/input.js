@@ -17,7 +17,7 @@ const MOVE_KEYS = new Set([
  * @property {boolean} interact
  * @property {number} lookDelta Raw mouse travel in pixels, independent of yaw.
  */
-export function createInput({document, canvas, isPlaying, onPause, onMute}) {
+export function createInput({document, canvas, isPlaying, onPause, onMute,isQte=()=>false,inputTime=()=>0}) {
   const keys = new Set();
   const listeners = [];
   const emptyEdges = () => ({
@@ -25,6 +25,7 @@ export function createInput({document, canvas, isPlaying, onPause, onMute}) {
     dx: 0, dy: 0, lookDelta: 0,
   });
   let pending = emptyEdges();
+  let stabs=[];
 
   function listen(target, type, handler) {
     target.addEventListener(type, handler);
@@ -41,6 +42,8 @@ export function createInput({document, canvas, isPlaying, onPause, onMute}) {
     if (event.repeat) return;
     if (event.code === 'KeyM') onMute();
     if (!isPlaying()) return;
+    if(event.code==='Space'&&!keys.has('Space')&&isQte())stabs.push(inputTime(event.timeStamp));
+    if(stabs.length>32)stabs.shift();
     if (event.code === 'KeyE') pending.interact = true;
     if (event.code === 'KeyF') pending.flashlight = true;
     keys.add(event.code);
@@ -60,7 +63,7 @@ export function createInput({document, canvas, isPlaying, onPause, onMute}) {
 
   return {
     /** @returns {PlayerInput} */
-    read(player) {
+    read(player,until=Infinity) {
       const held = (first, second) => keys.has(first) || keys.has(second) ? 1 : 0;
       const input = {
         forward: held('KeyW', 'ArrowUp') - held('KeyS', 'ArrowDown'),
@@ -72,13 +75,17 @@ export function createInput({document, canvas, isPlaying, onPause, onMute}) {
         flashlight: pending.flashlight,
         interact: pending.interact,
         lookDelta: pending.lookDelta,
+        stabTimes:stabs.filter(at=>at<=until+1e-9),
       };
       pending = emptyEdges();
+      stabs=stabs.filter(at=>at>until+1e-9);
       return input;
     },
+    clearEdges(){pending=emptyEdges();stabs=[];},
     clear() {
       keys.clear();
       pending = emptyEdges();
+      stabs=[];
     },
     dispose() {
       this.clear();

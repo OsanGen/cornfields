@@ -5,7 +5,7 @@ export async function resolvePublicFile(root,request){
   let name=decodeURIComponent(request.split(/[?#]/,1)[0]);
   if(name==='/')name='/index.html';
   if(name.split('/').some(part=>part.startsWith('.'))||name.includes('\\'))throw new Error('Not found');
-  const allowed=/^\/(index\.html|src\/[\w./-]+\.(js|css)|assets\/field\/[\w-]+\.(glb|jpg|png)|node_modules\/three\/(build|examples\/jsm)\/[\w./-]+\.js)$/;
+  const allowed=/^\/(index\.html|src\/[\w./-]+\.(js|css)|assets\/field\/[\w-]+\.(glb|jpg|png)|assets\/audio\/(distress|scream)\.wav|node_modules\/three\/(build|examples\/jsm)\/[\w./-]+\.js)$/;
   if(!allowed.test(name))throw new Error('Not found');
   const target=await realpath(path.resolve(root,'.'+name));
   const relative=path.relative(root,target).split(path.sep).join('/');
