@@ -1,6 +1,7 @@
 import {mkdir, readFile, realpath, rm, writeFile, lstat} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createHash} from 'node:crypto';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 
@@ -86,10 +87,29 @@ export async function collectRuntimeFiles(root = projectRoot) {
   return files;
 }
 
+// A query on index.html does not invalidate cached ES-module dependencies.
+// Keep the whole graph together so relative imports and asset URLs stay intact.
+export function versionRuntimeFiles(files) {
+  const hash = createHash('sha256');
+  for (const [file, contents] of [...files].sort(([a], [b]) => a.localeCompare(b))) {
+    hash.update(`${file}\0${contents.length}\0`).update(contents);
+  }
+  const releasePath = `releases/${hash.digest('hex').slice(0, 16)}/`;
+  let html = files.get('index.html').toString();
+  for (const directory of ['src', 'vendor', 'assets']) {
+    html = html.replaceAll(`./${directory}/`, `./${releasePath}${directory}/`);
+  }
+  const versioned = new Map([['index.html', Buffer.from(html)], ['.nojekyll', Buffer.from('')]]);
+  for (const [file, contents] of files) {
+    if (file !== 'index.html' && file !== '.nojekyll') versioned.set(releasePath + file, contents);
+  }
+  return {files: versioned, releasePath};
+}
+
 export async function build(root = projectRoot) {
   root = await realpath(root);
   // Collect and validate everything before replacing the generated directory.
-  const files = await collectRuntimeFiles(root);
+  const {files, releasePath} = versionRuntimeFiles(await collectRuntimeFiles(root));
   const dist = path.join(root, 'dist');
   const existing = await lstat(dist).catch(error => {
     if (error.code !== 'ENOENT') throw error;
@@ -102,7 +122,7 @@ export async function build(root = projectRoot) {
     await mkdir(path.dirname(target), {recursive: true});
     await writeFile(target, contents);
   }
-  return {directory: dist, files: [...files.keys()].sort()};
+  return {directory: dist, files: [...files.keys()].sort(), releasePath};
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

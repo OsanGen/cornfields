@@ -40,3 +40,11 @@ Before each update record the current successful deployment commit. Revert the f
 ## Published files
 
 dist/ is generated from the runtime module graph, the explicit asset list in scripts/build.mjs and the required Three.js modules. Three.js's license and asset credits are included. No Node server, account system or runtime API is needed. The hosting provider can maintain its own access logs.
+
+The page loads its scripts, styles and assets from `releases/<content-hash>/`.
+The hash covers the entire published runtime, so changing a nested module also
+changes the entrypoint URL. This prevents a fresh page from reusing an older
+cached intro or game module. Relative module, font and media URLs stay together
+under the same release directory. Use a fresh `?release=<commit>` page link when
+announcing a deployment to bypass a previously cached HTML page as well. On a
+normal launch, click **BEGIN** to play the intro; `?intro=off` deliberately skips it.

@@ -4,7 +4,7 @@ import {mkdtemp, mkdir, readFile, writeFile, rm, symlink, readdir} from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {build, collectRuntimeFiles, moduleImports, resolveModule, runtimeAssets} from '../scripts/build.mjs';
+import {build, collectRuntimeFiles, moduleImports, resolveModule, runtimeAssets, versionRuntimeFiles} from '../scripts/build.mjs';
 import {normalizeBasePath, resolvePreviewFile} from '../scripts/preview-dist.mjs';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -40,22 +40,23 @@ async function fixture(t) {
 test('package follows runtime and vendor imports, includes credits, and replaces stale output', async t => {
   const root = await fixture(t);
   const result = await build(root);
-  assert(result.files.includes('src/input.js'));
-  assert(result.files.includes('vendor/three/build/three.core.js'));
-  assert(result.files.includes('vendor/three/examples/jsm/utils/Helper.js'));
-  assert(result.files.includes('vendor/three/LICENSE'));
-  assert(result.files.includes('assets/field/LICENSES.md'));
-  assert(result.files.includes('assets/audio/distress.wav'));
-  assert(result.files.includes('assets/audio/scream.wav'));
-  assert(result.files.includes('assets/audio/sources.json'));
+  const files = result.files.map(file => file.startsWith(result.releasePath) ? file.slice(result.releasePath.length) : file);
+  assert(files.includes('src/input.js'));
+  assert(files.includes('vendor/three/build/three.core.js'));
+  assert(files.includes('vendor/three/examples/jsm/utils/Helper.js'));
+  assert(files.includes('vendor/three/LICENSE'));
+  assert(files.includes('assets/field/LICENSES.md'));
+  assert(files.includes('assets/audio/distress.wav'));
+  assert(files.includes('assets/audio/scream.wav'));
+  assert(files.includes('assets/audio/sources.json'));
   for(const file of ['rain.mp3','thunder.mp3','splash-1.mp3','splash-2.mp3','weather-sources.json','LICENSES.md']) {
-    assert(result.files.includes(`assets/audio/${file}`));
+    assert(files.includes(`assets/audio/${file}`));
   }
   assert(result.files.includes('.nojekyll'));
   assert(!result.files.some(file => /(?:node_modules|private|unused|stale|\._)/.test(file)));
   assert(!((await readdir(result.directory)).includes('stale.txt')));
   const html = await readFile(path.join(result.directory, 'index.html'), 'utf8');
-  assert(html.includes('./vendor/three/build/three.module.js'));
+  assert(html.includes(`./${result.releasePath}vendor/three/build/three.module.js`));
   assert(!html.includes('node_modules'));
 });
 
@@ -68,11 +69,11 @@ test('package rejects source escapes and keeps an existing build on validation f
 
 test('preview resolves a project prefix and rejects traversal, hidden paths, and symlink escape', async t => {
   const root = await fixture(t);
-  const {directory} = await build(root);
+  const {directory, releasePath} = await build(root);
   assert.equal(normalizeBasePath('/cornfields'), '/cornfields/');
   assert.throws(() => normalizeBasePath('/../'), /simple project path/);
   assert.equal(await resolvePreviewFile(directory, '/cornfields/?play=1', '/cornfields/'), path.join(directory, 'index.html'));
-  assert.equal(await resolvePreviewFile(directory, '/cornfields/src/main.js', '/cornfields/'), path.join(directory, 'src/main.js'));
+  assert.equal(await resolvePreviewFile(directory, `/cornfields/${releasePath}src/main.js`, '/cornfields/'), path.join(directory, releasePath, 'src/main.js'));
   await symlink(path.join(root, 'art/private.txt'), path.join(directory, 'outside.txt'));
   for (const url of ['/src/main.js', '/cornfields/%2e%2e/art/private.txt', '/cornfields/.secret', '/cornfields/src%5cmain.js', '/cornfields/outside.txt']) {
     await assert.rejects(resolvePreviewFile(directory, url, '/cornfields/'));
@@ -115,4 +116,59 @@ test('actual runtime graph and HTML resolve entirely below a GitHub Pages projec
 
 test('module closure recognizes multiline imports, reexports, side effects and lazy imports', () => {
   assert.deepEqual(moduleImports("import {\n thing\n} from './one.js';\nexport {thing} from './two.js';\nimport './three.js';\nconst later = import('./four.js');"), ['./one.js', './two.js', './three.js', './four.js']);
+});
+
+test('release URLs invalidate a cached entrypoint when a nested module changes', async t => {
+  const root = await fixture(t);
+  const entry = html => html.match(/type="module" src="([^"]+)"/)[1];
+  const first = await build(root);
+  const oldEntry = entry(await readFile(path.join(first.directory, 'index.html'), 'utf8'));
+  // A nested change must invalidate the graph even when main.js is unchanged.
+  await writeFile(path.join(root, 'src/input.js'), 'export const input = {intro: true};');
+  const second = await build(root);
+  const newEntry = entry(await readFile(path.join(second.directory, 'index.html'), 'utf8'));
+  assert.notEqual(newEntry, oldEntry, 'A new page must not reuse its cached module graph');
+  const base = new URL('https://example.test/cornfields/');
+  const oldChild = new URL('./input.js', new URL(oldEntry, base));
+  const newChild = new URL('./input.js', new URL(newEntry, base));
+  assert.notEqual(newChild.href, oldChild.href, 'Nested modules also need a fresh URL');
+  assert.equal(await readFile(path.join(second.directory, newChild.pathname.slice(base.pathname.length)), 'utf8'),
+    'export const input = {intro: true};');
+});
+
+test('release identity is stable, changes with assets, and preserves relative runtime URLs', async t => {
+  const root = await fixture(t);
+  const runtime = await collectRuntimeFiles(root);
+  const first = versionRuntimeFiles(runtime);
+  assert.equal(versionRuntimeFiles(new Map([...runtime].reverse())).releasePath, first.releasePath);
+  const changed = new Map(runtime);
+  changed.set('assets/audio/rain.mp3', Buffer.from('updated rain'));
+  assert.notEqual(versionRuntimeFiles(changed).releasePath, first.releasePath);
+
+  for (const prefix of ['/', '/cornfields/']) {
+    const base = new URL(`https://example.test${prefix}`);
+    const html = first.files.get('index.html').toString();
+    const imports = JSON.parse(html.match(/<script type="importmap">([^<]+)<\/script>/)[1]).imports;
+    for (const match of html.matchAll(/\b(?:src|href)="(\.\/[^"]+)"/g)) {
+      assert(first.files.has(new URL(match[1], base).pathname.slice(prefix.length)));
+    }
+    for (const [file, contents] of first.files) {
+      if (!file.endsWith('.js')) continue;
+      const importer = new URL(file, base);
+      for (const specifier of moduleImports(contents.toString())) {
+        const mapped = imports[specifier] || (specifier.startsWith('three/addons/')
+          ? imports['three/addons/'] + specifier.slice('three/addons/'.length) : null);
+        const url = new URL(mapped || specifier, mapped ? base : importer);
+        assert(first.files.has(url.pathname.slice(prefix.length)), `Missing versioned dependency ${url}`);
+      }
+    }
+    for (const [relative, importer] of [
+      ['../assets/audio/rain.mp3', 'src/audio.js'],
+      ['../assets/field/hands.glb', 'src/hands.js'],
+      ['../assets/fonts/rubik-glitch.ttf', 'src/style.css'],
+    ]) {
+      const url = new URL(relative, new URL(first.releasePath + importer, base));
+      assert(first.files.has(url.pathname.slice(prefix.length)), `Missing versioned asset ${url}`);
+    }
+  }
 });
