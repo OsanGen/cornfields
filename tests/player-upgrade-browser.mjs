@@ -6,14 +6,15 @@ import {captureGame} from './helpers/capture.mjs';
 
 const output='output/remaining-upgrade-2026-10-01/browser';await mkdir(output,{recursive:true});
 const preview=await startPreview({port:0,basePath:'/cornfields/',seconds:180});
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const deadline=setTimeout(()=>browser.close(),150000),report={errors:[],devices:[]};
 try{
   for(const touch of [false,true]){
     const name=touch?'phone':'desktop',page=await browser.newPage({viewport:touch?{width:844,height:390}:{width:1280,height:720},isMobile:touch,hasTouch:touch,deviceScaleFactor:1});
     page.setDefaultTimeout(15000);page.on('pageerror',error=>report.errors.push(String(error)));
     page.on('console',message=>{if(message.type()==='error')report.errors.push(message.text());});
-    await page.goto(preview.url+'?test=1&intro=off&horror=off&quality=high');
+    await page.goto(preview.url+'?test=1&intro=off&horror=off&quality=high',{waitUntil:'networkidle'});
+    await page.bringToFront();
     await page.waitForFunction(()=>window.__test?.intro().coreReady);
     await page.locator('#start-btn')[touch?'tap':'click']();
     const step=(seconds,input={})=>page.evaluate(({seconds,input})=>window.__test.step(seconds,input),{seconds,input});
@@ -36,7 +37,7 @@ try{
   const fallback=await browser.newPage({viewport:{width:844,height:390},isMobile:true,hasTouch:true});
   fallback.on('pageerror',error=>report.errors.push(String(error)));
   await fallback.route('**/player-arms.glb',route=>route.fulfill({status:200,contentType:'model/gltf-binary',body:'invalid optional model fixture'}));
-  await fallback.goto(preview.url+'?test=1&intro=off');await fallback.waitForFunction(()=>window.__test?.intro().coreReady);
+  await fallback.goto(preview.url+'?test=1&intro=off',{waitUntil:'networkidle'});await fallback.bringToFront();await fallback.waitForFunction(()=>window.__test?.intro().coreReady);
   assert.equal((await fallback.evaluate(()=>window.__test.diagnostics())).visuals.hands.status,'fallback');
   await fallback.locator('#start-btn').tap();await fallback.evaluate(()=>window.__test.step(.1,{forward:1}));
   assert.equal((await fallback.evaluate(()=>window.__test.state())).mode,'playing');
