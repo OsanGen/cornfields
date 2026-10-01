@@ -6,7 +6,7 @@ This source includes rain and puddles, the hands/QTE/enterable-corn update and t
 
 The progressive upgrade adds graphics tiers, corn motion/detail, animation blending, safer phone interruptions and pacing controls. It also replaces the first-person placeholders with a CC0 textured pistol and rigged arms, improves timber and wet-ground presentation, and provides repeatable asset exports. See [UPGRADE.md](UPGRADE.md) for the authoring guide, experiment outcomes and remaining device acceptance. The workflow runs above identify the deployed revision.
 
-The main game now uses spacious wooden corridors. Side doors lead into a separate,
+The main game now uses spacious wooden corridors. Open glowing entrances lead into a separate,
 open cornfield for optional hiding; going deep attracts additional zombies and
 warnings to return. See [CORRIDOR_FIELD_UPDATE.md](CORRIDOR_FIELD_UPDATE.md) for the
 corrected design, verification and release gates. SURVIVAL_UPDATE.md records the
@@ -27,7 +27,17 @@ unchanged. Three small CC0 creature recordings add a stalking growl and varied
 attack roars; provenance is in `assets/audio/creature-sources.json`.
 Use `npm run test:polish:browser` for desktop/touch captures and contact checks.
 
-On a phone, choose **BEGIN** or **SKIP INTRO**, then turn to landscape and tap **ENTER THE FIELD**. The left joystick moves; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
+The corridor pursuer continually routes toward the player around corners. Walking
+loses distance; Shift or the outer edge of the touch joystick sprints. Gun stagger,
+flashlight recoil and the ten-second escape recovery keep their existing rules.
+Walk through a neon **HIDE HERE** opening to enter corn without an interaction.
+The pursuer follows its last corridor doorway clue, then searches using field
+sight and sound. Quiet hiding still works; field time does not advance the main
+three-minute goal. Openings use a shared fractal/liquid border and the existing
+CC0 mist texture, with at most two nearby effects (one on phones/low quality).
+Reduced effects freezes the border motion. No new asset download is required.
+
+On a phone, choose **BEGIN** or **SKIP INTRO**, then turn to landscape and tap **ENTER THE FIELD**. The left joystick moves and its outer edge sprints; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
 
 For future changes, start with [ARCHITECTURE.md](ARCHITECTURE.md). It maps mechanics, input, UI, AI, visuals and audio to their files and verification commands.
 
@@ -49,19 +59,20 @@ The intro plays once per page session. Escape skips it; switching away pauses it
 | Control | Action |
 | --- | --- |
 | WASD / arrow keys | Move |
+| Shift while moving | Sprint in the corridor/field game |
 | Mouse | Look |
 | Left click | Fire one scarce, nonlethal round |
-| E | Open the entrance or toggle the aimed corn gate |
+| E | Open the main entrance; hiding openings require no interaction |
 | Esc | Skip an active intro; otherwise pause and release the mouse |
 | F | Toggle flashlight |
 | Space, repeatedly while grabbed | Drive the knife forward and break free |
 | M | Mute or unmute |
 
-Movement always uses the fast speed; Shift is unnecessary. The pause menu includes volume, reduced motion, fullscreen and restart. Switching away pauses the simulation. Headphones are recommended. Death restarts at the entrance; checkpoints are one-time rewards, not saved respawn points.
+Walking is 3.8 m/s; sprinting is 4.8 m/s and makes louder footsteps. The corridor pursuer moves at 4.0 to 4.2 m/s. The pause menu includes volume, reduced motion, fullscreen and restart. Switching away pauses the simulation. Headphones are recommended. Death restarts at the entrance; checkpoints are one-time rewards, not saved respawn points.
 
 ## Phone controls
 
-After watching or skipping the intro, turn to landscape and tap ENTER THE FIELD to play. The left joystick moves; drag the right side to look. FIRE spends one round per tap. LIGHT toggles the flashlight. The contextual button opens or closes the aimed gate. Walk through its opening to enter or leave corn. The top-right pause button opens settings and restart. Fullscreen is optional and appears only when supported.
+After watching or skipping the intro, turn to landscape and tap ENTER THE FIELD to play. The left joystick moves; push it to the outer edge to sprint. Drag the right side to look. FIRE spends one round per tap. LIGHT toggles the flashlight. The contextual button opens the main entrance. Walk directly through a glowing HIDE HERE opening to enter corn and through the red return frame to leave. The top-right pause button opens settings and restart. Fullscreen is optional and appears only when supported.
 
 When grabbed, repeatedly tap the contextual **STAB** button. Eight fresh taps free you;
 holding it does not count. Existing health drains during the struggle. After a successful
@@ -87,7 +98,7 @@ The manual `Publish playtest to GitHub Pages` workflow installs locked dependenc
 
 1. Enter the field with 100 health and two rounds.
    Spacious wooden corridors own the hidden 180-second and 120-metre qualification.
-   Side doors offer optional hiding in a separate open cornfield. Time there does
+   Glowing walk-through openings offer optional hiding in a separate open cornfield. Time there does
    not advance corridor qualification; returning resumes it.
 2. Follow landmarks; choose movement, flashlight, hiding or a shot to survive.
 3. A successful hit staggers the zombie. A miss spends the round. It cannot die.
@@ -102,11 +113,11 @@ escape follows a collision-checked route into nearby walkable space. Both actors
 share the gates, solid partitions and walkable geometry. Mandatory checkpoints remain
 physical bottlenecks even when every corn gate is open.
 The zombie remains incapacitated for exactly ten seconds after landing, then screams
-once and resumes hunting from legitimate observations. Extra shots cannot reset an
+once and resumes corridor pursuit or field hunting from observations. Extra shots cannot reset an
 active gun stagger or the escape recovery timer. A shot outside recovery buys the
 original 3 / 2.5 / 2 seconds, depending on checkpoint progress.
 
-Fixed side doors return the player from the open cornfield to the same corridor
+Fixed open passages return the player from the open cornfield to the same corridor
 entrance. Going deeper triggers warnings and up to three additional field zombies.
 Standing still can conceal the player without locking movement or deleting enemy
 memory. Rustling can trigger a nearby rush, while distant input does not reveal
@@ -130,7 +141,7 @@ fallback. Use `?test=1&intro=off&lab=1&horror=off` and the Viewmodel scene for i
 - One runtime dependency: pinned Three.js. No application framework, bundler, backend or runtime networked services. Visual assets are served locally.
 - A shared spacious corridor graph and separate open-field layout. Rendering, collision, visibility and pathfinding use the same active level data; the original 33 x 35 map remains for older fixtures.
 - Fine-grid circle collision, bounded movement substeps and cached A* enemy routing through the same door geometry.
-- One explicit evidence-based zombie state machine plus a small threat director. Perception, decaying memory, seeded prediction and bounded searches drive navigation; unseen hidden coordinates do not guide prediction.
+- One zombie state machine plus a small threat director. The primary pursuer receives a corridor-only route target while the player is in the main game. Field sight, sound, decaying memory and bounded searches guide hiding pursuit; unseen field coordinates never guide prediction.
 - Instanced corn, a rigged zombie with a primitive fallback, authored landmarks, fog and a toggleable flashlight.
 - Local CC0 creature vocal recordings with original synthesized wind, rustling, footsteps and impacts. Stereo direction and distance gain; optional audio-load failure retains synthesized fallback.
 - A tiny allowlisted local static server. App resources are served locally after installation. No telemetry, accounts, cookies or persistence.

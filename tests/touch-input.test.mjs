@@ -88,6 +88,14 @@ test('touch dispose removes handlers and resets controls', () => {
   for (const id of ['move-stick', 'look-zone', 'touch-fire', 'touch-interact', 'touch-light', 'touch-pause']) assert.equal(h.node(id).listenerCount(), 0);
 });
 
+test('joystick outer edge sprints and releasing or cancelling immediately stops it',()=>{
+  const h=fixture();h.send('move-stick','pointerdown',1,62,42);assert.equal(h.read().sprint,false);
+  h.send('move-stick','pointermove',1,62,20);assert.equal(h.read().sprint,true);
+  h.send('move-stick','pointerup',1);assert.equal(h.read().sprint,false);
+  h.send('move-stick','pointerdown',2,62,20);assert.equal(h.read().sprint,true);
+  h.send('move-stick','pointercancel',2);assert.equal(h.read().sprint,false);
+});
+
 test('touch start/resume ignores unavailable mouse capture and capture error events', async () => {
   const h = createHarness({touch: true, denyLock: true});
   await h.app.enter();

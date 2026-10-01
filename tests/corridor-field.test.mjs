@@ -59,10 +59,10 @@ test('corridor QTE reserves a valid local landing and has exactly one owner',()=
   assert.equal(beginTackle(g,blocksFor(g)),false);
   for(const p of g.interaction.landing.route)assert.ok(canOccupy(g.maze,p.x,p.z,.25,g.blocks));
 });
-test('real controls open a side door, cross into the field, and return without a timer reset',()=>{
+test('real controls walk through a side opening and return without a timer reset',()=>{
   const g=setup(),d=g.maze.cornDoors.find(d=>d.fieldEntrance);
   Object.assign(g.player,{x:d.x,z:d.z+1.3,yaw:0});
-  updateGame(g,.5,{interact:true});assert.ok(g.cornDoors[d.index].amount>.96);
+  assert.equal(g.cornDoors[d.index].amount,1);
   updateGame(g,.8,{forward:1});assert.equal(g.player.zone,'field');const time=g.corridorRun.elapsed;
   updateGame(g,.25,{});assert.equal(g.corridorRun.elapsed,time);
   updateGame(g,1,{forward:1,yaw:0});assert.equal(g.player.zone,'corridor');assert.ok(g.corridorRun.elapsed>=time);

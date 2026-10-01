@@ -21,6 +21,7 @@ export function createEnemy() {
     step: 0,
     path: [],
     target: null,
+    corridorTarget: null,
     repath: 0,
     decision: 0,
     lost: 0,
@@ -69,7 +70,8 @@ function recordObservation(game, source, position, anchorId = null, at = game.el
 
 /**
  * Perception is the only AI boundary allowed to inspect the live player.
- * Navigation receives observations, never a remote hiding-occupancy lookup.
+ * Navigation receives observations or permitted corridor route points, never
+ * a remote hiding-occupancy lookup.
  * escapeEligible is a fairness rule, not a target position.
  * @typedef {object} Perception
  * @property {boolean} seen
@@ -78,11 +80,19 @@ function recordObservation(game, source, position, anchorId = null, at = game.el
  * @property {boolean} observed Whether a new player observation was recorded.
  * @property {boolean} escapeEligible Physical range/occlusion rule for ending rage.
  * @property {{anchorId:string,occupied:boolean}|null} inspectedHide Local inspection only.
+ * @property {{x:number,z:number}|null} corridorTarget Public corridor route target, never field occupancy.
  */
 export function senseZombie(game, blocks) {
   const enemy = game.enemy;
   const player = game.player;
   const memory = enemy.memory;
+  // The main pursuer knows the active corridor route even around blind corners.
+  // Keep this separate from observations: a field search can only inherit the
+  // last doorway clue, never a remotely refreshed hidden-player position.
+  const corridorTarget = game.corridorRun?.started && !game.corridorRun.complete &&
+    enemy.id === 'pursuer' && enemy.zone === 'corridor' && player.zone === 'corridor' &&
+    !game.maze.cornWorld.openField ? point(player) : null;
+  enemy.corridorTarget = corridorTarget;
   const seen = seesPlayer(game, blocks);
   let heard = null;
 
@@ -168,10 +178,10 @@ export function senseZombie(game, blocks) {
     inspectedHide,
     certainty: seen ? 'visual' : beam ? 'beam' : heard ? 'sound' : memory.lastKnown ? 'memory' : 'uncertain',
   };
-  return { seen, heard, beam, noticed, observed: seen || beam || !!heard, escapeEligible, inspectedHide };
+  return { seen, heard, beam, noticed, observed: seen || beam || !!heard, escapeEligible, inspectedHide, corridorTarget };
 }
 
-function move(game, dt, target, speed, blocks) {
+function move(game, dt, target, speed, blocks, continuous = false) {
   const enemy = game.enemy;
   if (!target) return false;
   if(enemy.contactSince!=null&&aggressive.has(enemy.state))return false;
@@ -186,6 +196,9 @@ function move(game, dt, target, speed, blocks) {
     enemy.repath = C.zombie.repathSeconds;
   }
 
+  // Do not spend idle frames at each graph node during corridor pursuit.
+  // Actual movement still goes through the existing swept collision body.
+  if (continuous) while (enemy.path[0] && distance(enemy, enemy.path[0]) < .09) enemy.path.shift();
   let destination = enemy.path[0];
   if (!destination) {
     if (distance(enemy, target) < .12) return true;
@@ -426,12 +439,20 @@ export function updateZombie(game, dt, blocks) {
       game.metrics.rageEscapes++;
       return;
     }
-    if (sensed.observed || !enemy.target) enemy.target = memory.lastKnown;
-    const reached = move(game, dt, enemy.target, C.zombie.rageSpeedByTier[tier], blocks);
-    if (reached && !sensed.seen && enemy.decision <= 0) {
+    if (sensed.corridorTarget || sensed.observed || !enemy.target) enemy.target = sensed.corridorTarget || memory.lastKnown;
+    const reached = move(game, dt, enemy.target, C.zombie.rageSpeedByTier[tier], blocks, !!sensed.corridorTarget);
+    if (reached && !sensed.corridorTarget && !sensed.seen && enemy.decision <= 0) {
       choosePrediction(game, blocks);
       enemy.decision = C.zombie.decisionSeconds;
     }
+    return;
+  }
+
+  if (sensed.corridorTarget) {
+    transition(game, 'chase', 'corridor_route');
+    enemy.target = point(sensed.corridorTarget);
+    enemy.lost = 0;
+    move(game, dt, enemy.target, C.zombie.corridorSpeedByTier[tier], blocks, true);
     return;
   }
 

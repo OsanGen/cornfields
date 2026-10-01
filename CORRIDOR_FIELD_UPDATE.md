@@ -6,14 +6,20 @@ unseen changes to authored section interiors. The hidden 180-second clock and
 120 m movement requirement belong to the corridors. Field hiding pauses that
 clock, while enemies, weather and ordinary gameplay time remain active.
 
-Nine optional side doors connect to a reusable open-field space. Walking across
+Nine always-open side entrances connect to a reusable open-field space. Walking across
 an open threshold changes location and rotates the local coordinates. Returning
 crosses the same logical door into its preserved corridor position. The active
 doorway and corridor layout remain fixed for the trip. This is a deliberate zone
 transition, not a continuous geographical overworld. The field has no internal
 collision walls or finite walk grid; a fixed foliage pool follows the player.
 
-The original pursuer can follow an observed doorway crossing by physically
+The corridor pursuer continually routes toward the player's corridor position,
+including around corners, at 4.0 to 4.2 m/s. Walking is 3.8 m/s; Shift or the outer
+edge of the phone joystick sprints at 4.8 m/s. Stagger, flashlight recoil and QTE
+recovery retain priority. This route target is separate from sensory memory and
+is cleared on field entry, so quiet field hiding remains evidence-based.
+
+The original pursuer can follow its last corridor doorway clue by physically
 approaching the open threshold. Three additional field-only creatures are pooled.
 At 15 m, a cooldown-limited message directs the player back to the corridors.
 At 25 m one extra is eligible; at 40 m up to three are eligible, at least eight
@@ -36,11 +42,20 @@ remain one-time, tied to their stable landmarks.
 - `src/corridor-layout.js`: wide section geometry, fixed doors, protected recycling.
 - `src/corridor-run.js`: corridor progress, field travel/pressure, enemy ownership.
 - `src/corridor-view.js`: wooden boundaries and bounded open-field foliage.
+- `src/hide-portals.js`: shared liquid/fractal border, neon label and reused CC0 mist.
+- `src/zombie-ai.js`: corridor route target and ordinary field perception/search.
 - Existing movement, combat, QTE, model, audio and input modules retain their roles.
 
 `?test=1&survival=off` retains the legacy authored test layout. The previous dedicated
 survival layout remains available only with `?test=1&layout=survival` for comparison.
 Normal snapshots omit hidden progression; explicit test diagnostics expose it.
+
+Entrance effects are limited to the nearest two on desktop and one on phones/low
+quality. Low quality removes wisps and halves noise layers. Reduced effects freezes
+motion. The return retains its red sky beacon. Main and daughter gates remain normal.
+Crossing has a short latch and checks landing occupancy; rejected crossings cannot
+credit movement. `node tests/pursuit-portals-browser.mjs` checks actual desktop/touch
+movement, sprint, same-entrance return, clock pause, pursuit and reduced effects.
 
 ## Verification and release
 

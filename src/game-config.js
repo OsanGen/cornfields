@@ -4,6 +4,7 @@ export const GAME_CONFIG = {
     stabSeconds:.2,throwSeconds:.5,recoverySeconds:10,redSkySeconds:3,retackleGrace:1},
   player: {
     moveSpeed: 3.8,
+    sprintSpeed: 4.8,
     maxHealth: 100,
     startAmmo: 2,
     checkpointAmmo: 2,
@@ -23,6 +24,7 @@ export const GAME_CONFIG = {
     stalkSpeed: 2.15,
     investigateSpeed: 2.65,
     chaseSpeedByTier: [3.6, 3.85, 4.05],
+    corridorSpeedByTier: [4.0, 4.1, 4.2],
     rageSpeedByTier: [4.1, 4.25, 4.4],
     cornRushSpeedByTier: [4.3, 4.6, 4.9],
     staggerSecondsByTier: [3, 2.5, 2],

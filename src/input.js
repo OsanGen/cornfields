@@ -12,6 +12,7 @@ const MOVE_KEYS = new Set([
  * @property {number} yaw
  * @property {number} pitch
  * @property {boolean} movementIntent
+ * @property {boolean} sprint
  * @property {boolean} fire
  * @property {boolean} flashlight
  * @property {boolean} interact
@@ -73,6 +74,7 @@ export function createInput({document, canvas, isPlaying, onPause, onMute,onEsca
         forward: held('KeyW', 'ArrowUp') - held('KeyS', 'ArrowDown'),
         strafe: held('KeyD', 'ArrowRight') - held('KeyA', 'ArrowLeft'),
         movementIntent: [...MOVE_KEYS].some(key => keys.has(key)),
+        sprint: keys.has('ShiftLeft')||keys.has('ShiftRight'),
         yaw: player.yaw - pending.dx * 0.002,
         pitch: Math.max(-1.25, Math.min(1.25, player.pitch - pending.dy * 0.002)),
         fire: pending.fire,

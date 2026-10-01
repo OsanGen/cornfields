@@ -104,7 +104,8 @@ export function cornNeighbors(world,id,blocks=[],allowDoors=false,sound=false){
   for(const [dx,dz] of dirs){
     const nx=x+dx,nz=z+dz,n=nz*world.width+nx;if(nx<0||nx>=world.width||nz<0||nz>=world.height||blockedNode(world,n,blocks))continue;
     const edge=pair(id,n),door=world.edgeDoors.get(edge);
-    if(world.edges.has(edge)||(door!==undefined&&blocks.doors?.[door]?.locked&&!sound)||(!allowDoors&&door!==undefined&&doorAmount(blocks,door)<.96))continue;
+    const permanent=door!==undefined&&world.doors[door].permanentOpen;
+    if(world.edges.has(edge)||(!permanent&&((door!==undefined&&blocks.doors?.[door]?.locked&&!sound)||(!allowDoors&&door!==undefined&&doorAmount(blocks,door)<.96))))continue;
     if(blocks.physical){
       const a=xy(world,id),b=xy(world,n);
       let clear=true;
@@ -159,7 +160,8 @@ export function cornPath(world,from,to,blocks=[],{allowDoors=false,sound=false,m
 export function cornOccupy(world,x,z,r,blocks=[]){
   if(world.openField){
     if(!Number.isFinite(x)||!Number.isFinite(z))return false;
-    const d=world.doors[world.activeDoor],leaf=doorLeaf(d,doorAmount(blocks,d.index)*(blocks.doors?.[d.index]?.swing||1));
+    const d=world.doors[world.activeDoor];if(d.permanentOpen)return true;
+    const leaf=doorLeaf(d,doorAmount(blocks,d.index)*(blocks.doors?.[d.index]?.swing||1));
     return sqDistance({x,z},leaf.a,leaf.b)>=(r+.035)**2;
   }
   if(x-r<0||z-r<0||x+r>=world.width*world.size||z+r>=world.height*world.size)return false;
@@ -171,7 +173,7 @@ export function cornOccupy(world,x,z,r,blocks=[]){
   }
   const id=cornNode(world,p);
   for(const index of world.buckets.get(id)||[]){const s=world.segments[index];if(sqDistance(p,s.a,s.b)<(r+.025)**2)return false;}
-  for(const index of world.doorBuckets.get(id)||[]){const s=doorLeaf(world.doors[index],doorAmount(blocks,index)*(blocks.doors?.[index]?.swing||1));if(sqDistance(p,s.a,s.b)<(r+.035)**2)return false;}
+  for(const index of world.doorBuckets.get(id)||[]){if(world.doors[index].permanentOpen)continue;const s=doorLeaf(world.doors[index],doorAmount(blocks,index)*(blocks.doors?.[index]?.swing||1));if(sqDistance(p,s.a,s.b)<(r+.035)**2)return false;}
   return true;
 }
 
@@ -192,6 +194,7 @@ export function gateAt(game){
   const p=game.player,w=game.maze.cornWorld,blocks=game.blocks||[];
   let chosen=null,best=Infinity;
   for(const door of w.doors){
+    if(door.permanentOpen)continue;
     if(w.openField&&door.index!==w.activeDoor)continue;
     const dx=door.x-p.x,dz=door.z-p.z,d=Math.hypot(dx,dz);
     if(d>1.55||d<.02||(-Math.sin(p.yaw)*dx-Math.cos(p.yaw)*dz)/d<.45)continue;
@@ -209,7 +212,7 @@ export function safeDoorSwing(door,bodies,preferred=1){
   return clear(preferred)?preferred:clear(-preferred)?-preferred:0;
 }
 export function requestDoor(game,door,open,actor='player'){
-  if(!door||game.mode!=='playing'||(actor==='enemy'&&game.interaction?.phase==='recovery'))return false;
+  if(!door||door.permanentOpen||game.mode!=='playing'||(actor==='enemy'&&game.interaction?.phase==='recovery'))return false;
   const state=game.cornDoors[door.index];
   if(state.locked)return false;
   if(open&&state.amount<.01){

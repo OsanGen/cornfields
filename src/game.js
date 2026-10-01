@@ -90,7 +90,7 @@ export function createGame(maze) {
     enemy: createEnemy(),
     doorOpen: false,
     doorAmount: 0,
-    cornDoors:maze.cornDoors.map(()=>({amount:0,target:0})),movingDoors:new Set(),doorRevision:0,
+    cornDoors:maze.cornDoors.map(d=>({amount:d.permanentOpen?1:0,target:d.permanentOpen?1:0})),movingDoors:new Set(),doorRevision:0,
     entered: false,
     deepest: 0,
     beats: [],
@@ -252,19 +252,20 @@ function resolvePlayerInput(game, dt, input) {
   const forward = Number.isFinite(input.forward) ? input.forward : 0;
   const strafe = Number.isFinite(input.strafe) ? input.strafe : 0;
   const length = Math.hypot(forward, strafe);
+  const sprint=!!game.corridorRun&&!!input.sprint&&length>0;
+  const speed=sprint?C.player.sprintSpeed:C.player.moveSpeed;
   const blocks = blocksFor(game);
   if (length) {
     moveBody(game.maze, player,
-      (-Math.sin(player.yaw) * forward + Math.cos(player.yaw) * strafe) / length * C.player.moveSpeed * dt,
-      (-Math.cos(player.yaw) * forward - Math.sin(player.yaw) * strafe) / length * C.player.moveSpeed * dt,
+      (-Math.sin(player.yaw) * forward + Math.cos(player.yaw) * strafe) / length * speed * dt,
+      (-Math.cos(player.yaw) * forward - Math.sin(player.yaw) * strafe) / length * speed * dt,
       blocks);
   }
-  const moved = distance(player, before);
+  const moved = corridorMovement(game,before,distance(player,before));
   survivalLocomotion(game,moved);
-  corridorMovement(game,before,moved);
   updateCornPresence(game,input,wasInCorn);
   player.moving = moved > .0001;
-  player.sprinting = false;
+  player.sprinting = sprint&&player.moving;
   game.steps += moved;
   return blocks;
 }
@@ -327,7 +328,7 @@ function tick(game, dt, input) {
   const blocks=blocksFor(game);
   game.footstepTimer -= dt;
   if (player.moving && game.footstepTimer <= 0) {
-    addEvidence(game, 'footsteps', player, C.hearing.footstepRadius, 2);
+    addEvidence(game, 'footsteps', player, C.hearing.footstepRadius*(player.sprinting?1.35:1), 2);
     game.footstepTimer = C.hearing.footstepInterval;
   }
   if (input.fire) fireGun(game, blocks);

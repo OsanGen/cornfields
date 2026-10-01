@@ -64,3 +64,9 @@ test('disposing input removes its browser listeners', () => {
   assert.equal(h.document.listenerCount(), 0);
   assert.equal(h.canvas.listenerCount(), 0);
 });
+
+test('sprint follows held Shift and clears with movement on pause or release',()=>{
+  const h=inputFixture();h.key('KeyW');h.key('ShiftLeft');assert.equal(h.read().sprint,true);
+  h.document.dispatch('keyup',{code:'ShiftLeft'});assert.equal(h.read().sprint,false);
+  h.key('ShiftRight');h.input.clear();assert.equal(h.read().sprint,false);assert.equal(h.read().movementIntent,false);
+});

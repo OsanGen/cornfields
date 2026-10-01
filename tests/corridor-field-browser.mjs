@@ -26,7 +26,7 @@ try{
   await shot('01-start');
   await page.evaluate(()=>window.__test.fixture('corridor'));await step(.02,{yaw:Math.PI});await shot('01b-wide-corridors');
   await page.evaluate(()=>window.__test.fixture('gate'));await shot('02-corridor-door');
-  await action('interact');await step(.5);await step(.8,{forward:1});
+  assert.equal((await state()).interactionPrompt,'');await step(.8,{forward:1});
   assert.equal((await state()).zone,'field');await shot('03-open-field');
   const before=(await state()).corridorRun.elapsed;await step(1);assert.equal((await state()).corridorRun.elapsed,before);
   await step(11,{forward:1,yaw:Math.PI});await step(17);const deep=await state();

@@ -48,7 +48,7 @@ export function installCorridorLayout(maze){
   }
   rect(w,46,1,4,9);rect(w,46,80,4,18);rect(w,43,94,10,7);
   const entrance=gate(w,'main-entrance',48,5,w.size*4-.06);
-  for(const s of sections)gate(w,`field-door-${s.slot}`,s.x+16,s.z+4,w.size*2-.06,{fieldEntrance:true,slot:s.slot,crossDirection:-1});
+  for(const s of sections)gate(w,`field-door-${s.slot}`,s.x+16,s.z+4,w.size*2-.06,{fieldEntrance:true,permanentOpen:true,slot:s.slot,crossDirection:-1});
   const exit=gate(w,'daughter-approach',48,84,w.size*4-.06,{finalExit:true});
   maze.cornWorld=w;maze.cornDoors=w.doors;maze.cornRegions=new Map();maze.hideAnchors=w.doors.filter(d=>d.fieldEntrance);maze.landingZones=[];
   maze.spawn=pt(w,48,2);maze.door={x:16,z:1};maze.daughter=pt(w,48,97);maze.center={...maze.daughter};maze.gate={x:16,z:28};

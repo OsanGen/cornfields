@@ -84,6 +84,7 @@ export function createTouchInput({document, isPlaying, onPause,isQte=()=>false,i
     read(player,until=Infinity) {
       const value = {
         forward, strafe, movementIntent: pending.moved || Boolean(forward || strafe),
+        sprint:Math.hypot(forward,strafe)>.85,
         yaw: player.yaw - pending.dx * 0.004,
         pitch: Math.max(-1.25, Math.min(1.25, player.pitch - pending.dy * 0.004)),
         fire: pending.fire, flashlight: pending.flashlight, interact: pending.interact,

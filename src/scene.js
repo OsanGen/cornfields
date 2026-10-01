@@ -116,6 +116,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const centerGlow=new THREE.PointLight(0xdcca8c,24,14,1.8);centerGlow.position.set(maze.center.x,4,maze.center.z);scene.add(centerGlow);
   const rewardRings=maze.checkpoints.map(cp=>{const ring=new THREE.Mesh(new THREE.TorusGeometry(.85,.035,4,24),new THREE.MeshBasicMaterial({color:0xb6be87}));ring.rotation.x=Math.PI/2;ring.position.set(cp.x,.025,cp.z);scene.add(ring);return {ring,id:cp.id};});
   for(const a of maze.hideAnchors){
+    if(a.permanentOpen)continue;
     const mark=textSign('CORN / E',.67,.18);
     if(maze.corridorLayout)mark.position.set(a.x,2.43,a.z+.08);
     else mark.position.set(a.x+a.cornSide.x*.97,1.45,a.z+a.cornSide.z*.97);

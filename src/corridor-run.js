@@ -9,7 +9,7 @@ export function initializeCorridorRun(g){
   if(!g.maze.corridorLayout)return;
   g.corridorMaze=g.maze;g.player.zone='corridor';g.player.yaw=Math.PI;g.doorOpen=true;
   g.corridorRun={elapsed:0,distance:0,ready:false,started:false,complete:false,recycleWait:1,cursor:0,recycles:0};
-  g.fieldTrip={active:false,doorId:null,returnDoor:null,warningAt:-100,nextSpawnAt:0,maxDepth:0,serial:0};
+  g.fieldTrip={active:false,doorId:null,returnDoor:null,warningAt:-100,nextSpawnAt:0,maxDepth:0,serial:0,crossingUntil:0};
   Object.assign(g.enemy,g.maze.corridorLayout.enemySpawn,{id:'pursuer',active:true,zone:'corridor'});
   g.enemies=[g.enemy,...Array.from({length:3},(_,i)=>Object.assign(createEnemy(),{id:`field-${i}`,active:false,zone:'field',extra:true}))];
   g.cornDoors[g.maze.corridorLayout.exit].locked=true;
@@ -23,14 +23,17 @@ function fieldMaze(g,door){
     cornWorld:{...w,openField:true,activeDoor:door.index,doors},checkpoints:[],landmarks:[]};
 }
 export function enterOpenField(g,door){
-  if(!g.corridorRun||g.fieldTrip.active||g.interaction||!door.fieldEntrance||g.cornDoors[door.index].amount<.96)return false;
+  if(!g.corridorRun||g.fieldTrip.active||g.interaction||!door.fieldEntrance||(!door.permanentOpen&&g.cornDoors[door.index].amount<.96))return false;
   const p=g.player,trip=g.fieldTrip;
   const destination={x:-(p.x-door.x),z:Math.max(.85,-(p.z-door.z))};
   if(g.enemies.some(e=>e.active&&e.zone==='field'&&distance(e,destination)<e.radius+p.radius+.1))return false;
-  Object.assign(trip,{active:true,doorId:door.id,returnDoor:door,serial:trip.serial+1});
+  Object.assign(trip,{active:true,doorId:door.id,returnDoor:door,serial:trip.serial+1,crossingUntil:g.elapsed+.3});
   const primary=g.enemies[0];
-  // Only a real observation near the doorway can give the pursuer an ingress.
-  if(primary.zone==='corridor'&&primary.memory.lastKnown&&distance(primary.memory.lastKnown,door)<5)primary.followDoor=door.index;
+  // Latch the final corridor route clue at entry. Field coordinates are never
+  // supplied to the inactive pursuer; it must walk to this fixed threshold.
+  const clue=primary.corridorTarget||primary.memory.lastKnown;
+  if(primary.zone==='corridor'&&clue&&distance(clue,door)<5)primary.followDoor=door.index;
+  primary.corridorTarget=null;
   g.maze=fieldMaze(g,door);g.fieldMaze=g.maze;
   Object.assign(p,destination,{yaw:p.yaw+Math.PI,zone:'field',hidden:false,cornZoneId:'open-field',stillSince:g.elapsed});g.metrics.hidesEntered++;
   emitEvent(g,'hide','Stay still to hide. Your daughter is back in the corridors.',p);
@@ -39,8 +42,10 @@ export function enterOpenField(g,door){
 export function leaveOpenField(g){
   if(!g.fieldTrip.active||g.interaction)return false;
   const p=g.player,door=g.fieldTrip.returnDoor;
-  g.maze=g.corridorMaze;g.fieldTrip.active=false;
-  Object.assign(p,{x:door.x-p.x,z:door.z+.9,yaw:p.yaw-Math.PI,zone:'corridor',hidden:false,cornZoneId:null,stillSince:g.elapsed});
+  const destination={x:door.x-p.x,z:door.z+.9};
+  if(g.enemies.some(e=>e.active&&e.zone==='corridor'&&distance(e,destination)<e.radius+p.radius+.1))return false;
+  g.maze=g.corridorMaze;g.fieldTrip.active=false;g.fieldTrip.crossingUntil=g.elapsed+.3;
+  Object.assign(p,destination,{yaw:p.yaw-Math.PI,zone:'corridor',hidden:false,cornZoneId:null,stillSince:g.elapsed});
   const primary=g.enemies[0];
   if(primary.zone==='field'){
     primary.followDoor=door.index;
@@ -51,12 +56,18 @@ export function leaveOpenField(g){
   return true;
 }
 export function corridorMovement(g,before,moved){
-  if(!g.corridorRun)return;
+  if(!g.corridorRun)return moved;
   const p=g.player;
   if(p.zone==='corridor'){
+    for(const d of g.maze.cornDoors.filter(d=>d.fieldEntrance))if(before.z>=d.z-.65&&p.z<d.z-.65&&Math.abs(p.x-d.x)<d.width/2-p.radius){
+      if(g.elapsed<g.fieldTrip.crossingUntil||!enterOpenField(g,d)){Object.assign(p,before);return 0;}
+      break;
+    }
     if(g.corridorRun.started)g.corridorRun.distance+=moved;
-    for(const d of g.maze.cornDoors.filter(d=>d.fieldEntrance))if(before.z>=d.z-.65&&p.z<d.z-.65&&Math.abs(p.x-d.x)<d.width/2-p.radius){enterOpenField(g,d);break;}
-  }else if(before.z>=-.65&&p.z<-.65&&Math.abs(p.x)<g.fieldTrip.returnDoor.width/2-p.radius)leaveOpenField(g);
+  }else if(before.z>=-.65&&p.z<-.65&&Math.abs(p.x)<g.fieldTrip.returnDoor.width/2-p.radius){
+    if(g.elapsed<g.fieldTrip.crossingUntil||!leaveOpenField(g)){Object.assign(p,before);return 0;}
+  }
+  return moved;
 }
 export function advanceCorridorRun(g,dt){
   const run=g.corridorRun;if(!run)return;
