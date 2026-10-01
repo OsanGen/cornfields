@@ -30,11 +30,12 @@ test('missing thunder sample fallback is also cancellable by a critical cue',()=
 
 test('weather voices do not consume gameplay event identity or the reserved source slots',()=>{
   const {audio,sources,game}=audioFixture();audio.eventRun=7;audio.eventId=19;
+  const steps=[];audio.footstep=event=>steps.push(event);
   audio.weatherEvent({type:'footstep',wet:true,variant:0},game);
   assert.equal(audio.eventRun,7);assert.equal(audio.eventId,19);
-  assert.equal(sources.length,1);
+  assert.equal(steps.length,1);assert.equal(steps[0].wet,true);assert.equal(sources.length,0);
   for(let i=0;i<10;i++)audio.transients.add({});
-  audio.weatherEvent({type:'thunder'},game);assert.equal(sources.length,1);
+  audio.weatherEvent({type:'thunder'},game);assert.equal(sources.length,0);
 });
 
 test('mute drops new weather voices and pauses rain gain when the run ends',()=>{

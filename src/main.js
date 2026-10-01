@@ -7,6 +7,8 @@ import {selectControlMode} from './control-mode.js';
 import {createWeather} from './weather.js';
 import {createIntroVisuals} from './intro-visuals.js';
 import {INTRO_ENABLED} from './intro.js';
+import {createPrologueVisuals} from './prologue-visuals.js';
+import {createPrologueAudio} from './prologue-audio.js';
 
 const node = id => document.getElementById(id);
 node('start-btn').disabled = true;
@@ -27,9 +29,12 @@ try {
   const audio = new FieldAudio({weatherEnabled: weather.state.enabled});
   const introEnabled=INTRO_ENABLED&&parameters.get('intro')!=='off';
   const introView=introEnabled?createIntroVisuals(view.renderer,{getCorn:view.introCorn,touch,enhanced:parameters.get('introfx')!=='off'}):null;
+  const prologueEnabled=introEnabled&&parameters.get('prologue')!=='off';
+  const prologueView=prologueEnabled?createPrologueVisuals(view.renderer,{getCorn:view.introCorn,getWorld:()=>({scene:view.scene,camera:view.camera}),spawn:{...maze.spawn,yaw:Math.PI},touch}):null;
+  const prologueAudio=prologueEnabled?createPrologueAudio(audio):null;
 
   const app = createGameApp({
-    maze, view, audio, weather, document, window, touch, introEnabled, introView, ready:view.ready,
+    maze, view, audio, weather, document, window, touch, introEnabled, introView, prologueEnabled,prologueView,prologueAudio,ready:view.ready,
     debug: parameters.has('debug'), horror:parameters.get('horror')!=='off',
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
   });

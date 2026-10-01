@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101713">
-  <title>CORNFIELDS · Find your daughter</title>
+  <title>CORNFIELDS · Find Sadie Yates</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23101713'/%3E%3Cpath d='M20 35V5M20 15L10 8M20 22L30 12M20 28L10 20' stroke='%23c3c598' stroke-width='2' fill='none'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./src/style.css">
   <script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
@@ -20,18 +20,20 @@
       <div class="intro">
         <p class="eyebrow"><span class="status-dot"></span> SOMETHING IS IN THE ROWS</p>
         <h1>CORN<br>FIELDS<span class="title-period">.</span></h1>
-        <p class="intro-copy">Your daughter is somewhere in the middle.<br>Something else is listening.</p>
+        <p class="intro-copy">Sadie Yates is somewhere in the corn.<br>Something else is listening.</p>
         <label class="alias-label" for="player-alias">WHAT SHOULD THE CORN CALL YOU?</label>
         <input id="player-alias" class="alias-input" autocomplete="off" spellcheck="false" maxlength="160" dir="auto" placeholder="Name or alias" aria-label="Name or fictional alias">
         <p class="alias-note">Fictional horror uses only this name. It stays in this session.<br>No camera or microphone. Leave blank to be STRANGER.</p>
         <button id="start-btn" class="primary">ENTER THE FIELD <span>↗</span></button>
         <button id="preflight-skip" class="text-button" hidden>SKIP INTRO</button>
         <p id="intro-content-note" class="small-note" hidden>Distorted visuals and sudden sounds. Reduced effects available.</p>
+        <p id="opening-note" class="small-note" hidden>A cinematic story playtest with temporary synthetic voices.<br>Sound is optional. All dialogue is subtitled.<br>Reduced effects are available.</p>
+        <p id="opening-status" class="small-note" role="status" hidden></p>
         <button id="credits-btn" class="text-button">CREDITS</button>
         <p id="loading" class="small-note">Loading the field...</p>
         <p class="small-note">Zombie model: <a href="https://opengameart.org/content/zombie" target="_blank" rel="noopener noreferrer" style="color:inherit">Pixelhouse</a> · <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer" style="color:inherit">CC BY 3.0</a> · modified in Blender</p>
       </div>
-      <div class="field-note"><span class="note-number">01 /</span><p>2 rounds. They only buy time.<br>Hide unseen. Stay completely still.<br>Light makes it angry.</p><span class="note-rule"></span><p class="muted">Two landmarks restore health and ammo.<br>Find her. End the nightmare.</p></div>
+      <div class="field-note"><span class="note-number">01 /</span><p>2 rounds. They only buy time.<br>Hide unseen. Stay completely still.<br>Light makes it angry.</p><span class="note-rule"></span><p class="muted">Two landmarks restore health and ammo.<br>Find Sadie Yates. End the nightmare.</p></div>
       <footer class="menu-footer"><span>HEADPHONES RECOMMENDED</span><span id="control-summary">WASD <i>MOVE</i> &nbsp; SHIFT <i>SPRINT</i> &nbsp; CLICK <i>FIRE</i> &nbsp; E <i>INTERACT</i></span><span id="device-label">DESKTOP / KEYBOARD + MOUSE</span></footer>
     </section>
     <section id="intro-screen" aria-label="Cornfields opening" hidden>
@@ -41,6 +43,14 @@
         <span id="intro-ghost" aria-hidden="true"></span>
       </div>
       <button id="intro-skip" class="text-button">SKIP INTRO <span aria-hidden="true">/ ESC</span></button>
+      <div class="opening-controls">
+        <button id="opening-pause" class="text-button" aria-label="Pause opening" aria-keyshortcuts="Escape" hidden>PAUSE</button>
+        <button id="story-skip" class="text-button" aria-keyshortcuts="J" hidden>SKIP STORY</button>
+      </div>
+      <div id="story-caption" role="region" aria-label="Story subtitles" aria-live="off" hidden>
+        <p id="story-speaker"></p>
+        <p id="story-subtitle"></p>
+      </div>
       <div class="intro-actions">
         <p id="intro-status" role="status"></p>
         <button id="intro-continue" class="primary" hidden>CONTINUE INTRO</button>
@@ -60,9 +70,10 @@
       <p class="credit-notices">Zombie: Pixelhouse, CC BY 3.0, modified in Blender.<br>
         <a href="./assets/field/LICENSES.md" target="_blank" rel="noopener noreferrer">Field and character notices</a> ·
         <a href="./assets/audio/LICENSES.md" target="_blank" rel="noopener noreferrer">Audio notices</a> ·
+        <a href="./assets/audio/prologue/LICENSES.md" target="_blank" rel="noopener noreferrer">Synthetic prologue voices</a> ·
         <a href="./assets/fonts/LICENSES.md" target="_blank" rel="noopener noreferrer">Font notices</a>
       </p>
-      <button id="credits-replay" class="text-button">REPLAY INTRO</button>
+      <button id="credits-replay" class="text-button">REPLAY OPENING</button>
       <button id="credits-close" class="primary">BACK</button>
     </section>
     <div id="hud" hidden>
@@ -94,11 +105,11 @@
       <label class="volume">Sound <input id="volume" aria-label="Sound volume" type="range" min="0" max="100" value="55"></label>
       <label class="graphics-setting">Graphics <select id="graphics-quality"><option value="auto">Automatic</option><option value="low">Low</option><option value="balanced">Balanced</option><option value="high">High</option></select></label>
       <label class="check"><input id="motion" type="checkbox"> Reduce camera motion and flicker</label>
-      <p id="controls-help" class="controls">WASD move · Shift sprint · Mouse look · Click fire · E open / close<br>F flashlight · Esc pause · M mute<br>Walk through a glowing HIDE HERE entrance for cover.<br>Stay still. Even looking makes noise. Going deep attracts more creatures.<br>Find your daughter in the corridors. Grabbed? Repeatedly press Space to stab.</p>
+      <p id="controls-help" class="controls">WASD move · Shift sprint · Mouse look · Click fire · E open / close<br>F flashlight · Esc pause · M mute<br>Walk through a glowing HIDE HERE entrance for cover.<br>Stay still. Even looking makes noise. Going deep attracts more creatures.<br>Find Sadie Yates in the corridors. Grabbed? Repeatedly press Space to stab.</p>
       <button id="fullscreen-btn" class="text-button">TOGGLE FULLSCREEN</button>
       <button id="restart-btn" class="text-button">START OVER</button>
       <button id="title-btn" class="text-button">TITLE / EDIT ALIAS</button>
-      <button id="replay-intro" class="text-button">REPLAY INTRO</button>
+      <button id="replay-intro" class="text-button">REPLAY OPENING</button>
       <button id="pause-credits" class="text-button">CREDITS</button>
     </section>
     <section id="result" class="modal" hidden>

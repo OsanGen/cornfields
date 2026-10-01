@@ -19,7 +19,7 @@ async function load({touch=false,query='',width=1280,height=720}={}){
   page.setDefaultTimeout(16000);
   page.on('pageerror',error=>report.errors.push(String(error)));
   page.on('console',message=>{if(message.type()==='error')report.errors.push(message.text());});
-  await page.goto(`${base}?test=1${query}`,{waitUntil:'networkidle'});await page.bringToFront();
+  await page.goto(`${base}?test=1&prologue=off${query}`,{waitUntil:'networkidle'});await page.bringToFront();
   await page.waitForFunction(()=>window.__test?.intro().coreReady);
 }
 async function measure(){

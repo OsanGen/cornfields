@@ -2,7 +2,7 @@
 
 **[Published playtest](https://osangen.github.io/cornfields/)** · Automatically selects desktop or touch controls.
 
-This source includes rain and puddles, the hands/QTE/enterable-corn update and the psychedelic intro. Publication status and deployed commit are available in the [Pages workflow runs](https://github.com/OsanGen/cornfields/actions/workflows/pages.yml).
+This source includes rain and puddles, the hands/QTE/enterable-corn update and a cinematic story before the psychedelic intro, with recorded footsteps in gameplay and the cinematic. The cinematic uses temporary playtest artwork and synthetic voices; publication status and deployed commit are available in the [Pages workflow runs](https://github.com/OsanGen/cornfields/actions/workflows/pages.yml).
 
 The progressive upgrade adds graphics tiers, corn motion/detail, animation blending, safer phone interruptions and pacing controls. It also replaces the first-person placeholders with a CC0 textured pistol and rigged arms, improves timber and wet-ground presentation, and provides repeatable asset exports. See [UPGRADE.md](UPGRADE.md) for the authoring guide, experiment outcomes and remaining device acceptance. The workflow runs above identify the deployed revision.
 
@@ -37,11 +37,11 @@ three-minute goal. Openings use a shared fractal/liquid border and the existing
 CC0 mist texture, with at most two nearby effects (one on phones/low quality).
 Reduced effects freezes the border motion. No new asset download is required.
 
-On a phone, choose **BEGIN** or **SKIP INTRO**, then turn to landscape and tap **ENTER THE FIELD**. The left joystick moves and its outer edge sprints; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
+On a phone, turn to landscape and choose **BEGIN STORY**. Gameplay follows the story and titles automatically. **Skip Story** retains the titles; **Skip Opening** goes straight to the brief return shot. The left joystick moves and its outer edge sprints; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
 
 For future changes, start with [ARCHITECTURE.md](ARCHITECTURE.md). It maps mechanics, input, UI, AI, visuals and audio to their files and verification commands.
 
-A lean browser horror prototype for desktop and landscape phones. Find your daughter in the center of the corn maze while an unkillable stalker listens, searches and predicts your route. Two rounds buy time. Hiding only works if you enter unseen and stay completely still.
+A lean browser horror prototype for desktop and landscape phones. Play Chief Mike Hartmouth, searching for missing Sadie Yates while an unkillable stalker pursues you. Two rounds buy time. Hiding only works if you enter unseen and stay completely still.
 
 ## Play locally
 
@@ -52,9 +52,9 @@ npm ci
 npm start
 ```
 
-Open <http://127.0.0.1:4173>. Enter an optional alias, choose sound/reduced effects, then click **BEGIN** for the 20-second opening or **SKIP INTRO**. Click **ENTER THE FIELD** on the title to capture the mouse and start playing. The preview binds only to loopback and closes after one hour; run `npm start` again if needed. Use `PORT=4174 npm start` if the default port is occupied.
+Open <http://127.0.0.1:4173>. Choose sound/reduced effects, then click **BEGIN STORY**. Mouse capture and sound activation happen on that click; the approximately six-minute opening leads directly into gameplay. The preview binds only to loopback and closes after one hour; run `npm start` again if needed. Use `PORT=4174 npm start` if the default port is occupied.
 
-The intro plays once per page session. Escape skips it; switching away pauses it until Continue Intro. Retry bypasses it. Credits and Replay Intro are available from non-playing screens. `?intro=off` restores direct entry; `?introfx=off` uses the direct-render fallback. See [INTRO_UPDATE.md](INTRO_UPDATE.md) for implementation, verification and rollback.
+The opening plays once per page session. Escape pauses; J skips the story and K skips the opening. Switching away pauses until **Continue**; retry bypasses it. **Replay Opening** preserves the paused run. `?intro=off` restores direct entry; `?prologue=off` restores the previous title-only opening; `?introfx=off` uses the direct-render title fallback. See [PROLOGUE_UPDATE.md](PROLOGUE_UPDATE.md) for story, assets and verification. [INTRO_UPDATE.md](INTRO_UPDATE.md) documents the retained title controller.
 
 | Control | Action |
 | --- | --- |
@@ -143,7 +143,7 @@ fallback. Use `?test=1&intro=off&lab=1&horror=off` and the Viewmodel scene for i
 - Fine-grid circle collision, bounded movement substeps and cached A* enemy routing through the same door geometry.
 - One zombie state machine plus a small threat director. The primary pursuer receives a corridor-only route target while the player is in the main game. Field sight, sound, decaying memory and bounded searches guide hiding pursuit; unseen field coordinates never guide prediction.
 - Instanced corn, a rigged zombie with a primitive fallback, authored landmarks, fog and a toggleable flashlight.
-- Local CC0 creature vocal recordings with original synthesized wind, rustling, footsteps and impacts. Stereo direction and distance gain; optional audio-load failure retains synthesized fallback.
+- Local CC0 creature vocals and recorded footsteps, with synthesized wind, rustling and impacts. Stereo direction and distance gain; optional audio-load failure retains synthesized fallback.
 - A tiny allowlisted local static server. App resources are served locally after installation. No telemetry, accounts, cookies or persistence.
 
 ## Files
@@ -317,6 +317,8 @@ The existing 1K Brown Mud maps now use a darker wet material. Shallow puddles bl
 Rain is one camera-local batch: 300 streaks on touch devices and 800 on desktop. Ripple/drop pools are capped at 12/24 on touch and 24/48 on desktop. The entire weather renderer uses at most four additional batches and two small generated textures. Reduced effects cap rain at 100 streaks and disable lightning/splash droplets. Storms use active gameplay time, pause with the game and reset on retry. QTE, the red-sky cue and critical scares take priority over thunder and lightning.
 
 Four local CC0 recordings add 699,480 bytes: Ylmir's loopable rain and rubberduck's thunder and splash effects. They load after the audio-unlock gesture with bounded failure handling. Provenance, exact hashes and licenses are in `assets/audio/weather-sources.json` and `assets/audio/LICENSES.md`. Missing sound files preserve play and visual effects.
+
+Gameplay and the cinematic share twelve recorded CC0 footsteps by Fantozzi, adding 58,757 bytes. Dirt/corn uses soft steps, wet mud layers existing splash recordings, and the cinematic roadside uses hard-surface contacts. Nearby zombies use heavier spatial steps. Cinematic footsteps follow the same movement phase as the cast's legs and stop on pause, stillness and skips. Files and licenses are in `assets/audio/footsteps/sources.json`; no runtime audio service is required. Verify with `node --test tests/footsteps.test.mjs tests/prologue-motion.test.mjs tests/prologue-audio.test.mjs` and `node tests/footsteps-browser.mjs` against the packaged local preview.
 
 Use `?weather=off` for the dry baseline or immediate weather rollback. The regular shared link still detects desktop/touch controls automatically.
 

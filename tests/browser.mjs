@@ -70,7 +70,7 @@ try{
   assert.equal((await state()).enemy.state,'staggered');assert.equal((await state()).metrics.shotsHit,1);await shot('07-stagger');checks.push('Actual gun input hits, staggers and ends rage');
   await restart();await enterMaze();const ending=await driveUntil('won');assert.equal(ending.mode,'won');
   assert.deepEqual(ending.progress.activatedCheckpoints,['cross','barrels']);assert.equal(ending.metrics.checkpointTimes.length,2);assert.equal(ending.player.maxHealth,100);
-  assert.equal(await page.locator('#result-title').textContent(),'You found her.');await shot('08-daughter');checks.push('Full real-movement route activates both one-time checkpoints and daughter success');
+  assert.equal(await page.locator('#result-title').textContent(),'You found Sadie.');await shot('08-daughter');checks.push('Full real-movement route activates both one-time checkpoints and daughter success');
   await restart();const fresh=await state();assert.equal(fresh.player.ammo,2);assert.equal(fresh.player.health,100);assert.equal(fresh.player.hidden,false);assert.deepEqual(fresh.progress.activatedCheckpoints,[]);assert.equal(fresh.metrics.shotsFired,0);checks.push('Restart clears all run state');
   await key('Escape');assert.deepEqual(errors,[]);assert.deepEqual(failedRequests,[]);
   report.ending=ending;report.diagnostics=await page.evaluate(()=>window.__test.diagnostics());

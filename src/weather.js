@@ -142,7 +142,7 @@ export function createWeather(maze, {touch = false, enabled = true} = {}) {
       const x = at.x + Math.cos(game.player.yaw) * side;
       const z = at.z - Math.sin(game.player.yaw) * side;
       const p = puddleAt(x, z);
-      const event = {type: 'footstep', wet: !!p, x, z, variant: foot % 2};
+      const event = {type: 'footstep', wet: !!p, surface: enabled && game.player.zone !== 'field' ? 'mud' : 'soft', x, z, variant: foot % 2};
       state.lastFootstep = {...event};
       state[p ? 'wetSteps' : 'drySteps']++;
       if (p) splash(p, x, z, .8);

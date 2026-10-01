@@ -24,7 +24,7 @@ export function eventTarget() {
 }
 
 /** Fakes only browser/renderer/audio boundaries, never the game or runtime. */
-export function createHarness({denyLock = false, lockRequest, audioUnlock, touch = false, width = 844, height = 390, weather = false, intro=false, ready=null, survival=false,corridors=false} = {}) {
+export function createHarness({denyLock = false, lockRequest, audioUnlock, touch = false, width = 844, height = 390, weather = false, intro=false, prologue=false, ready=null, survival=false,corridors=false} = {}) {
   const nodes = new Map();
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {
@@ -87,8 +87,10 @@ export function createHarness({denyLock = false, lockRequest, audioUnlock, touch
   };
   const maze = createMaze({survival,corridors});
   const weatherModel = weather ? createWeather(maze, {touch}) : null;
+  const prologueView={start(){},render(){},release(){},dispose(){}};
+  const prologueAudio={sync(){},cue(){},pause(){},release(){},dispose(){}};
   const app = createGameApp({
-    maze, view, audio, weather: weatherModel, document, window, touch, introEnabled:intro, ready, now: () => 0,
+    maze, view, audio, weather: weatherModel, document, window, touch, introEnabled:intro||prologue,prologueEnabled:prologue,prologueView,prologueAudio, ready, now: () => 0,
     requestFrame(callback) { frames.set(++frameId, callback); return frameId; },
     cancelFrame(id) { frames.delete(id); },
   });

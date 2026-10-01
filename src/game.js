@@ -100,7 +100,7 @@ export function createGame(maze) {
     caption: '',
     captionTime: 0,
     chapter: 'THE THRESHOLD',
-    objective: 'Open the CORNFIELD door. Find your daughter.',
+    objective: 'Open the CORNFIELD door. Find Sadie Yates.',
     landmark: 'TRUST THE LANDMARKS',
     landmarks: [],
     centerReached: false,
@@ -111,7 +111,7 @@ export function createGame(maze) {
     footstepTimer: 0,
     tutorial: { hideShown: false, entered: false },
     progress: {
-      objective: 'Find your daughter',
+      objective: 'Find Sadie Yates',
       checkpointIndex: 0,
       escalationTier: 0,
       activatedCheckpoints: [],
@@ -174,8 +174,8 @@ export function interact(game) {
   const blocks = blocksFor(game);
   if (nearDoor(game)) {
     game.doorOpen = true;
-    game.objective = 'FIND YOUR DAUGHTER';
-    emit(game, 'door', 'Find your daughter. Keep moving.');
+    game.objective = 'FIND SADIE YATES';
+    emit(game, 'door', 'Find Sadie Yates. Keep moving.');
     addEvidence(game, 'door', game.player, C.hearing.doorRadius, 2);
     return;
   }
@@ -206,8 +206,8 @@ export function win(game) {
   game.centerReached = true;
   game.progress.daughterFound = true;
   game.chapter = 'THE CENTER';
-  game.objective = 'You found her.';
-  emit(game, 'win', 'You found her.', game.maze.daughter);
+  game.objective = 'You found Sadie Yates.';
+  emit(game, 'win', 'You found Sadie Yates.', game.maze.daughter);
 }
 
 function checkpoints(game, blocks) {
@@ -281,7 +281,7 @@ function updateProgress(game, blocks) {
   if (game.doorOpen && cell.z < 30 && !game.entered) {
     game.entered = true;
     game.chapter = 'THE OUTER ROWS';
-    game.objective = 'FIND YOUR DAUGHTER';
+    game.objective = 'FIND SADIE YATES';
     emit(game, 'entered');
   }
   if (game.entered) game.deepest = Math.max(game.deepest, game.maze.distances.get(key(cell.x, cell.z)) || 0);

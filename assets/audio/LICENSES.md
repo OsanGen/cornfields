@@ -1,5 +1,7 @@
 # Audio sources
 
+- Footsteps: **Fantozzi** (sliced and shared by qubodup), [Fantozzi's Footsteps (Grass/Sand & Stone)](https://opengameart.org/content/fantozzis-footsteps-grasssand-stone), [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). Twelve SandL/R and StoneL/R recordings converted to mono 44.1 kHz MP3 at 96 kbps, peak adjusted, edge silence trimmed and a 2 ms attack fade applied. Runtime files and processing hashes: `footsteps/sources.json`. Both gameplay and cinematic use the same recordings; wet steps layer the existing rubberduck splashes.
+
 Runtime recordings are hosted locally with the game. Creature and weather recordings are CC0-1.0; the pistol recording uses CC BY 3.0 as noted below.
 
 - Pistol shot: **Michel Baradari**, [Chaingun, pistol, rifle, shotgun shots](https://opengameart.org/content/chaingun-pistol-rifle-shotgun-shots), [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Original `shots/pistol.wav`. Converted to mono PCM16 at 44.1 kHz, trimmed to 0.9 seconds and faded out over the last 0.1 seconds. Runtime: `pistol-shot.wav`. See `weapon-source.json` for source and runtime hashes. Original credit: Sounds (c) by Michel Baradari, apollo-music.de.

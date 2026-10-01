@@ -51,7 +51,7 @@ export function advanceCornSurvival(game,dt){
     if(crossed(previous,p,inner,1))s.innerCrossed=true;
     if(s.innerCrossed&&outerClosed&&close(game,layout.inner)){
       s.state='active_survival';s.startedAt=game.elapsed;game.entered=true;
-      game.chapter='THE LOST ROWS';game.objective='FIND YOUR DAUGHTER';
+      game.chapter='THE LOST ROWS';game.objective='FIND SADIE YATES';
       emitEvent(game,'corn_survival_started');
     }
     return;
@@ -85,7 +85,7 @@ export function finishCornSurvival(game){
     lock(game,index,false);
     if(requestDoor(game,game.maze.cornWorld.doors[index],true))game.movingDoors.add(index);
   }
-  game.chapter='THE THRESHOLD';game.objective='FIND YOUR DAUGHTER';
+  game.chapter='THE THRESHOLD';game.objective='FIND SADIE YATES';
   emitEvent(game,'corn_survival_complete','',game.player);
 }
 export function survivalSnapshot(game){

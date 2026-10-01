@@ -1,0 +1,200 @@
+{
+  "type": "temporary synthetic playtest dialogue",
+  "story": "Jacob Nangle; approved roadside adaptation",
+  "generator": "Installed Piper, offline ONNX CPU, two intra-op threads",
+  "model": "en_US-libritts_r-medium",
+  "model_url": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/libritts_r/medium",
+  "model_card": "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/libritts_r/medium/MODEL_CARD",
+  "model_sha256": "10bb85e071d616fcf4071f369f1799d0491492ab3c5d552ec19fb548fac13195",
+  "license": "CC BY 4.0 per model card; attribution and modified-output notice in LICENSES.md",
+  "cast_corpus_ids": {
+    "mike": "5918",
+    "clarence": "3370",
+    "stanley": "5914",
+    "dispatch": "783"
+  },
+  "voice_selection_reference": "https://github.com/line/LibriTTS-P",
+  "modifications": "New scripted speech; gain normalization, gentle tempo fitting and mono MP3 encoding. Dispatch filtering applied at runtime.",
+  "files": {
+    "car_mike_memory.mp3": {
+      "bytes": 110948,
+      "sha256": "74b62702e5091c9099c82b54e35f548947ca2d60b08c49b837876f71b0f34653",
+      "duration": 15.7486
+    },
+    "car_mike_2002.mp3": {
+      "bytes": 14516,
+      "sha256": "b1c15c52412175a6e18e243bec4105ef2ad2936f656e93815357067ecd2d4596",
+      "duration": 1.9841
+    },
+    "car_clarence_nervous.mp3": {
+      "bytes": 8972,
+      "sha256": "44ba19e84b8004d7eaae133598c6dd8cf516a3d763518e0a0c3c773691f1946a",
+      "duration": 1.1912
+    },
+    "car_mike_story.mp3": {
+      "bytes": 24596,
+      "sha256": "a26f511af5f9abfa9dc7f1855013f4e88e02e6a0293b5f87eb6fe3a3d4dc904a",
+      "duration": 3.4194
+    },
+    "car_mike_ready.mp3": {
+      "bytes": 34844,
+      "sha256": "0dc85316d031ecf17c6fe5999c9ece764678c52927c61a50b0d4af0852ed89db",
+      "duration": 4.8824
+    },
+    "dispatch_missing.mp3": {
+      "bytes": 47108,
+      "sha256": "895870aeb99552379a772f7f1a038bd7d6e3f87a86071e4131076ca01d40e9c0",
+      "duration": 6.626
+    },
+    "dispatch_property.mp3": {
+      "bytes": 22748,
+      "sha256": "32f4580f7ae077f55c43ee7ee31f45597039e936f563ac7a0b59b9c5c5f1359f",
+      "duration": 3.1645
+    },
+    "dispatch_clarence_close.mp3": {
+      "bytes": 7124,
+      "sha256": "04b20a55c44ce8514c112cf43d1d6e326b016e6dee541a73109e86fc594a7deb",
+      "duration": 0.9141
+    },
+    "emergence_stanley_missing.mp3": {
+      "bytes": 29972,
+      "sha256": "ec2a75d9ba88af3a0dc2f9b0f0c0939f79d353233b1da67da2f1da11a57f211c",
+      "duration": 4.1993
+    },
+    "emergence_stanley_follow.mp3": {
+      "bytes": 9644,
+      "sha256": "9904c16269260a105af3ba9b87640755b7266c638f9a2adc972acb91f41ad517",
+      "duration": 1.2835
+    },
+    "walk_stanley_curious.mp3": {
+      "bytes": 11492,
+      "sha256": "34fa898e198b2c8fed7bf84901d3100e4f0123f6f017357b378440f80bebc41d",
+      "duration": 1.5442
+    },
+    "walk_stanley_weeks.mp3": {
+      "bytes": 35348,
+      "sha256": "7476f3d446c92fd42cdf702c4e695c2ea0a62adda818f917e3ae75d4c9961766",
+      "duration": 4.9665
+    },
+    "walk_stanley_dinner.mp3": {
+      "bytes": 43076,
+      "sha256": "d3285615f9e7d586f3b145d582c45f34644672904bbede3df7d21ddb29fe51e2",
+      "duration": 6.0509
+    },
+    "walk_clarence_lives.mp3": {
+      "bytes": 5780,
+      "sha256": "7783f204a0abffa14be1be6fe13889fd5467db4d872e13ec9b77b66df2a3de52",
+      "duration": 0.7259
+    },
+    "walk_stanley_nobody.mp3": {
+      "bytes": 38708,
+      "sha256": "4b1587926a4f062b5fdf4da545e506758429930974259383bbfff3fe338522c3",
+      "duration": 5.4304
+    },
+    "walk_stanley_asked.mp3": {
+      "bytes": 13172,
+      "sha256": "ffbfc3ab8f158b6ce062197db1824b8b83bb89cf5ae46738a3bbad4c398cbb7d",
+      "duration": 1.7791
+    },
+    "walk_stanley_man.mp3": {
+      "bytes": 28964,
+      "sha256": "bb9c4ba4f4bf879b0f4a817d44f324b09999b5907d914a5e666b3b88f8ebab49",
+      "duration": 4.0384
+    },
+    "walk_clarence_known.mp3": {
+      "bytes": 7124,
+      "sha256": "ac4f25d1bf8b58127affbc7e809365796cca531cf2bdec9db39c9c0e6bd1c787",
+      "duration": 0.9144
+    },
+    "walk_stanley_stranger.mp3": {
+      "bytes": 18884,
+      "sha256": "4d541ef14f8982cb5c1e2de3a0b892eaead148c482f914d602a3ac35c344194e",
+      "duration": 2.6084
+    },
+    "walk_stanley_protective.mp3": {
+      "bytes": 23420,
+      "sha256": "defa36116aa567d34e940bd292bccb741d47e9ff9b101addbf3d4aa20d4aab93",
+      "duration": 3.2438
+    },
+    "history_stanley_miles.mp3": {
+      "bytes": 21236,
+      "sha256": "800c6328f4897f08476a327d01fe41ed7c38baff90215aabc98e3b1a803886ef",
+      "duration": 2.933
+    },
+    "history_stanley_acres.mp3": {
+      "bytes": 37700,
+      "sha256": "a31e2fea6a6bdc1a23f1317e7216db9ef5592745e2a46b39fcf24deda20bc1cb",
+      "duration": 5.3034
+    },
+    "history_clarence_through.mp3": {
+      "bytes": 8300,
+      "sha256": "004f4836c1e4da5f4fc7d498ce4d4f5845f4f32a4a2531afaf5366ff99243e10",
+      "duration": 1.0863
+    },
+    "history_stanley_compass.mp3": {
+      "bytes": 37532,
+      "sha256": "03e038ff24efe0ee292217399afe5d95b020642923be3ad0538297168e3b4a85",
+      "duration": 5.2603
+    },
+    "history_stanley_direction.mp3": {
+      "bytes": 50300,
+      "sha256": "8fa392504c0bb619790dd18929e65bb923728ddf4a9fe8499db6a006184db15a",
+      "duration": 7.1002
+    },
+    "history_stanley_rule.mp3": {
+      "bytes": 47780,
+      "sha256": "15f43a34fcfd7ca4b6812b5e143a8893da160f08cb6efc454a4e552a4ebed6dd",
+      "duration": 6.725
+    },
+    "history_stanley_knew.mp3": {
+      "bytes": 14180,
+      "sha256": "704992567a3d0cfb9a34b49c5937bedecbed76ba0ca765ac92bd965efcd26085",
+      "duration": 1.9389
+    },
+    "disappearance_mike_when.mp3": {
+      "bytes": 10988,
+      "sha256": "43308879bfe9776e17db08bf554ca6c365b12253d12e9f1e8ed166b00bd8526a",
+      "duration": 1.4706
+    },
+    "disappearance_stanley_dog.mp3": {
+      "bytes": 28124,
+      "sha256": "8b05e026f81ebf4473a97bf2205ac65077eb25b7784f39084de6e7ffbeaec5b2",
+      "duration": 3.931
+    },
+    "disappearance_stanley_barking.mp3": {
+      "bytes": 51644,
+      "sha256": "4711b9355b7d1cb8d57181d15a48aeab9e272698f2697e92a69d287385dbf2f4",
+      "duration": 7.2879
+    },
+    "disappearance_stanley_gone.mp3": {
+      "bytes": 22748,
+      "sha256": "add181a34d7f49e0aae950436b7282b959306c88b268a39a38d877b1e7089475",
+      "duration": 3.1663
+    },
+    "disappearance_clarence_footsteps.mp3": {
+      "bytes": 15692,
+      "sha256": "53bf9108ce4a5a6c1febd6422049a58dcc9f1083068759042d373a9b69815f0c",
+      "duration": 2.1427
+    },
+    "disappearance_stanley_vanished.mp3": {
+      "bytes": 28292,
+      "sha256": "6e2a9413f8611427bfd1edc66ecf0f0cca990b97ef5818d7923988b14c7c5612",
+      "duration": 3.9559
+    },
+    "arrival_clarence_here.mp3": {
+      "bytes": 7292,
+      "sha256": "e43291617486493d401e4f37754db75683c0550eb96f73750ebd96d286bcf161",
+      "duration": 0.9523
+    },
+    "arrival_stanley_yes.mp3": {
+      "bytes": 3428,
+      "sha256": "8e988e44c775a570fee5a4a2a31936840312f7eabfbf6e0f64d738af22028f26",
+      "duration": 0.3995
+    },
+    "rupture_clarence_mike.mp3": {
+      "bytes": 3932,
+      "sha256": "3a2ccbc592593338fee795229a464dd315c6f9a9715bc245fbfd525900db0f3d",
+      "duration": 0.4795
+    }
+  }
+}

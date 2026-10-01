@@ -33,7 +33,7 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
   if (touch) {
     text('control-summary', 'LEFT THUMB MOVE / EDGE SPRINT · RIGHT SIDE LOOK');
     text('device-label', 'PHONE / LANDSCAPE');
-    text('controls-help', 'Left stick: move; push to the edge to sprint · Drag right side: look · Buttons: fire, light, interact. Walk through a glowing HIDE HERE entrance for cover. Stay still, including your aim. Going deep attracts more creatures. Find your daughter in the corridors. Grabbed? Tap STAB repeatedly.');
+    text('controls-help', 'Left stick: move; push to the edge to sprint · Drag right side: look · Buttons: fire, light, interact. Walk through a glowing HIDE HERE entrance for cover. Stay still, including your aim. Going deep attracts more creatures. Find Sadie Yates in the corridors. Grabbed? Tap STAB repeatedly.');
     text('light-label', 'LIGHT');
   }
 
@@ -79,6 +79,48 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
         document.body.classList.toggle('playing',false);
       }
       text('credits-roles',INTRO.roles);
+    },
+    renderOpening(intro,{touch:openingTouch=touch,portrait=false,coreReady=false,coreError=null,entering=false,pointerError=''}={}){
+      const frame=intro.frame(reducedMotion);
+      // The original title-only flow remains owned by renderIntro.
+      if(!frame.stage)return;
+      const active=intro.active,phase=intro.phase,preflight=phase==='preflight',paused=phase==='paused',ready=phase==='ready';
+      const playing=active&&phase==='playing',story=frame.stage==='prologue';
+      document.body.classList.toggle('story-player',true);
+      document.body.classList.toggle('opening-active',active);
+      document.body.classList.toggle('opening-story',playing&&story);
+      document.body.classList.toggle('opening-paused',active&&(paused||ready));
+      node('intro-card').hidden=!active||preflight||ready||(!paused&&frame.stage!=='credits');
+      node('intro-enter').hidden=true;
+      node('intro-continue').hidden=!active||(!paused&&!ready);
+      node('intro-continue').disabled=!coreReady||!!coreError||entering||portrait;
+      text('intro-continue','CONTINUE');
+      node('intro-settings').hidden=!active||(!preflight&&!paused&&!ready);
+      node('preflight-skip').hidden=true;
+      node('intro-content-note').hidden=true;
+      node('opening-note').hidden=!active||!preflight;
+      node('start-btn').disabled=!coreReady||!!coreError||entering||portrait;
+      if(preflight)text('start-btn','BEGIN STORY');
+      const status=coreError?'The field could not load. Reload to retry.':
+        portrait?'TURN YOUR PHONE TO LANDSCAPE TO CONTINUE':
+        entering?'PREPARING TO CONTINUE...':!coreReady?'PREPARING THE FIELD...':
+        pointerError||(paused?'OPENING PAUSED':'');
+      node('opening-status').hidden=!active||!preflight||!status;text('opening-status',status);
+      node('intro-status').hidden=!active||(!paused&&!ready)||!status;text('intro-status',status);
+      node('intro-skip').hidden=!active||preflight||ready;
+      node('intro-skip').setAttribute?.('aria-keyshortcuts','K');
+      text('intro-skip',openingTouch?'SKIP OPENING':'SKIP OPENING / K');
+      node('story-skip').hidden=!active||!story||preflight||ready;
+      text('story-skip',openingTouch?'SKIP STORY':'SKIP STORY / J');
+      node('opening-pause').hidden=!playing;
+      text('opening-pause',openingTouch?'PAUSE':'PAUSE / ESC');
+      const showCaption=playing&&story&&!!frame.spoken;
+      node('story-caption').hidden=!showCaption;
+      text('story-speaker',showCaption?frame.speaker:'');text('story-subtitle',showCaption?frame.spoken:'');
+      const chapterFringe={car:.03,dispatch:.04,emergence:.16,walk:.22,history:.35,disappearance:.45,arrival:.5,rupture:.7};
+      const distortion=Number.isFinite(frame.distortion)?frame.distortion:chapterFringe[frame.chapter]||0;
+      node('story-caption').style.setProperty('--story-fringe',`${reducedMotion?0:Math.max(0,Math.min(1,distortion))*.8}px`);
+      text('credits-replay','REPLAY OPENING');text('replay-intro','REPLAY OPENING');text('title-btn','TITLE');
     },
     setAlias(value){alias=value;},
     setReducedMotion(value) {
@@ -171,10 +213,10 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
 
       if (ended && previousResult !== mode) {
         const won = mode === 'won';
-        text('result-label', won ? 'CORNFIELD / DAUGHTER FOUND' : 'THE FIELD REMEMBERS');
-        text('result-title', won ? 'You found her.' : 'You were found.');
+        text('result-label', won ? 'CORNFIELD / SADIE YATES FOUND' : 'THE FIELD REMEMBERS');
+        text('result-title', won ? 'You found Sadie.' : 'You were found.');
         text('result-copy', won
-          ? 'She is here. The search is over.'
+          ? 'Sadie Yates is safe. The search is over.'
           : 'Shots buy time. Hide unseen. Remain completely still.');
         node('retry-btn').innerHTML = won
           ? 'ENTER AGAIN <span>↗</span>' : 'TRY AGAIN <span>↗</span>';

@@ -1,5 +1,6 @@
 import {actorPosition} from './hiding.js';
 import {createAudioLifecycle} from './audio-lifecycle.js';
+import {createFootstepBank} from './footsteps.js';
 // Locally hosted licensed recordings plus synthesized fallback effects.
 export class FieldAudio {
   constructor({weatherEnabled=true}={}){this.ctx=null;this.volume=.55;this.muted=false;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.sources=[];this.transients=new Set();this.weaponVoices=new Set();this.weaponStats={sample:'idle',played:0,fallback:0};this.samples={};this.voice=null;this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;this.weatherEnabled=weatherEnabled;this.weatherSamples={};this.weatherVoices=new Set();this.rainTarget=0;this.weatherQuiet=false;}
@@ -12,6 +13,7 @@ export class FieldAudio {
     }
     if(!await this.lifecycle.resume())return false;
     this.applyVolume();
+    this.footsteps ||= createFootstepBank(this);void this.footsteps.load();
     this.samplesReady ||= Promise.all(Object.entries({distress:'distress.wav',scream:'scream.wav',pistol:'pistol-shot.wav',growl:'creature-growl.mp3',roar:'creature-roar.mp3',roarAlt:'creature-roar-alt.mp3'}).map(async([name,file])=>{
       if(name==='pistol')this.weaponStats.sample='loading';
       const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
@@ -81,7 +83,7 @@ export class FieldAudio {
   }
   async loadWeather(){
     this.rainGain=this.ctx.createGain();this.rainGain.gain.value=0;this.rainGain.connect(this.gameGain||this.master);
-    const files={rain:'rain.mp3',thunder:'thunder.mp3',splash0:'splash-1.mp3',splash1:'splash-2.mp3'};
+    const files={rain:'rain.mp3',thunder:'thunder.mp3'};
     await Promise.all(Object.entries(files).map(async([name,file])=>{
       const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
       try{
@@ -97,6 +99,8 @@ export class FieldAudio {
       }catch{/* Weather remains visual; the existing ambience is the audio fallback. */}
       finally{clearTimeout(timer);}
     }));
+    this.footsteps ||= createFootstepBank(this);await this.footsteps.load();
+    for(let i=0;i<2;i++)this.weatherSamples[`splash${i}`]=this.footsteps.sample(`wet${i}`);
   }
   stopWeatherVoices(){
     for(const source of this.weatherVoices){try{source.stop();}catch{}}
@@ -111,7 +115,9 @@ export class FieldAudio {
   }
   weatherEvent(event,game){
     if(!this.ctx||this.ctx.state!=='running'||this.muted||game.mode!=='playing')return;
-    if(event.type==='footstep'&&!event.wet){this.sound({noise:true,duration:.16,gain:.32,filter:1100});this.sound({freq:75,end:35,duration:.13,gain:.11});return;}
+    if(event.type==='footstep'){
+      this.footstep({surface:event.surface||'soft',wet:event.wet,gain:game.player?.sprinting?.82:.65});return;
+    }
     const thunder=event.type==='thunder';
     if(thunder&&(this.weatherQuiet||this.weatherVoices.size))return;
     // Reserve room for threat/QTE audio even during a busy splash sequence.
@@ -137,7 +143,8 @@ export class FieldAudio {
   setVolume(v){this.volume=v;this.applyVolume();}
   toggleMute(){this.muted=!this.muted;if(this.muted){this.stopCues();this.stopIntro();}this.applyVolume();return this.muted;}
   onInterruption(listener){this.interruptionListeners ||= new Set();this.interruptionListeners.add(listener);return()=>this.interruptionListeners.delete(listener);}
-  pause(){this.stopWeaponVoices();this.stopIntro();this.lifecycle?.pause();}
+  pause(){this.stopWeaponVoices();this.stopIntro();this.footsteps?.stop();this.lifecycle?.pause();}
+  footstep(options){this.footsteps ||= createFootstepBank(this);return this.footsteps.play(options);}
   sound({noise=false,freq=100,end=45,duration=.3,gain=.3,pan=0,filter=900,type='sine',delay=0,weapon=false}={}){
     if(!this.ctx||this.ctx.state!=='running'||this.muted||(!weapon&&this.transients.size>=16))return;
     const owner=weapon?this.weaponVoices:this.transients;if(weapon)this.reserveWeaponVoice();
@@ -170,7 +177,7 @@ export class FieldAudio {
     source.onended=()=>{this.weaponVoices.delete(source);source.disconnect();gain.disconnect();};
     source.start(time);source.stop(time+duration+.01);
   }
-  stopCues({weapons=true}={}){if(weapons)this.stopWeaponVoices();for(const source of this.transients){try{source.stop();}catch{}}this.transients.clear();this.weatherVoices.clear();this.voice=null;}
+  stopCues({weapons=true}={}){if(weapons)this.stopWeaponVoices();this.footsteps?.stop('game');for(const source of this.transients){try{source.stop();}catch{}}this.transients.clear();this.weatherVoices.clear();this.voice=null;}
   vocal(kind,g,position,priority=1,duration=1.4){
     if(!this.ctx||this.ctx.state!=='running'||this.muted||this.transients.size>=16)return;
     if(this.voice&&this.voice.priority>priority)return;
@@ -225,13 +232,23 @@ export class FieldAudio {
   pan(source,player){const dx=source.x-player.x,dz=source.z-player.z;return (dx*Math.cos(player.yaw)-dz*Math.sin(player.yaw))/Math.max(3,Math.hypot(dx,dz));}
   update(g,dt,{footsteps=true}={}){
     if(!this.ctx||g.mode!=='playing')return;
-    if(footsteps&&g.player.moving&&!g.player.hidden&&g.steps-this.lastStep>1.55){this.lastStep=g.steps;this.sound({noise:true,duration:.16,gain:.32,filter:1100});this.sound({freq:75,end:35,duration:.13,gain:.11});}
+    if(g.steps<this.lastStep||g.player.hidden||g.interaction)this.lastStep=g.steps;
+    if(footsteps&&g.player.moving&&!g.player.hidden&&!g.interaction&&g.steps-this.lastStep>1.55){this.lastStep=g.steps;this.footstep({surface:'soft',gain:g.player.sprinting?.82:.65});}
     const player={...actorPosition(g,'player'),yaw:g.player.yaw},enemy=actorPosition(g,'enemy'),d=Math.hypot(player.x-enemy.x,player.z-enemy.z);
+    this.enemySteps ||= new WeakMap();
+    for(const actor of g.enemies||[g.enemy]){
+      const last=this.enemySteps.get(actor)??actor.step;
+      const distance=Math.hypot(player.x-actor.x,player.z-actor.z);
+      const audible=actor.active!==false&&actor.visible&&(!g.enemies||actor.zone===g.player.zone)&&distance<18&&!g.interaction;
+      if(!audible||actor.step<last||actor.step-last>1.4){
+        this.enemySteps.set(actor,actor.step);
+        if(audible&&actor.step-last>1.4)this.footstep({actor:actor.id||'enemy',heavy:true,gain:Math.max(.04,.62*(1-distance/18)),pan:this.pan(actor,player)});
+      }else if(!this.enemySteps.has(actor))this.enemySteps.set(actor,actor.step);
+    }
     if(g.enemies&&g.enemy.zone!==g.player.zone){this.threatGain?.gain.setTargetAtTime(0,this.ctx.currentTime,.35);return;}
-    if(g.enemy.visible&&d<18&&g.enemy.step-this.lastEnemyStep>1.4){this.lastEnemyStep=g.enemy.step;this.sound({freq:65,end:25,duration:.23,gain:Math.max(.04,.55*(1-d/18)),pan:this.pan(enemy,player)});}
     const intensity=g.threat?.intensity||0;this.threatGain?.gain.setTargetAtTime(intensity*.18,this.ctx.currentTime,.35);
     this.pulse-=dt;if(['chase','rage_chase','corn_rush'].includes(g.enemy.state)&&this.pulse<=0){this.pulse=g.enemy.state==='chase'?.55:.4;this.sound({freq:53,end:31,duration:.22,gain:.20});this.sound({freq:48,end:26,duration:.16,gain:.13,delay:.2});}
     this.breath-=dt;if(g.enemy.visible&&d<14&&this.breath<=0&&!g.interaction&&['concealed_stalk','observe','investigate','predictive_search'].includes(g.enemy.state)){this.breath=5.2;this.vocal('growl',g,enemy,0,1.9);}
   }
-  reset(){this.stopCues();this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.weatherQuiet=false;this.rainTarget=0;if(this.ctx){this.rainGain?.gain.setTargetAtTime(0,this.ctx.currentTime,.03);this.master.gain.cancelScheduledValues(this.ctx.currentTime);this.applyVolume();}}
+  reset(){this.stopCues();this.footsteps?.reset();this.enemySteps=new WeakMap();this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.weatherQuiet=false;this.rainTarget=0;if(this.ctx){this.rainGain?.gain.setTargetAtTime(0,this.ctx.currentTime,.03);this.master.gain.cancelScheduledValues(this.ctx.currentTime);this.applyVolume();}}
 }

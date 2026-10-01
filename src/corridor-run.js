@@ -13,7 +13,7 @@ export function initializeCorridorRun(g){
   Object.assign(g.enemy,g.maze.corridorLayout.enemySpawn,{id:'pursuer',active:true,zone:'corridor'});
   g.enemies=[g.enemy,...Array.from({length:3},(_,i)=>Object.assign(createEnemy(),{id:`field-${i}`,active:false,zone:'field',extra:true}))];
   g.cornDoors[g.maze.corridorLayout.exit].locked=true;
-  g.objective='Enter the wooden corridors. Find your daughter.';
+  g.objective='Enter the wooden corridors. Find Sadie Yates.';
 }
 function fieldMaze(g,door){
   const base=g.corridorMaze,w=base.cornWorld;
@@ -36,7 +36,7 @@ export function enterOpenField(g,door){
   primary.corridorTarget=null;
   g.maze=fieldMaze(g,door);g.fieldMaze=g.maze;
   Object.assign(p,destination,{yaw:p.yaw+Math.PI,zone:'field',hidden:false,cornZoneId:'open-field',stillSince:g.elapsed});g.metrics.hidesEntered++;
-  emitEvent(g,'hide','Stay still to hide. Your daughter is back in the corridors.',p);
+  emitEvent(g,'hide','Stay still to hide. Sadie Yates is back in the corridors.',p);
   return true;
 }
 export function leaveOpenField(g){
@@ -52,7 +52,7 @@ export function leaveOpenField(g){
     primary.followAfter=g.elapsed+(primary.memory.lastKnown&&distance(primary.memory.lastKnown,{x:0,z:0})<5?0:8);
   }
   g.metrics.hidesSurvived++;
-  emitEvent(g,'leave','Find your daughter. Keep moving.',p);
+  emitEvent(g,'leave','Find Sadie Yates. Keep moving.',p);
   return true;
 }
 export function corridorMovement(g,before,moved){
@@ -72,7 +72,7 @@ export function corridorMovement(g,before,moved){
 export function advanceCorridorRun(g,dt){
   const run=g.corridorRun;if(!run)return;
   if(g.player.zone==='corridor'){
-    if(!run.started&&g.player.z>9*g.maze.cornWorld.size){run.started=true;g.entered=true;g.chapter='THE WOODEN ROWS';g.objective='FIND YOUR DAUGHTER';}
+    if(!run.started&&g.player.z>9*g.maze.cornWorld.size){run.started=true;g.entered=true;g.chapter='THE WOODEN ROWS';g.objective='FIND SADIE YATES';}
     if(run.started&&!run.complete)run.elapsed+=dt;
     if(!run.ready&&run.elapsed>=C.cornSurvival.seconds&&run.distance>=C.cornSurvival.distance){run.ready=true;emitEvent(g,'corridor_exit_ready');}
     if(run.ready&&!g.interaction){
@@ -87,7 +87,7 @@ export function advanceCorridorRun(g,dt){
 function updateFieldPressure(g){
   if(!g.fieldTrip.active||g.interaction)return;
   const trip=g.fieldTrip,p=g.player,depth=Math.hypot(p.x,p.z);trip.maxDepth=Math.max(trip.maxDepth,depth);
-  if(depth>=15&&g.elapsed-trip.warningAt>=18){trip.warningAt=g.elapsed;emitEvent(g,'field_warning','Too deep. Return to the corridors. Find your daughter.');}
+  if(depth>=15&&g.elapsed-trip.warningAt>=18){trip.warningAt=g.elapsed;emitEvent(g,'field_warning','Too deep. Return to the corridors. Find Sadie Yates.');}
   const desired=depth>=40?3:depth>=25?1:0;
   const extras=g.enemies.filter(e=>e.extra&&e.active);
   // Retreat releases only distant creatures hidden by the field's dense corn.

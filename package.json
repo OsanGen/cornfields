@@ -23,6 +23,8 @@
     "test:browser": "node tests/hands-corn-browser.mjs",
     "test:intro": "node --test tests/intro.test.mjs tests/intro-audio.test.mjs",
     "test:intro:browser": "node tests/intro-browser.mjs",
+    "test:prologue": "node --test --test-concurrency=1 tests/opening.test.mjs tests/prologue*.test.mjs",
+    "test:prologue:browser": "node tests/prologue-browser.mjs",
     "test:mobile": "CORNFIELD_DEVICE=phone node tests/hands-corn-browser.mjs"
   },
   "dependencies": { "three": "0.186.0" }

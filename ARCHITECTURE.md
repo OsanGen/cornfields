@@ -7,11 +7,11 @@ pressure and per-enemy dispatch; `corridor-view.js` owns their distinct views.
 The original `corn-survival` modules below remain historical test fixtures.
 Normal startup selects `createMaze({corridors:true})`.
 
-The opening is a separate presentation controller in `intro.js`, driven by the existing `app.js` frame loop. `intro-visuals.js` owns a small scene/camera and composer, borrowing the renderer and ready corn geometry through `scene.introCorn`. It disposes only owned staging/effect resources. `main.js` starts the shell immediately while `view.ready` resolves; entry is gated on core readiness. The timeline and all gameplay ticks are separate, including test stepping.
+The opening is a separate presentation controller in `opening.js`, driven by the existing `app.js` frame loop. It sequences `prologue.js` (326-second story), `intro.js` (existing 20-second titles), and a four-second return. Script and recording timing live in `prologue-script.js` and `prologue-voice-timing.js`. Gameplay, AI and weather ticks remain frozen until handoff. `prologue-visuals.js` owns the cruiser/approach/cast and borrows the renderer and corn geometry. Under a mist veil it transfers to the actual maze at the real spawn. Temporary scene membership, fog, sky tint and camera visibility are restored after every draw. `intro-visuals.js` retains the title scene/composer. Owned scene resources are released after entry. Core loading gates Begin.
 
-`FieldAudio.prepare()` creates/resumes the shared context without starting game loops. Intro cues use a separate gain and source set. `startGameplay()` activates game ambience once; the legacy `unlock()` remains prepare plus startGameplay. Intro entry requests pointer lock before awaiting anything and starts the simulation only after capture succeeds. Retrying capture leaves the ready title and simulation unchanged.
+`FieldAudio.prepare()` resumes the shared context without starting game loops. `prologue-audio.js` owns a separate bus, prerecorded dialogue, road/wind ambience and centered rupture effects. It sequentially fetches at most three upcoming utterances and retains at most four decoded buffers; pause cancels voices, resume seeks from the story clock, and release clears buffers. Speech failures preserve subtitles. `startGameplay()` activates game ambience once; legacy `unlock()` remains prepare plus startGameplay. The initial Begin gesture requests pointer lock before awaiting anything. Capture persists through the opening; only interruption requires Continue and recapture. The end automatically starts gameplay and quarantines held inputs.
 
-`INTRO_ENABLED` and `?intro=off` restore the original entry path. `npm run test:intro` and `npm run test:intro:browser` cover the opening. Existing gameplay browser suites explicitly bypass it. Local font assets and notices are part of the runtime allowlist; no CDN or new package is required.
+`INTRO_ENABLED` and `?intro=off` restore direct entry. `?prologue=off` retains the old title-only behavior. `npm run test:prologue` and `npm run test:prologue:browser` cover the complete opening; title-only browser regression explicitly sets prologue=off. Existing gameplay browser suites bypass all opening scenes. Voice MP3s and notices are explicitly allowlisted; no CDN, TTS runtime or new package is required. See PROLOGUE_UPDATE.md for authoring and asset provenance.
 
 This is a JavaScript/Three.js game with desktop and landscape touch input. It has one runtime dependency and a small static packaging step for hosting. Keep changes small and preserve the deterministic simulation.
 
@@ -40,7 +40,11 @@ This is a JavaScript/Three.js game with desktop and landscape touch input. It ha
 | Threat text and intensity | src/threat-director.js | Truthfulness and cooldown tests |
 | Scene, gun, landmarks, foliage | src/scene.js; src/field-visuals.js | Browser screenshots and frame-time comparison |
 | Mud, rain, puddles, ripple/splash limits, storm timing | src/weather.js; src/weather-view.js; src/field-visuals.js | tests/weather.test.mjs; tests/weather-browser.mjs |
-| Sounds and spatial cues | src/audio.js | Browser checks with sound |
+| Sounds and spatial cues | src/audio.js, src/footsteps.js | Audio unit and browser checks |
+
+`footsteps.js` caches twelve CC0 Fantozzi recordings (58,757 bytes) and the two existing splash clips once per audio context. Gameplay and cinematic voices have separate owners and buses, with ten active footstep layers maximum and an immediate synthesized fallback. Weather remains the sole gameplay contact owner when present; its existing collision-resolved distance counter emits one dry/wet contact. Audio does not change AI hearing or consume its random stream. Each nearby zombie has its own distance cursor and existing zone/visibility/distance gates.
+
+`prologue-motion.js` supplies the cinematic's blocking, distance-driven gait and contact cursor to both visuals and audio. Retimed dialogue changes travel speed without breaking leg/sound alignment. Car exits have explicit contacts; seated, stationary and rupture scenes are silent. Pauses, replay, time jumps and the concealed location transfer rebase contact cursors. Cast steps use relative pan/distance and sit below dialogue. `tests/footsteps-browser.mjs` verifies real decoding/playback in desktop and touch browser contexts.
 | Browser diagnostics | src/debug.js | Keep existing verification hooks compatible |
 
 When balance changes affect instructions, also update the corresponding tutorial copy in index.html or ui.js.

@@ -11,6 +11,7 @@ import {createUI} from './ui.js';
 import {createIntro, INTRO_ENABLED} from './intro.js';
 import {setReturnOpen} from './corn-layout.js';
 import {enterOpenField} from './corridor-run.js';
+import {createOpening} from './opening.js';
 
 /**
  * Owns one game session and its browser lifecycle.
@@ -25,6 +26,9 @@ export function createGameApp({
   horror = true,
   introEnabled = INTRO_ENABLED,
   introView = null,
+  prologueEnabled = false,
+  prologueView = null,
+  prologueAudio = null,
   ready = null,
   now = () => performance.now(),
   requestFrame = callback => window.requestAnimationFrame(callback),
@@ -45,7 +49,10 @@ export function createGameApp({
   let alias='STRANGER';
   let coreReady = !ready, coreError = null, introAudioAttempt = 0, introEntering = false, pendingCapture = null;
   let creditsOpen = false;
-  const intro = createIntro({enabled:introEnabled, onCue:id=>audio.introCue?.(id)});
+  prologueEnabled=prologueEnabled&&introEnabled;
+  let openingStage=null;
+  const intro = prologueEnabled?createOpening({onCue:id=>prologueAudio?.cue(id),onIntroCue:id=>audio.introCue?.(id)}):createIntro({enabled:introEnabled, onCue:id=>audio.introCue?.(id)});
+  if(prologueEnabled){ui.node('player-alias').value='MIKE';document.body.classList.toggle('story-player',true);}
   if (ready) Promise.resolve(ready).then(()=>{if(!disposed){coreReady=true;present();}},error=>{
     if(!disposed){coreError=error.message;ui.showError('The field could not load. Reload to retry.');present();}
   });
@@ -57,7 +64,7 @@ export function createGameApp({
     isQte:()=>game.interaction?.phase==='qte',
     inputTime:stamp=>manual?game.elapsed:game.elapsed+clock.pendingSeconds+Math.max(0,Math.min(.25,((Number.isFinite(stamp)&&stamp<1e12?stamp:now())-last)/1000)),
     onPause: pause,
-    onEscape() { if (['playing','paused'].includes(intro.phase)) skipIntro(); else pause(); },
+    onEscape() { if(prologueEnabled&&intro.active)pause();else if (['playing','paused'].includes(intro.phase)) skipIntro(); else pause(); },
     isPresentation: () => intro.active,
     onMute() {
       game.caption = audio.toggleMute() ? 'Sound muted.' : 'Sound on.';
@@ -104,8 +111,22 @@ export function createGameApp({
     syncMode();
     ui.render(game);
     ui.renderIntro(intro, {enabled:introEnabled, portrait:touch&&window.innerHeight>window.innerWidth, coreReady, coreError, entering:introEntering, pointerError, creditsOpen, muted:audio.muted, volume:audio.volume});
+    if(prologueEnabled)ui.renderOpening(intro,{touch,portrait:touch&&window.innerHeight>window.innerWidth,coreReady,coreError,entering:introEntering,pointerError});
     if (intro.active) {
-      try { introView?.render(intro.frame(reducedMotion)); }
+      try {
+        if(prologueEnabled&&intro.phase!=='preflight'){
+          if(openingStage!==intro.stage){
+            openingStage=intro.stage;
+            if(openingStage==='credits'){prologueAudio?.pause();introView?.start();if(intro.phase==='playing')audio.startIntro?.();}
+            else{audio.stopIntro?.();introView?.release();if(openingStage==='prologue')prologueView?.start();}
+          }
+          const shot=intro.frame(reducedMotion);
+          if(intro.stage==='credits')introView?.render(shot);
+          else prologueView?.render(shot);
+          if(intro.stage==='prologue'&&intro.phase==='playing')prologueAudio?.sync(shot);
+        }else if(prologueEnabled)view.render(game,0,reducedMotion);
+        else introView?.render(intro.frame(reducedMotion));
+      }
       catch { introView?.release(); introView=null; }
     } else view.render(game, time, reducedMotion);
   }
@@ -128,6 +149,7 @@ export function createGameApp({
   }
 
   function beginIntro(replay=false) {
+    if(prologueEnabled){void beginOpening({replay});return;}
     if(!introEnabled)return;
     if(disposed||(!replay&&intro.phase!=='preflight')||(replay&&game.mode==='playing'))return;
     if(!intro.begin({replay}))return;
@@ -139,6 +161,7 @@ export function createGameApp({
 
   function finishReplay() {
     introAudioAttempt++;audio.stopIntro?.();audio.pause();intro.finish();introView?.release();input.clear();clock.reset();last=now();
+    if(prologueEnabled){prologueAudio?.release();prologueView?.release();openingStage=null;if(document.pointerLockElement===canvas)document.exitPointerLock();}
     present();ui.focusMode(game.mode);
     if(game.mode==='menu')ui.node('start-btn').focus();
   }
@@ -146,11 +169,17 @@ export function createGameApp({
   function readyIntro() {
     introAudioAttempt++;audio.stopIntro?.();input.clear();clock.reset();
     if(intro.replaying){finishReplay();return;}
+    if(prologueEnabled){finishOpening();return;}
     if(!document.hidden)audio.startIntro?.({quiet:true});
     present();ui.node('intro-enter').focus();
   }
 
   function skipIntro() {
+    if(prologueEnabled){
+      if(intro.phase==='preflight'){void beginOpening({skip:true});return;}
+      if(!intro.active||disposed)return;
+      prologueAudio?.pause();audio.stopIntro?.();intro.skip();input.clear();present();return;
+    }
     if(!intro.active||intro.phase==='ready'||disposed)return;
     intro.skip();readyIntro();
   }
@@ -160,7 +189,51 @@ export function createGameApp({
     if(phase==='playing'&&intro.phase==='ready')readyIntro();
   }
 
+  function finishOpening(){
+    if(disposed||!coreReady||coreError||document.hidden||(touch&&window.innerHeight>window.innerWidth)||(!touch&&document.pointerLockElement!==canvas)){
+      pointerError='Opening paused. Continue when you are ready.';prologueAudio?.pause();audio.pause();present();return;
+    }
+    prologueAudio?.release();prologueView?.release();introView?.release();audio.stopIntro?.();intro.finish();openingStage=null;
+    input.quarantine?.();input.clear();clock.reset();last=now();
+    alias='MIKE';ui.setAlias(alias);startGame(game);audio.startGameplay?.();present();
+  }
+
+  async function beginOpening({replay=false,skip=false}={}){
+    if(disposed||introEntering||!coreReady||coreError||(touch&&window.innerHeight>window.innerWidth))return;
+    if(replay&&game.mode==='playing')return;
+    if(!replay&&!['preflight','paused','ready'].includes(intro.phase))return;
+    const attempt=++entryAttempt;introEntering=true;pointerError=null;let timer,accepted=false;
+    try{
+      const capture=touch?Promise.resolve():new Promise((resolve,reject)=>{
+        pendingCapture={resolve,reject};
+        if(document.pointerLockElement===canvas){resolve();return;}
+        const result=canvas.requestPointerLock();
+        if(result?.then)result.then(resolve,reject);else if(document.pointerLockElement===canvas)resolve();
+        timer=setTimeout(()=>reject(new Error('Mouse capture unavailable. Press Continue to retry.')),4000);
+      });
+      const sound=Promise.resolve(audio.prepare?.()).catch(()=>false);
+      sound.then(()=>{
+        if(disposed||document.hidden||intro.phase==='paused'||(!intro.active&&game.mode!=='playing'))audio.pause();
+        else if(attempt!==entryAttempt)return;
+        else if(!accepted&&!introEntering)audio.pause();
+        else if(accepted&&!intro.active&&game.mode==='playing')audio.startGameplay?.();
+        else if(accepted&&intro.stage==='credits')audio.startIntro?.();
+        if(!disposed&&accepted)present();
+      });
+      await capture;
+      if(disposed||attempt!==entryAttempt)return;
+      if(document.hidden||(!touch&&document.pointerLockElement!==canvas))throw new Error('Opening interrupted. Press Continue to retry.');
+      accepted=true;
+      if(intro.phase==='ready'){finishOpening();return;}
+      if(intro.phase==='paused')intro.resume();else{intro.begin({replay});openingStage=null;}
+      if(skip)intro.skip();
+      ui.chooseIntroFont();input.clear();clock.reset();last=now();manual=false;
+    }catch(error){if(!disposed&&attempt===entryAttempt){pointerError=error.message;prologueAudio?.pause();audio.pause();}}
+    finally{clearTimeout(timer);if(attempt===entryAttempt){pendingCapture=null;introEntering=false;}if(!disposed)present();}
+  }
+
   async function enterIntro() {
+    if(prologueEnabled){await beginOpening();return;}
     if(disposed||intro.phase!=='ready'||!coreReady||coreError||introEntering)return;
     if(touch&&window.innerHeight>window.innerWidth)return;
     const attempt=++entryAttempt;introEntering=true;pointerError=null;
@@ -199,7 +272,8 @@ export function createGameApp({
   function pause() {
     view.quality?.reset();
     if(intro.active){
-      cancelIntroEntry();introAudioAttempt++;intro.pause();audio.pause();input.clear();clock.reset();present();return;
+      cancelIntroEntry();introAudioAttempt++;intro.pause();prologueAudio?.pause();audio.pause();input.clear();clock.reset();
+      if(prologueEnabled&&document.pointerLockElement===canvas)document.exitPointerLock();present();return;
     }
     input.clear();
     pauseGame(game);
@@ -209,6 +283,10 @@ export function createGameApp({
 
   async function enter(reset = false) {
     if (disposed) return;
+    if(prologueEnabled&&intro.active){
+      if(!reset){await beginOpening();return;}
+      intro.finish();prologueAudio?.pause();prologueView?.release();introView?.release();openingStage=null;
+    }
     if(intro.active){if(intro.phase==='preflight')beginIntro();else if(intro.phase==='ready')await enterIntro();return;}
     if(!coreReady||coreError)return;
     if (touch && window.innerHeight > window.innerWidth) return;
@@ -263,7 +341,7 @@ export function createGameApp({
     last = time;
     view.quality?.sample(dt,!manual&&!document.hidden&&!intro.active&&game.mode==='playing'&&!game.interaction&&coreReady);
     if (!manual) {
-      if(intro.active)tickIntro(dt);
+      if(intro.active)tickIntro(prologueEnabled?Math.max(0,Math.min(.1,dt)):dt);
       else clock.frame(dt, step => input.read(game.player,game.elapsed+step));
     }
     // Explicit test stepping renders once per step. Repainting identical manual
@@ -279,13 +357,24 @@ export function createGameApp({
   listen(ui.node('intro-skip'),'click',skipIntro);
   listen(ui.node('intro-enter'),'click',()=>void enterIntro());
   listen(ui.node('intro-continue'),'click',()=>{
+    if(prologueEnabled){void beginOpening();return;}
     if(intro.phase!=='paused')return;
     intro.resume();last=now();manual=false;introAudio();present();ui.node('intro-skip').focus();
   });
   for(const id of ['replay-intro','credits-replay'])listen(ui.node(id),'click',()=>beginIntro(true));
+  if(prologueEnabled){
+    listen(ui.node('story-skip'),'click',()=>{intro.skipStory();prologueAudio?.pause();present();});
+    listen(ui.node('opening-pause'),'click',pause);
+    listen(document,'keydown',event=>{
+      if(!intro.active||event.repeat||['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName))return;
+      if(event.code==='KeyK'){event.preventDefault();skipIntro();}
+      if(event.code==='KeyJ'){event.preventDefault();intro.skipStory();prologueAudio?.pause();present();}
+    });
+  }
   for(const id of ['credits-btn','pause-credits'])listen(ui.node(id),'click',()=>{creditsOpen=true;present();ui.node('credits-close').focus();});
   listen(ui.node('credits-close'),'click',()=>{creditsOpen=false;present();ui.focusMode(game.mode);if(game.mode==='menu')ui.node('credits-btn').focus();});
   listen(ui.node('intro-mute'),'click',()=>{
+    if(prologueEnabled){audio.toggleMute();if(audio.muted)prologueAudio?.pause();else if(intro.phase==='playing')void Promise.resolve(audio.prepare?.()).then(()=>{if(disposed||document.hidden||intro.phase!=='playing')audio.pause();else if(intro.stage==='credits')audio.startIntro?.();});present();return;}
     audio.toggleMute();if(!audio.muted&&['playing','ready'].includes(intro.phase))introAudio(intro.phase==='ready');present();
   });
   listen(ui.node('intro-volume'),'input',event=>{audio.setVolume(Number(event.target.value)/100);ui.node('volume').value=event.target.value;});
@@ -316,6 +405,12 @@ export function createGameApp({
   listen(document, 'pointerlockchange', () => {
     if (touch) return;
     if(intro.active){
+      if(prologueEnabled){
+        if(document.pointerLockElement===canvas)pendingCapture?.resolve();
+        else if(introEntering)pendingCapture?.reject(new Error('Mouse capture was lost. Press Continue to retry.'));
+        else if(intro.phase==='playing')pause();
+        return;
+      }
       if(document.pointerLockElement===canvas){if(introEntering)pendingCapture?.resolve();else document.exitPointerLock();}
       else if(introEntering)pendingCapture?.reject(new Error('Mouse capture was lost. Click Enter the Field to retry.'));
       return;
@@ -344,6 +439,7 @@ export function createGameApp({
       const portrait = window.innerHeight > window.innerWidth;
       ui.node('rotate').hidden = !portrait||intro.active;
       if (portrait) pause();
+      else present();
     };
     listen(window, 'resize', viewportChanged);
     listen(window, 'orientationchange', pause);
@@ -358,19 +454,19 @@ export function createGameApp({
     ui.showError('Graphics were interrupted. Reload to restart the field.');
   });
 
-  ui.node('loading').textContent = 'FIND YOUR DAUGHTER · 2 ROUNDS · NO SAVES';
+  ui.node('loading').textContent = 'FIND SADIE YATES · 2 ROUNDS · NO SAVES';
   ui.node('start-btn').disabled = !intro.active&&!coreReady;
   present();
 
   return {
     enter,
     pause,
-    introSnapshot:()=>({...intro.snapshot(),coreReady,entering:introEntering,visuals:introView?.diagnostics?.()}),
+    introSnapshot:()=>({...intro.snapshot(),coreReady,entering:introEntering,visuals:introView?.diagnostics?.(),prologueVisuals:prologueView?.diagnostics?.(),prologueAudio:prologueAudio?.diagnostics?.()}),
     restart: () => enter(true),
     startLoop() {
       if (frameId === null && !disposed) frameId = requestFrame(frame);
     },
-    snapshot: (diagnostic=false) => ({...gameSnapshot(game,{diagnostic}), ...(weather ? {weather: weather.snapshot()} : {})}),
+    snapshot: (diagnostic=false) => ({...gameSnapshot(game,{diagnostic}), ...(weather ? {weather: weather.snapshot()} : {}),...(prologueEnabled&&intro.active?{opening:{...intro.snapshot(),subtitle:intro.frame(reducedMotion).spoken||'',speaker:intro.frame(reducedMotion).speaker||''}}:{})}),
     weatherSurfaces: () => weather ? weather.state.puddles.map(p => ({...p})) : [],
     preview(time){manual=true;view.render(game,time,reducedMotion);},
     animationTrial(name){view.animationTrial?.(name);},
@@ -392,7 +488,7 @@ export function createGameApp({
           game.mode='playing';game.entered=true;game.corridorRun.started=true;
           const at=name==='gate'?{x:d.x,z:d.z+1.3}:game.maze.corridorLayout.sections[1].anchor;
           Object.assign(game.player,at,{yaw:0,pitch:0,flashlightOn:false,zone:'corridor'});
-          game.chapter='THE WOODEN ROWS';game.objective='FIND YOUR DAUGHTER';
+          game.chapter='THE WOODEN ROWS';game.objective='FIND SADIE YATES';
           Object.assign(game.enemy,{x:at.x,z:at.z-(name==='encounter'?.7:10),state:name==='encounter'?'chase':'observe',timer:100,visible:true,active:true,zone:'corridor',target:{...at},yaw:Math.PI});
           if(viewmodel){for(const enemy of game.enemies){enemy.active=false;enemy.visible=false;}game.threat.activeMessage=null;game.threat.activeMessageTime=0;game.caption='';}
           game.grace=name==='encounter'?0:100;input.clear();clock.reset();manual=true;present();return;
@@ -426,6 +522,7 @@ export function createGameApp({
       audioState: audio.ctx?.state || 'uninitialized',
       audioSamples:Object.keys(audio.samples||{}),
       weaponAudio:{...audio.weaponStats,voices:audio.weaponVoices?.size||0},
+      footstepAudio:audio.footsteps?.diagnostics(),
       weatherAudioSamples:Object.keys(audio.weatherSamples||{}),
       weather:weather?.snapshot(),
       audioSources:audio.transients?.size||0,
@@ -470,6 +567,7 @@ export function createGameApp({
       if (disposed) return;
       disposed = true;
       introAudioAttempt++;cancelIntroEntry();intro.dispose();introView?.dispose();audio.stopIntro?.();
+      prologueView?.dispose();prologueAudio?.dispose();
       entryAttempt++;
       if (frameId !== null) cancelFrame(frameId);
       input.dispose();
@@ -477,6 +575,7 @@ export function createGameApp({
       for (const remove of listeners) remove();
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       audio.pause();
+      audio.footsteps?.dispose();
     },
   };
 }

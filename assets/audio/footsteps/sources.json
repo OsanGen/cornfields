@@ -1,0 +1,132 @@
+{
+  "author": "Fantozzi",
+  "submittedBy": "qubodup",
+  "source": "https://opengameart.org/content/fantozzis-footsteps-grasssand-stone",
+  "archive": "https://opengameart.org/sites/default/files/Fantozzi-footsteps.7z",
+  "archiveSha256": "415d360e0911c1c1c5355ee94023b772e6f4044f59b9b580610e7dbffd1840fd",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "format": "mono 44.1 kHz MP3 96 kbps",
+  "files": [
+    {
+      "file": "soft-1.mp3",
+      "original": "Fantozzi-SandL1.flac",
+      "sourceSha256": "93a2630579a82507e3c6ceab9b012f71a50cf8922f4beadb14057dcc0636b099",
+      "sha256": "cdcaaa42decfdc506d783adfa850e0a3e0068e94555153db5605a5a7aff22832",
+      "bytes": 5706,
+      "duration": 0.41582766439909297,
+      "peak": 0.7139890193939209,
+      "processing": "volume=0.592994,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "soft-2.mp3",
+      "original": "Fantozzi-SandR1.flac",
+      "sourceSha256": "3514d12f3369297233e915814364ed02902003d4103b010371c2ac15c2aa48fe",
+      "sha256": "f837a05c02ba2b91ff6b981c02d49152a83ab15f2480193fcc8d1c52e9026677",
+      "bytes": 5393,
+      "duration": 0.3758503401360544,
+      "peak": 0.7419275641441345,
+      "processing": "volume=0.552184,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "soft-3.mp3",
+      "original": "Fantozzi-SandL2.flac",
+      "sourceSha256": "9bb57478cc96e1410cae27d926aa8d77d5f2d368d9776822f63cf0b37c6d2faf",
+      "sha256": "94023571746429c6fb350c8c62417e6f603317290f691937a82899284ff2c760",
+      "bytes": 4766,
+      "duration": 0.3161904761904762,
+      "peak": 0.7643022537231445,
+      "processing": "volume=0.558066,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "soft-4.mp3",
+      "original": "Fantozzi-SandR2.flac",
+      "sourceSha256": "0356f659313887f01a9f21fd5bedf57a77073d0d74d57b5621279ee453a80f3c",
+      "sha256": "ea448466b36fa83f1db8e9653e49bda409d42da623486f654873485fd50706ff",
+      "bytes": 4766,
+      "duration": 0.32272108843537417,
+      "peak": 0.728090763092041,
+      "processing": "volume=0.552184,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "soft-5.mp3",
+      "original": "Fantozzi-SandL3.flac",
+      "sourceSha256": "042820e65cc947d8bb8adf18524ffff7cdf5fc310f9412cbf8bdf7a139984c21",
+      "sha256": "5d2b727a8724c630e54dda7c03a8741b73ad64d3b843eecfd1419783f094f6c3",
+      "bytes": 4766,
+      "duration": 0.31523809523809526,
+      "peak": 0.7149485349655151,
+      "processing": "volume=0.552141,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "soft-6.mp3",
+      "original": "Fantozzi-SandR3.flac",
+      "sourceSha256": "7535306b6ff3b9e071256f12789eb53fb90769a913ff7e00b271298727e0f521",
+      "sha256": "57db9d6746e0188a39b485fc9b53f45f3db14be8a7105e24134e8af3f1d17d26",
+      "bytes": 4766,
+      "duration": 0.3349659863945578,
+      "peak": 0.7604576349258423,
+      "processing": "volume=0.559258,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "hard-1.mp3",
+      "original": "Fantozzi-StoneL1.flac",
+      "sourceSha256": "7cfa4a2f500ae2bd19a961022296611d837c34ca2e556fe68deb692388f49971",
+      "sha256": "1e2712a74a800c3c2988594dc9da0e07a9dc469a2ffbc77fbfb578a279a302af",
+      "bytes": 5079,
+      "duration": 0.3406575963718821,
+      "peak": 0.7243763208389282,
+      "processing": "volume=0.552217,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "hard-2.mp3",
+      "original": "Fantozzi-StoneR1.flac",
+      "sourceSha256": "7073bddd2e3ba432e15a83844180c0ebc52835c2c6bab0fa902ee5952499c729",
+      "sha256": "499e0a86593232d3ff4d4f70be8a854a8bf197f8725be5dfc027458d2e968125",
+      "bytes": 5079,
+      "duration": 0.34591836734693876,
+      "peak": 0.7391729354858398,
+      "processing": "volume=0.573127,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "hard-3.mp3",
+      "original": "Fantozzi-StoneL2.flac",
+      "sourceSha256": "dcbd6be44af4b3206daa36c5398035ca527bb057c51ce00482b9ca6356be2468",
+      "sha256": "dfcb95b4ced7d09f3fb10ab830b9583c919540d54b83f7c670a2913e6c713f52",
+      "bytes": 4452,
+      "duration": 0.29825396825396827,
+      "peak": 0.7380734086036682,
+      "processing": "volume=0.552200,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "hard-4.mp3",
+      "original": "Fantozzi-StoneR2.flac",
+      "sourceSha256": "d66330b4a32e93b0dfdcb8c53667654de8702a0fa48b2d06c48d94dc66b3e1cc",
+      "sha256": "e3915d42592f2295911e798549862ee04d72897507b6ae0924798b9241d1f891",
+      "bytes": 4452,
+      "duration": 0.30333333333333334,
+      "peak": 0.7441161870956421,
+      "processing": "volume=0.554922,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "hard-5.mp3",
+      "original": "Fantozzi-StoneL3.flac",
+      "sourceSha256": "37a25f4254cf8f2e56d271912b0569f3bb15c57bf3fde9de492466eb23853b0d",
+      "sha256": "2e16f1de5228d412588574e650c5433e70363f5312f238f46e67e731901fa47b",
+      "bytes": 4766,
+      "duration": 0.3165986394557823,
+      "peak": 0.7503780722618103,
+      "processing": "volume=0.552175,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    },
+    {
+      "file": "hard-6.mp3",
+      "original": "Fantozzi-StoneR3.flac",
+      "sourceSha256": "b98f2c4b932242739ce8687206f7eb3313ce30afd4af7b7e148507c5cbd26787",
+      "sha256": "977ca0cfd517547def33d5afd5bda1f63d2757cc3553dd45c0db198b47093ccc",
+      "bytes": 4766,
+      "duration": 0.33471655328798183,
+      "peak": 0.7166914343833923,
+      "processing": "volume=0.577864,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,silenceremove=start_periods=1:start_duration=0:start_threshold=-48dB,areverse,afade=t=in:d=0.002,apad=pad_dur=0.02"
+    }
+  ]
+}

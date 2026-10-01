@@ -2,6 +2,8 @@ import {mkdir, readFile, realpath, rm, writeFile, lstat} from 'node:fs/promises'
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
+import {PROLOGUE_LINES} from '../src/prologue-script.js';
+import {FOOTSTEP_FILES} from '../src/footsteps.js';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 
@@ -21,9 +23,9 @@ export const runtimeAssets = [
 ].map(name => `assets/field/${name}`).concat(['distress.wav','scream.wav','sources.json',
   'rain.mp3','thunder.mp3','splash-1.mp3','splash-2.mp3','weather-sources.json','LICENSES.md','pistol-shot.wav','weapon-source.json',
   'creature-growl.mp3','creature-roar.mp3','creature-roar-alt.mp3','creature-sources.json',
-].map(name=>`assets/audio/${name}`)).concat([
+].map(name=>`assets/audio/${name}`)).concat([...new Set(Object.values(FOOTSTEP_FILES))].filter(name=>name.startsWith('footsteps/')).map(name=>`assets/audio/${name}`),['assets/audio/footsteps/sources.json']).concat([
   'barlow-condensed.ttf','rubik-glitch.ttf','barlowcondensed-OFL.txt','rubikglitch-OFL.txt','LICENSES.md','sources.json',
-].map(name=>`assets/fonts/${name}`));
+].map(name=>`assets/fonts/${name}`)).concat([...PROLOGUE_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/prologue/${name}`));
 
 // The game's static ES-module imports, including multiline import/export lists.
 export function moduleImports(source) {
