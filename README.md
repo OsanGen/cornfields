@@ -4,6 +4,8 @@
 
 This source includes rain and puddles, the hands/QTE/enterable-corn update and the psychedelic intro. Publication status and deployed commit are available in the [Pages workflow runs](https://github.com/OsanGen/cornfields/actions/workflows/pages.yml).
 
+The progressive upgrade adds graphics tiers, corn motion/detail, animation blending, safer phone interruptions and pacing controls. It also replaces the first-person placeholders with a CC0 textured pistol and rigged arms, improves timber and wet-ground presentation, and provides repeatable asset exports. See [UPGRADE.md](UPGRADE.md) for the authoring guide, experiment outcomes and remaining device acceptance. The workflow runs above identify the deployed revision.
+
 The main game now uses spacious wooden corridors. Side doors lead into a separate,
 open cornfield for optional hiding; going deep attracts additional zombies and
 warnings to return. See [CORRIDOR_FIELD_UPDATE.md](CORRIDOR_FIELD_UPDATE.md) for the
@@ -51,7 +53,7 @@ holding it does not count. Existing health drains during the struggle. After a s
 eye stab, you land in nearby corn with free movement and a ten-second escape window.
 Its final scream briefly turns the sky red. No health is restored by escaping.
 
-Rotation to portrait or switching away pauses the game and clears held controls. Return to landscape and tap CONTINUE. Action buttons never count as looking. Deliberate joystick movement and looking produce local rustling. Only a zombie within hearing range and a valid acoustic route learns that position. Touch mode caps rendering pixel ratio at 1.
+Rotation to portrait or switching away pauses the game and clears held controls. Return to landscape and tap CONTINUE. Action buttons never count as looking. Deliberate joystick movement and looking produce local rustling. Only a zombie within hearing range and a valid acoustic route learns that position. Automatic graphics quality adapts separately from the control mode; Low, Balanced and High are available in the pause menu.
 
 Input mode follows the device: a touchscreen with a coarse primary pointer gets touch controls; a mouse or trackpad gets desktop controls. Window size does not determine input mode. Older shared links containing `controls=touch` or `controls=mouse` also auto-detect. Verification alone can force a mode with `?test=1&controls=touch` or `?test=1&controls=mouse`. Physical-phone frame rate, browser interruptions and comfort still need a phone playtest.
 
@@ -69,9 +71,9 @@ The manual `Publish playtest to GitHub Pages` workflow installs locked dependenc
 ## Implemented loop
 
 1. Enter the field with 100 health and two rounds.
-   The local update first leads south through two gates into a required corn detour.
-   Its original entrance eventually reconnects; returning through it unlocks the
-   onward route. This segment grants no health, ammunition or checkpoint reward.
+   Spacious wooden corridors own the hidden 180-second and 120-metre qualification.
+   Side doors offer optional hiding in a separate open cornfield. Time there does
+   not advance corridor qualification; returning resumes it.
 2. Follow landmarks; choose movement, flashlight, hiding or a shot to survive.
 3. A successful hit staggers the zombie. A miss spends the round. It cannot die.
 4. The flashlight makes it recoil, then rage. Shoot it or escape beyond sight and distance to end rage.
@@ -81,7 +83,7 @@ The manual `Publish playtest to GitHub Pages` workflow installs locked dependenc
 Close contact has a short interruptible windup before a tackle and knife struggle.
 The struggle needs eight fresh Space presses or STAB taps, with a brief input grace
 before health drains at one full health bar per three active seconds. A successful
-escape follows a collision-checked route into nearby connected corn lanes. Both actors
+escape follows a collision-checked route into nearby walkable space. Both actors
 share the gates, solid partitions and walkable geometry. Mandatory checkpoints remain
 physical bottlenecks even when every corn gate is open.
 The zombie remains incapacitated for exactly ten seconds after landing, then screams
@@ -89,12 +91,11 @@ once and resumes hunting from legitimate observations. Extra shots cannot reset 
 active gun stagger or the escape recovery timer. A shot outside recovery buys the
 original 3 / 2.5 / 2 seconds, depending on checkpoint progress.
 
-Outside the new dedicated segment, the inherited route retains 631 operable corn
-gates and 29 fixed outer-containment spans. Those gates stay
-open until explicitly closed. A closing leaf stops safely if an actor blocks its arc.
-The zombie opens gates on its planned route. Corn contains 25 connected loop regions;
-standing still conceals without locking movement or deleting enemy memory. Rustling
-can trigger a nearby rush, while distant input does not reveal your position.
+Fixed side doors return the player from the open cornfield to the same corridor
+entrance. Going deeper triggers warnings and up to three additional field zombies.
+Standing still can conceal the player without locking movement or deleting enemy
+memory. Rustling can trigger a nearby rush, while distant input does not reveal
+the player's position. The older dense-gate maze remains only in legacy fixtures.
 
 The optional title-screen alias is normalized to 24 Unicode graphemes. Blank input
 uses STRANGER. It stays in this session, survives quick retry, and can be edited through
@@ -102,16 +103,17 @@ TITLE / EDIT ALIAS in the pause menu. It is rendered as literal text and omitted
 game snapshots, AI state, storage and network requests. Sparse authored corn taunts
 use only this name. QTE corruption text is presentation, separate from tactical warnings.
 
-Original posed hands share a 1K atlas and gain gradual dirt at checkpoints. Knife
-progress, bounded tremor, brief pre-impact easing and immediate recoil are driven
-by the existing interaction clock. Blood rain and red sky have separate QTE and
-recovery ownership. Reduced effects suppress blood rain and reduce text/tremor.
-Use ?horror=off for clean hand/eye inspection.
+CC0 rigged hands use a 1K skin texture and a fitted grip around the textured service
+pistol. The original knife has a narrower blade and shaped handle. Weapon motion,
+slide recoil, near-wall lowering and gradual dirt remain presentation only; knife
+progress follows the existing interaction clock. Reduced effects suppress idle
+motion, blood rain and excessive tremor. Optional model failure retains the primitive
+fallback. Use `?test=1&intro=off&lab=1&horror=off` and the Viewmodel scene for inspection.
 
 ## Lean implementation
 
 - One runtime dependency: pinned Three.js. No application framework, bundler, backend or runtime networked services. Visual assets are served locally.
-- One authored 33 x 35 progression map with 370 corridor cells, plus a fixed 3 x subdivision for corn lanes. Rendering, collision, visibility and pathfinding share the same level data.
+- A shared spacious corridor graph and separate open-field layout. Rendering, collision, visibility and pathfinding use the same active level data; the original 33 x 35 map remains for older fixtures.
 - Fine-grid circle collision, bounded movement substeps and cached A* enemy routing through the same door geometry.
 - One explicit evidence-based zombie state machine plus a small threat director. Perception, decaying memory, seeded prediction and bounded searches drive navigation; unseen hidden coordinates do not guide prediction.
 - Instanced corn, a rigged zombie with a primitive fallback, authored landmarks, fog and a toggleable flashlight.
@@ -127,7 +129,9 @@ Use ?horror=off for clean hand/eye inspection.
 - `src/corn-world.js`, `src/corn-view.js`: shared lane topology, collision, routing, door geometry and instanced rendering.
 - `src/corn-layout.js`, `src/corn-survival.js`: pooled corridor footprints, protected recycling, committed entry, hidden qualification and original-gate return.
 - `src/corn-survival-view.js`: fixed-capacity dynamic corn instances driven by the run's geometry revision.
-- `src/hands.js`, `src/horror-presentation.js`: optional hand asset, progression dirt and derived QTE/taunt presentation.
+- `src/corridor-layout.js`, `src/corridor-run.js`, `src/corridor-view.js`: current main-game layout, qualification, field trips and world presentation.
+- `src/hands.js`, `src/viewmodel-pose.js`: optional pistol/rigged-hand loading, fit settings, recoil and bounded presentation motion.
+- `src/horror-presentation.js`: derived QTE/taunt presentation.
 - `src/grapple.js`: tackle, timestamped knife input, health drain, safe throw and recovery deadlines.
 - `src/zombie-poses.js`: original per-bone choreography over the existing Pixelhouse rig.
 - `src/zombie-ai.js`, `src/threat-director.js`: perception, memory, prediction and pressure.
@@ -141,11 +145,15 @@ Use ?horror=off for clean hand/eye inspection.
 - `src/debug.js`: stable browser verification hooks.
 - `src/style.css`, `index.html`: title screen, controls and overlays.
 - `tests/*.test.mjs`: deterministic gameplay, AI fairness, input and infrastructure checks.
-- `tests/hands-corn-browser.mjs`: current desktop/touch gate, name, QTE and recovery browser scenarios.
+- `tests/corridor-field-browser.mjs`: current desktop/touch door, open-field, QTE, return and qualification scenarios.
+- `tests/player-upgrade-browser.mjs`: real pistol/arms, firing, QTE and failed optional-asset fallback.
+- `tests/upgrade-browser.mjs`: matched presentation/performance, intro and lifecycle checks.
+- `tests/hands-corn-browser.mjs`: retained name/QTE and inherited corn-layout scenarios.
 - `tests/corn-survival.test.mjs`, `tests/corn-survival-browser.mjs`: dynamic-maze simulation checks and the prepared desktop/touch entry, QTE and return browser story.
 - `tests/hands-corn-performance.mjs`: pending matched comparison against the saved pre-update source.
 - Older `browser.mjs`, `mobile-browser.mjs` and `horror-browser.mjs` are historical harnesses for the superseded pocket mechanic; the npm browser commands use the current harness.
 - `scripts/build.mjs`, `scripts/preview-dist.mjs`: allowlisted static packaging and project-path preview.
+- `scripts/build-player-viewmodel.py`: reproducible Blender export of the selected CC0 assets; source hashes live in `assets/field/player-viewmodel-source.json`.
 - `scripts/serve.mjs`, `scripts/server-path.mjs`: loopback preview and canonical public-file allowlist.
 - `progress.md`: implementation and verification record.
 
@@ -165,11 +173,11 @@ contains reusable near/far plants, fallen leaves and the entrance assembly.
 Soil, wood and rust use local 1K CC0 Poly Haven maps. See `assets/field/LICENSES.md`
 and `assets/field/sources.json` for provenance and download hashes.
 
-The current scene uses instanced wooden swing gates, retained outer fencing and dense
-corn around walkable lanes. Thin foliage-colored partition meshes match physical
-stage boundaries. Existing wood textures are reused. Gate leaves fold fully back
-so open geometry does not sever the corn loops. Original field assets remain
-chunked and distance-culled; the 6,720-triangle hand asset adds about 1.38 MB.
+The current scene uses spacious timber corridors, fixed side doors and dense corn
+in a separate open field. Shared field assets remain instanced and distance-culled.
+Existing wood textures are reused for panels, braces and door details. The pistol
+and rigged-arm GLBs total about 2.9 MB and replace the older posed-hand asset in
+the runtime package.
 
 `?visuals=field` and the old `?visuals=sample` URL both show the complete field.
 `?visuals=legacy` is an explicit reload-based rollback. Missing assets preserve
@@ -194,7 +202,8 @@ Andreas Mischok's CC0 Solitude Night panorama. The photographed ground, building
 and horizon lights are masked below 16 degrees, then blended to the existing fog
 color through 33 degrees. Three taller silhouettes are replaced with nearby sky
 pixels offline. Cloud detail is static. The background uses one unlit
-960-triangle sphere with no shadows, reflection map, additional lights or effects.
+960-triangle sphere with no shadows or additional world lights. The same JPEG
+is reused for inexpensive puddle reflections, with no extra scene render pass.
 It follows camera position without rotating as the player turns.
 
 Use `?visuals=field&sky=off` for a sky-only comparison or rollback. The explicit
@@ -268,9 +277,10 @@ model load retains the original enemy after a bounded deadline and cannot block 
 
 Original per-bone animation now adds painful searching, a four-limb inverted chase,
 face-shielding recoil, fetal collapse and a lowered knife struggle. Eye meshes attach
-to the head and obey depth testing. No additional lights, bloom, ragdoll solver,
-animation library or imported stock clips are used. Denys, Mixamo and Quaternius
-clips were not integrated: current download or license access could not be verified.
+to the head and obey depth testing. An optional clip bank adds Pixelhouse Fury and
+Collapse from the original archive, blended through the existing rig. It requires
+no animation library or ragdoll solver. Denys, Mixamo and Quaternius clips were not
+integrated. See `zombie-clips.json` for source hashes and `UPGRADE.md` for export steps.
 The two local vocals are artisticdude's CC0 Zombies Sound Pack selections, with
 source filenames and hashes in `assets/audio/sources.json`.
 

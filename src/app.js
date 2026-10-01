@@ -10,6 +10,7 @@ import {normalizeAlias} from './horror-presentation.js';
 import {createUI} from './ui.js';
 import {createIntro, INTRO_ENABLED} from './intro.js';
 import {setReturnOpen} from './corn-layout.js';
+import {enterOpenField} from './corridor-run.js';
 
 /**
  * Owns one game session and its browser lifecycle.
@@ -196,6 +197,7 @@ export function createGameApp({
   }
 
   function pause() {
+    view.quality?.reset();
     if(intro.active){
       cancelIntroEntry();introAudioAttempt++;intro.pause();audio.pause();input.clear();clock.reset();present();return;
     }
@@ -259,6 +261,7 @@ export function createGameApp({
     if (disposed) return;
     const dt = (time - last) / 1000;
     last = time;
+    view.quality?.sample(dt,!manual&&!document.hidden&&!intro.active&&game.mode==='playing'&&!game.interaction&&coreReady);
     if (!manual) {
       if(intro.active)tickIntro(dt);
       else clock.frame(dt, step => input.read(game.player,game.elapsed+step));
@@ -270,6 +273,8 @@ export function createGameApp({
   }
 
   listen(ui.node('start-btn'), 'click', () => void enter());
+  ui.node('graphics-quality').value=view.quality?.snapshot().mode||'auto';
+  listen(ui.node('graphics-quality'),'change',event=>{view.quality?.set(event.target.value);present();});
   listen(ui.node('preflight-skip'),'click',skipIntro);
   listen(ui.node('intro-skip'),'click',skipIntro);
   listen(ui.node('intro-enter'),'click',()=>void enterIntro());
@@ -326,6 +331,13 @@ export function createGameApp({
     pause();
   });
   listen(window, 'blur', pause);
+  function pauseForLifecycle(){
+    if(disposed)return;
+    pause();audio.pause();input.clear();clock.reset();last=now();
+  }
+  listen(window,'pagehide',pauseForLifecycle);
+  listen(window,'pageshow',event=>{if(event.persisted)pauseForLifecycle();});
+  if(audio.onInterruption)listeners.push(audio.onInterruption(pauseForLifecycle));
   if (touch) {
     const viewportChanged = () => {
       input.clear();
@@ -360,16 +372,29 @@ export function createGameApp({
     },
     snapshot: (diagnostic=false) => ({...gameSnapshot(game,{diagnostic}), ...(weather ? {weather: weather.snapshot()} : {})}),
     weatherSurfaces: () => weather ? weather.state.puddles.map(p => ({...p})) : [],
+    preview(time){manual=true;view.render(game,time,reducedMotion);},
+    animationTrial(name){view.animationTrial?.(name);},
     fixture(name){
+      const viewmodel=name==='viewmodel';if(viewmodel)name='corridor';
+      if(['field','animation'].includes(name)&&maze.corridorLayout){
+        game=createGame(maze);game.mode='playing';game.entered=true;game.corridorRun.started=true;game.grace=100;
+        const door=maze.cornDoors.find(d=>d.fieldEntrance),at=maze.corridorLayout.sections[1].anchor;
+        Object.assign(game.player,at,{yaw:0,flashlightOn:true});
+        Object.assign(game.enemy,{x:at.x,z:at.z-3,state:'observe',stateStartedAt:0,timer:100,visible:true,yaw:Math.PI});
+        if(name==='field'){game.cornDoors[door.index].amount=1;Object.assign(game.player,{x:door.x,z:door.z+1});enterOpenField(game,door);Object.assign(game.player,{x:8,z:8});}
+        input.clear();clock.reset();manual=true;present();return;
+      }
       if(game.corridorRun){
         if(name==='eligible'){Object.assign(game.corridorRun,{elapsed:180,distance:120});return;}
         if(['gate','encounter','corridor'].includes(name)){
+          if(game.fieldTrip.active){game=createGame(maze);view.animationTrial?.(null);}
           const d=game.maze.cornDoors.find(d=>d.fieldEntrance);
           game.mode='playing';game.entered=true;game.corridorRun.started=true;
           const at=name==='gate'?{x:d.x,z:d.z+1.3}:game.maze.corridorLayout.sections[1].anchor;
           Object.assign(game.player,at,{yaw:0,pitch:0,flashlightOn:false,zone:'corridor'});
           game.chapter='THE WOODEN ROWS';game.objective='FIND YOUR DAUGHTER';
-          Object.assign(game.enemy,{x:at.x,z:at.z-(name==='encounter'?.7:10),state:name==='encounter'?'chase':'observe',timer:100,visible:true,zone:'corridor',target:{...at},yaw:Math.PI});
+          Object.assign(game.enemy,{x:at.x,z:at.z-(name==='encounter'?.7:10),state:name==='encounter'?'chase':'observe',timer:100,visible:true,active:true,zone:'corridor',target:{...at},yaw:Math.PI});
+          if(viewmodel){for(const enemy of game.enemies){enemy.active=false;enemy.visible=false;}game.threat.activeMessage=null;game.threat.activeMessageTime=0;game.caption='';}
           game.grace=name==='encounter'?0:100;input.clear();clock.reset();manual=true;present();return;
         }
       }
@@ -417,6 +442,7 @@ export function createGameApp({
       drawCalls: view.renderer.info.render.calls,
       triangles: view.renderer.info.render.triangles,
       visuals: view.visuals,
+      quality:view.quality?.snapshot(),
     }),
     advance(milliseconds) {
       manual = true;
@@ -446,6 +472,7 @@ export function createGameApp({
       entryAttempt++;
       if (frameId !== null) cancelFrame(frameId);
       input.dispose();
+      view.dispose?.();
       for (const remove of listeners) remove();
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       audio.pause();

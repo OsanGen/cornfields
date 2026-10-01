@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
-import {optionalAsset, stripRootTravel} from './asset-safety.js';
+import {optionalAsset} from './asset-safety.js';
 import {createZombiePoses} from './zombie-poses.js';
+import {createZombieAnimation} from './zombie-animation.js';
 
 function disposeModel(model) {
   model.traverse(object => {
@@ -52,28 +53,26 @@ export function attachZombieModel(enemy, gltf) {
     head.add(eye);
     return eye;
   });
-  const clip = gltf.animations[0]?.clone();
-  if (clip) stripRootTravel(clip, ['Bip01']);
-  // Explicit sampling avoids mixer caches skipping writes after procedural poses.
-  const channels = (clip?.tracks || []).map(track => {
-    const split = track.name.lastIndexOf('.');
-    return {target:model.getObjectByName(track.name.slice(0, split)),
-      property:track.name.slice(split + 1), sample:track.createInterpolant()};
-  }).filter(channel => channel.target && ['position', 'quaternion', 'scale'].includes(channel.property));
+  const animation=createZombieAnimation(model,gltf.animations);
+  let trial=null;
   for (const child of enemy.children) if (child !== centered) child.visible = false;
-  let previousTime = null, previousState = '', previousPosition = null, clipTime = 0;
+  let previousTime = null, previousState = '', previousPosition = null, clipTime = 0,previousOwner=null;
 
   return {
     model,
+    trial(name){trial=name;previousTime=null;animation.reset();},
     update(subject, time, suppliedGame) {
       const game = suppliedGame || (subject?.enemy ? subject : {enemy:subject});
       const state = game.enemy;
+      const owner=`${game.runId??0}:${state.id??'enemy'}`;
+      if(previousOwner!==owner){previousTime=null;previousPosition=null;clipTime=0;poses.resetCycle();animation.reset();previousOwner=owner;}
       const signature = `${state.state}:${state.stateStartedAt}:${game.interaction?.phase}:${game.interaction?.presses}`;
       if (!Number.isFinite(time) || (time === previousTime && signature === previousState)) return;
       if (previousTime !== null && time < previousTime) {
         clipTime = 0;
         previousPosition = null;
         poses.resetCycle();
+        animation.reset();
       }
       const dt = previousTime === null ? 0 : Math.max(0, time - previousTime);
       const travelled = previousPosition && dt > 0
@@ -84,9 +83,9 @@ export function attachZombieModel(enemy, gltf) {
       // In-place clip follows distance, preventing walk-in-place during listening.
       clipTime += travelled * (state.state === 'chase' ? .8 : 1.1);
       poses.reset();
-      for (const channel of channels) channel.target[channel.property].fromArray(channel.sample.evaluate(clipTime % (clip.duration || 1)));
+      animation.update({state,game,time,walkTime:clipTime,travelled,dt,trial});
       model.updateWorldMatrix(false, true);
-      const presentation = poses.update(state, time, game, travelled);
+      const presentation = trial?{name:'trial',eyes:'white',age:0}:poses.update(state, time, game, travelled);
       const colors = {white:0xdfedda, dim:0x243025, red:0xff170c, burst:0xff4130, off:0x000000};
       eyeMaterial.color.setHex(colors[presentation.eyes]);
       for (const [index, eye] of eyes.entries()) eye.visible = presentation.eyes !== 'off' &&
@@ -98,7 +97,7 @@ export function attachZombieModel(enemy, gltf) {
     diagnostics() {
       return {...poses.diagnostics(), eyeWorldLeft:eyes[0].getWorldPosition(new THREE.Vector3()).toArray(),
         eyeWorldRight:eyes[1].getWorldPosition(new THREE.Vector3()).toArray(),
-        sourceClips:clip ? [clip.name] : [], externalClipsIntegrated:false};
+        sourceClips:gltf.animations.map(clip=>clip.name), externalClipsIntegrated:gltf.animations.length>1,animation:animation.snapshot(),trial};
     },
     dispose() {
       centered.removeFromParent();
@@ -108,9 +107,23 @@ export function attachZombieModel(enemy, gltf) {
 }
 
 export async function installZombie(enemy,additional=[]) {
+  const clips=loadClips();
   const gltf = await optionalAsset(new GLTFLoader().loadAsync(
     new URL('../assets/field/zombie.glb', import.meta.url).href), 8000,
   late => disposeModel(late.scene));
+  gltf.animations.push(...await clips);
   const copies=additional.map(group=>attachZombieModel(group,{...gltf,scene:cloneSkeleton(gltf.scene)}));
   return {...attachZombieModel(enemy,gltf),copies};
+}
+
+async function loadClips(){
+  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),3000);
+  try{
+    const response=await fetch(new URL('../assets/field/zombie-clips.json',import.meta.url),{signal:abort.signal});
+    if(!response.ok)throw new Error('Optional animation bank unavailable');
+    const bank=await response.json();
+    if(bank.schema!==1||bank.clips.length>4)throw new Error('Unsupported animation bank');
+    return bank.clips.map(data=>{const clip=THREE.AnimationClip.parse(data);if(!clip.validate())throw new Error('Invalid animation');return clip;});
+  }catch{return [];}
+  finally{clearTimeout(timer);}
 }

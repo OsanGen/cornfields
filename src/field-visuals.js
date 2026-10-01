@@ -109,7 +109,8 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
   const kit={};gltf.scene.updateMatrixWorld(true);
   gltf.scene.traverse(o=>{if(o.isMesh){const mesh=o.clone();mesh.geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);mesh.position.set(0,0,0);mesh.quaternion.identity();mesh.scale.set(1,1,1);kit[o.name]=mesh;}});
   for(const name of ['corn_near_0','corn_near_1','corn_near_2','corn_far_0','corn_far_1','corn_far_2','litter_0','litter_1','entrance_door','entrance_frame','entrance_hardware'])if(!kit[name])throw new Error(`Missing visual asset ${name}`);
-  const layout=fieldLayout(maze),group=new THREE.Group();group.name='Blender corn and timber fences';
+  // Production corridors borrow the kit without constructing the retired maze.
+  const layout=maze.corridorLayout?{plants:[],fences:[],litter:[]}:fieldLayout(maze),group=new THREE.Group();group.name='Blender corn and timber fences';
   const chunks=new Map(),dummy=new THREE.Object3D(),tint=new THREE.Color();
   const chunkAt=(x,z)=>{
     const cx=Math.floor(x/CHUNK),cz=Math.floor(z/CHUNK),key=`${cx},${cz}`;
@@ -199,5 +200,5 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
       }
     }
   }
-  update();return {update,setVisible(value){group.visible=value;},stats,materials:{wood,wire:wireMaterial},introCorn:[0,1,2].map(i=>({geometry:kit[`corn_near_${i}`].geometry,material:kit[`corn_near_${i}`].material}))};
+  update();return {update,setVisible(value){group.visible=value;},stats,materials:{wood,wire:wireMaterial},introCorn:[0,1,2].map(i=>({geometry:kit[`corn_near_${i}`].geometry,material:kit[`corn_near_${i}`].material})),farCorn:[0,1,2].map(i=>({geometry:kit[`corn_far_${i}`].geometry,material:kit[`corn_far_${i}`].material}))};
 }

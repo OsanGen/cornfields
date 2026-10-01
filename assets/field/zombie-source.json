@@ -6,12 +6,14 @@
   "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
   "download": "https://opengameart.org/sites/default/files/zombie.zip",
   "sourceSha256": "062733d16d1ac3146fd82de55ffadb71ab09fcad119c2f8002edae50b9d2a880",
-  "changes": "Blender conversion, desaturated sickly texture grade, 2K color and 1K normal, walk animation. Original runtime per-joint horror poses and head-attached eyes added locally; no additional third-party animation clips integrated.",
+  "changes": "Blender conversion, desaturated sickly texture grade, 2K color and 1K normal, walk animation. Original per-joint horror poses and head-attached eyes. Additional Fury and Collapse actions from the same Pixelhouse source archive are delivered in zombie-clips.json with source hashes and export settings.",
   "runtimeAnimation": {
     "sourceClip": "Zombie Lurch",
     "poseSource": "src/zombie-poses.js",
     "authorship": "Original local procedural choreography on the existing Pixelhouse rig",
-    "externalClipsIntegrated": false,
+    "externalClipsIntegrated": true,
+    "additionalClipBank": "zombie-clips.json",
+    "additionalSourceClips": ["Pixelhouse Fury", "Pixelhouse Collapse"],
     "rootTravel": "Frozen horizontally; navigation remains authoritative",
     "presentationAcceptance": "Static silhouette reviewed; motion and in-game camera acceptance are separate checks"
   },

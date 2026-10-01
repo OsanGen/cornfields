@@ -1,13 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {FieldAudio} from '../src/audio.js';
+import {createAudioLifecycle} from '../src/audio-lifecycle.js';
+import {eventTarget} from './helpers/browser.mjs';
 
 function fixture(){
   const audio=new FieldAudio({weatherEnabled:false}),sources=[];
   const param=()=>({value:0,setValueAtTime(v){this.value=v;},setTargetAtTime(v){this.value=v;},linearRampToValueAtTime(v){this.value=v;},exponentialRampToValueAtTime(v){this.value=v;},cancelScheduledValues(){}});
   const node=()=>({gain:param(),frequency:param(),connect(){return this;},disconnect(){this.disconnected=true;}});
   const source=()=>{const s={...node(),stopped:0,start(){},stop(){this.stopped++;}};sources.push(s);return s;};
-  audio.ctx={state:'running',currentTime:1,createGain:node,createBiquadFilter:node,createBufferSource:source,createOscillator:source,suspend(){this.state='suspended';}};
+  audio.ctx={...eventTarget(),state:'running',currentTime:1,createGain:node,createBiquadFilter:node,createBufferSource:source,createOscillator:source,resume(){this.state='running';},suspend(){this.state='suspended';}};
+  audio.lifecycle=createAudioLifecycle(audio.ctx,()=>{});void audio.lifecycle.resume();
   audio.master=node();audio.gameGain=node();audio.noise={};audio.samples.distress={};
   return {audio,sources};
 }

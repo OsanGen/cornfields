@@ -191,6 +191,11 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
           tier: game.progress.escalationTier,
           hidden: player.hidden,
           metrics: game.metrics,
+          perception:game.enemy.perception,
+          pacing:game.threat.pacing,
+          zone:player.zone,
+          fieldDepth:player.zone==='field'?Math.hypot(player.x,player.z):0,
+          worldRevision:game.maze.cornWorld?.revision,
         }, null, 2));
       }
     },

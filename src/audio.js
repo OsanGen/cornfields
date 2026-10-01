@@ -1,27 +1,29 @@
 import {actorPosition} from './hiding.js';
+import {createAudioLifecycle} from './audio-lifecycle.js';
 // Local CC0 vocal recordings plus original synthesized environmental effects.
 export class FieldAudio {
   constructor({weatherEnabled=true}={}){this.ctx=null;this.volume=.55;this.muted=false;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.sources=[];this.transients=new Set();this.samples={};this.voice=null;this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;this.weatherEnabled=weatherEnabled;this.weatherSamples={};this.weatherVoices=new Set();this.rainTarget=0;this.weatherQuiet=false;}
   async prepare(){
     if(!this.ctx){
       const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
-      this.ctx=new C();this.master=this.ctx.createGain();this.master.gain.value=this.volume*.48;this.master.connect(this.ctx.destination);
+      this.ctx=new C();this.lifecycle=createAudioLifecycle(this.ctx,()=>{for(const listener of this.interruptionListeners||[])listener();});this.master=this.ctx.createGain();this.master.gain.value=this.volume*.48;this.master.connect(this.ctx.destination);
       this.gameGain=this.ctx.createGain();this.gameGain.gain.value=0;this.gameGain.connect(this.master);
       this.noise=this.ctx.createBuffer(1,this.ctx.sampleRate*3,this.ctx.sampleRate);const d=this.noise.getChannelData(0);let last=0;for(let i=0;i<d.length;i++){last=(last+(Math.random()*2-1)*.045)/1.025;d[i]=last*3;}
     }
-    await this.ctx.resume();this.applyVolume();
+    if(!await this.lifecycle.resume())return false;
+    this.applyVolume();
     this.samplesReady ||= Promise.all(['distress','scream'].map(async name=>{
       const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
       try{const response=await fetch(new URL(`../assets/audio/${name}.wav`,import.meta.url),{signal:abort.signal});if(!response.ok)throw new Error('Optional vocal unavailable');this.samples[name]=await this.ctx.decodeAudioData(await response.arrayBuffer());}
       catch{/* The game remains playable with synthesized fallback. */}finally{clearTimeout(timer);}
     }));
+    return true;
   }
   async unlock(){
-    await this.prepare();
-    this.startGameplay();
+    if(await this.prepare())this.startGameplay();
   }
   startGameplay(){
-    if(!this.ctx)return;
+    if(!this.ctx||!this.lifecycle?.active)return;
     this.stopIntro();
     this.gameGain?.gain.setValueAtTime(1,this.ctx.currentTime);
     if(!this.gameAudioStarted){
@@ -132,7 +134,8 @@ export class FieldAudio {
   applyVolume(){if(this.ctx)this.master.gain.setTargetAtTime(this.muted?0:this.volume*.48,this.ctx.currentTime,.05);}
   setVolume(v){this.volume=v;this.applyVolume();}
   toggleMute(){this.muted=!this.muted;if(this.muted){this.stopCues();this.stopIntro();}this.applyVolume();return this.muted;}
-  pause(){this.stopIntro();if(this.ctx?.state==='running')void this.ctx.suspend();}
+  onInterruption(listener){this.interruptionListeners ||= new Set();this.interruptionListeners.add(listener);return()=>this.interruptionListeners.delete(listener);}
+  pause(){this.stopIntro();this.lifecycle?.pause();}
   sound({noise=false,freq=100,end=45,duration=.3,gain=.3,pan=0,filter=900,type='sine',delay=0}={}){
     if(!this.ctx||this.ctx.state!=='running'||this.muted||this.transients.size>=16)return;
     const t=this.ctx.currentTime+delay,source=noise?this.ctx.createBufferSource():this.ctx.createOscillator();

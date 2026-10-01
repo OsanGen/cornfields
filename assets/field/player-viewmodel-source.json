@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "units": "metres",
+  "forward": "-Z",
+  "armOrigin": "wrist",
+  "sources": [
+    {
+      "name": "Service Pistol",
+      "author": "Mateusz Sadek / Poly Haven",
+      "url": "https://polyhaven.com/a/service_pistol",
+      "license": "CC0-1.0",
+      "changes": "wood grip variant, loose magazines/bullets/alternate removed, 1K textures, barrel normalized to -Z",
+      "sourceFiles": {
+        "service_pistol.bin": "a97b6d31ca8865384a76d31289017e25a326a67b3b254162b2a02ecbd97600bc",
+        "service_pistol.gltf": "e18f346e76187ab4b5b3b7293ec39077ad2ff508fcf561b47f93ac48957e7e50",
+        "textures/service_pistol_arm_1k.jpg": "a1b45605ba70a8a78a5bbb14aeb4f06755ad8505a682b0e4c804b8d5bd7b347e",
+        "textures/service_pistol_diff_1k.jpg": "34c536275a34438b578520531868fe4cd0b9b6825b39b30092029d79f33bd718",
+        "textures/service_pistol_nor_gl_1k.jpg": "e93c1cdfa5029e64ad87df4f7b2378827b01381593b98d2bec3c6d27de4aac42"
+      }
+    },
+    {
+      "name": "fps arms (rigged only)",
+      "author": "para; mesh and texture from MakeHuman",
+      "url": "https://opengameart.org/content/fps-arms-rigged-only",
+      "license": "CC0-1.0",
+      "archiveSha256": "31f6c7bd5caea8856c4aafca8461f38a3c8bfdd3d8f05c898e403b9475e54562",
+      "changes": "split left/right arms; wrist origins; finger grip poses; skin material; GLB export"
+    }
+  ],
+  "exporter": "5.2.1 LTS",
+  "meshoptTrial": false,
+  "runtime": {
+    "service-pistol.glb": {
+      "bytes": 2550148,
+      "sha256": "009df6c833794c86f3206a11fd092d244e78ef7e04383095d340e7cf196298eb"
+    },
+    "player-arms.glb": {
+      "bytes": 352948,
+      "sha256": "ef42a6fb1aee866bec852bbe722acd9a5cea36a291baba939691c7ecf9690e54"
+    }
+  }
+}

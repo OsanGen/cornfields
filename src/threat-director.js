@@ -1,6 +1,7 @@
 import { GAME_CONFIG as C, distance, clamp, emitEvent } from './game-config.js';
 import { lineOfSight } from './maze.js';
 import { actorPosition, localIngressVisible } from './hiding.js';
+import {PRESENTATION} from './presentation-config.js';
 
 /** The director may set pacing intent, never an exact hidden-player navigation target. */
 export function updateDirector(game, dt) {
@@ -10,8 +11,21 @@ export function updateDirector(game, dt) {
   threat.directorIntent = threat.quietWindow > 0 ? 'withdraw' :
     game.progress.escalationTier === 2 ? 'intercept' :
     game.progress.escalationTier === 1 ? 'circle' : 'investigate';
-  const pursuing = (!game.enemies||game.enemy.zone===game.player.zone)&&['chase', 'rage_chase', 'corn_rush'].includes(game.enemy.state);
+  const localEnemies=game.enemies?game.enemies.filter(enemy=>enemy.active&&enemy.zone===game.player.zone):[game.enemy];
+  const pursuing=localEnemies.some(enemy=>['chase','rage_chase','corn_rush'].includes(enemy.state));
   threat.pressure = clamp(threat.pressure + (pursuing ? dt * .1 : -dt * .04), 0, 1);
+  const previous=threat.pacing?.phase||'calm';
+  const active=pursuing||!!(game.interaction&&game.interaction.phase!=='recovery');
+  const sameZone=!game.enemies||game.enemy.zone===game.player.zone;
+  let phase,reason;
+  if(game.interaction?.phase==='recovery'){phase='recovery';reason='QTE recovery';}
+  else if(active){phase='pressure';reason=game.interaction?'active interaction':'observed pursuit';}
+  else if(previous==='pressure'||(previous==='recovery'&&game.elapsed-threat.pacing.since<PRESENTATION.pacing.recoverySeconds)){
+    phase='recovery';reason='encounter ended';
+  }else if(sameZone&&game.enemy.visible&&distance(game.player,game.enemy)<PRESENTATION.pacing.warningDistance){phase='warning';reason='nearby visible threat';}
+  else{phase='calm';reason='no immediate encounter';}
+  if(phase!==previous||!threat.pacing)threat.pacing={phase,reason,since:game.elapsed};
+  if(phase==='recovery'){threat.activeMessage=null;threat.activeMessageTime=0;}
 }
 
 export function updateFeedback(game, dt) {
@@ -27,8 +41,9 @@ export function updateFeedback(game, dt) {
   threat.activeMessageTime = Math.max(0, threat.activeMessageTime - dt);
   if (threat.activeMessageTime <= 0) threat.activeMessage = null;
   threat.messageTimes = (threat.messageTimes || []).filter(at => game.elapsed - at < 10);
-  if (threat.quietWindow > 0 || threat.proximityTier < 2 || threat.messageTimes.length >= 2 ||
+  if (threat.pacing?.phase==='recovery'||threat.quietWindow > 0 || threat.proximityTier < 2 || threat.messageTimes.length >= 2 ||
       game.elapsed - threat.lastMessageAt < C.feedback.messageMinimumGapSeconds) return;
+  if(threat.pacing?.phase==='warning'&&game.elapsed-threat.lastMessageAt<PRESENTATION.pacing.messageGap)return;
 
   const dot = d < .01 ? 1 :
     (-Math.sin(player.yaw) * (to.x - from.x) - Math.cos(player.yaw) * (to.z - from.z)) / d;

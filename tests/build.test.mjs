@@ -164,7 +164,8 @@ test('release identity is stable, changes with assets, and preserves relative ru
     }
     for (const [relative, importer] of [
       ['../assets/audio/rain.mp3', 'src/audio.js'],
-      ['../assets/field/hands.glb', 'src/hands.js'],
+      ['../assets/field/player-arms.glb', 'src/hands.js'],
+      ['../assets/field/service-pistol.glb', 'src/hands.js'],
       ['../assets/fonts/rubik-glitch.ttf', 'src/style.css'],
     ]) {
       const url = new URL(relative, new URL(first.releasePath + importer, base));

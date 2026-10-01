@@ -6,24 +6,22 @@ The first release deployed commit `26952a98f6990504b6883df9f2ae51a75b7ab8d0`. [G
 
 ## Prepare
 
-The September 30 release packages the current weather/puddles, hands/QTE/physical-corn and psychedelic-intro work together. Its local verification passed 201 tests, syntax/lock checks, a 93-file build, and desktop/touch-emulated intro-to-gameplay browser checks. `INTRO_UPDATE.md` and `HANDS_CORN_UPDATE.md` retain the separate manual acceptance gaps.
+The October 1 progressive upgrade adds graphics tiers, foliage motion, animation blending, lifecycle and AI fixes, CC0 pistol/arms and environment detail. Local verification passed 263 tests, syntax/lock checks, a 109-file build, desktop/touch-emulated gameplay and intro checks. `UPGRADE.md` records the implementation, experiments and physical-device acceptance gaps.
 
-The previous successful deployment observed before this publication is `d70e4c2f9fe807ba39e3aea54ddb099b87ea7ff3`, [Actions run 36654059021](https://github.com/OsanGen/cornfields/actions/runs/36654059021). Keep it as the release rollback baseline. The exact new deployed SHA, provider run and served-file verification belong in the release receipt after the workflow succeeds.
+The successful deployment verified before this publication is `b234a99e23c12e8034b5199e8294876a0ebf71e3`, [Actions run 36742247493](https://github.com/OsanGen/cornfields/actions/runs/36742247493), Pages deployment 6764333670. Keep it as the rollback baseline. The exact new deployed SHA, provider run and served-file verification belong in the release receipt after the workflow succeeds.
 
 1. Run `npm ci`, `npm test`, `npm run check`, then `npm run build` with Node.js 22.
 2. Run `CORNFIELD_BASE_PATH=/cornfields/ npm run preview` and test `http://127.0.0.1:4180/cornfields/`.
 3. Run the desktop and mobile browser checks using an installed Playwright/browser. Mobile emulation is not physical-phone acceptance.
 4. Review the source and asset list before the first commit. Include index.html, src/, assets/field/, assets/audio/, scripts/, tests/, package files, public docs and .github/. Exclude editable art, local output, caches, node_modules, generated dist, backups and local work logs.
 
-For the horror/QTE release, also run `node tests/horror-browser.mjs` against the
-packaged preview. It walks to a real hide, provokes an encounter, taps STAB through
-the actual input adapter, verifies the throw and recovery, checks the red sky,
-then verifies failure and retry. `CORNFIELD_DESKTOP=1` runs the same scenario with
-mouse capture and Space key presses. No test bypasses pointer-lock permission.
-`node tests/horror-performance.mjs` compares fixed views to the current committed
-HEAD using the same assets; run it before committing the candidate. Retain its
-baseline SHA and method alongside the result. Emulation and fixed-view timings
-do not certify physical-device performance or subjective animation/audio quality.
+The workflow runs `tests/corridor-field-browser.mjs` for desktop/touch door, field,
+return, QTE and qualification behavior, then `npm run test:player:browser` for the
+pistol/arms and optional-asset fallback. It also runs the shared game client through
+real input and retains browser evidence. For matched presentation and lifecycle
+checks, use `npm run test:upgrade` with the retained baseline package. Emulation
+and fixed-view timings do not certify physical-device performance or subjective
+animation/audio quality.
 
 ## Publish after target confirmation
 

@@ -36,6 +36,8 @@ jobs:
           ln -s "$RUNNER_TEMP/corn-browser/node_modules/playwright" node_modules/playwright
       - name: Verify corridor and field in desktop and touch browsers
         run: node tests/corridor-field-browser.mjs
+      - name: Verify player assets and fallback in desktop and touch browsers
+        run: npm run test:player:browser
       - name: Run shared game client
         run: |
           CORNFIELD_BASE_PATH=/cornfields/ CORNFIELD_SESSION_SECONDS=90 node scripts/preview-dist.mjs &
@@ -46,7 +48,9 @@ jobs:
         if: always()
         with:
           name: corridor-field-verification
-          path: output/corridor-field/
+          path: |
+            output/corridor-field/
+            output/remaining-upgrade-2026-10-01/browser/
           retention-days: 7
       - uses: actions/upload-pages-artifact@v4
         with:

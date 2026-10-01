@@ -7,7 +7,7 @@ import {attachZombieModel} from '../src/zombie.js';
 import {zombiePoseState} from '../src/zombie-poses.js';
 
 // Use the shipped geometry, bones, skin weights and clip without browser textures.
-async function fixture() {
+async function fixture({bank=false}={}) {
   const bytes = await readFile(new URL('../assets/field/zombie.glb', import.meta.url));
   const length = bytes.readUInt32LE(12);
   const json = JSON.parse(bytes.subarray(20, 20 + length));
@@ -16,6 +16,7 @@ async function fixture() {
   json.buffers[0].uri = 'data:application/octet-stream;base64,' + bytes.subarray(28 + length).toString('base64');
   globalThis.ProgressEvent ||= class { constructor(type, properties) { this.type = type; Object.assign(this, properties); } };
   const gltf = await new GLTFLoader().parseAsync(JSON.stringify(json), '');
+  if(bank){const data=JSON.parse(await readFile(new URL('../assets/field/zombie-clips.json',import.meta.url)));gltf.animations.push(...data.clips.map(clip=>THREE.AnimationClip.parse(clip)));}
   const group = new THREE.Group();
   const adapter = attachZombieModel(group, gltf);
   const game = {enemy:{state:'stalk', stateStartedAt:0, timer:0, x:0, z:0}, player:{health:100}, interaction:null};
@@ -109,4 +110,19 @@ test('clock rewind clears locomotion phase for a restart', async () => {
   h.game.enemy.x = 0;
   h.adapter.update(h.game, 0);
   assert.deepEqual(h.adapter.diagnostics(), initial);
+});
+
+test('additional source clips blend on the real rig without taking over QTE or simulation',async()=>{
+  const h=await fixture({bank:true});
+  assert.equal(h.adapter.diagnostics().sourceClips.length,3);
+  for(const state of ['observe','flashlight_recoil','staggered','chase']){
+    Object.assign(h.game.enemy,{state,stateStartedAt:0,timer:2.5});
+    const before=JSON.stringify(h.game);h.adapter.update(h.game,.5);
+    assert.equal(JSON.stringify(h.game),before);assert(h.adapter.getEyeWorld().toArray().every(Number.isFinite));
+  }
+  h.game.interaction={phase:'stab',phaseStartedAt:0};h.adapter.update(h.game,.6);
+  assert.equal(h.adapter.diagnostics().pose,'stab');
+  h.game.interaction=null;h.game.enemy.state='observe';h.game.runId=2;h.adapter.update(h.game,0);
+  const restarted=h.adapter.diagnostics();h.game.runId=3;h.adapter.update(h.game,0);
+  assert.deepEqual(h.adapter.diagnostics(),restarted);
 });

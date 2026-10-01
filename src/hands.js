@@ -1,54 +1,85 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import {PLAYER_VIEWMODEL as POSE} from './viewmodel-pose.js';
 
-/** One optional original posed asset shared by the normal gun and escape grip. */
-export function installHands({gun,knife,placeholders}){
-  const stats={status:'loading',error:null,wear:0,meshes:0};
-  const materials=[],baseColors=[],groups=[];
-  let expired=false,timer,previousTime=0,runId=null;
-  const wearUniform={value:0};
-  const limitCloseLight=shader=>{
-    shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>',`#include <lights_fragment_end>
-      reflectedLight.directDiffuse=min(reflectedLight.directDiffuse,diffuseColor.rgb*.65);
-      reflectedLight.directSpecular=min(reflectedLight.directSpecular,vec3(.025));`);
+function disposeAssets(roots,ownedMaterials=[]){
+  const resources=new Set(ownedMaterials);
+  for(const root of roots)root.traverse(object=>{
+    if(object.geometry)resources.add(object.geometry);
+    if(object.isSkinnedMesh)resources.add(object.skeleton);
+    for(const material of [object.material].flat().filter(Boolean)){
+      resources.add(material);for(const value of Object.values(material))if(value?.isTexture)resources.add(value);
+    }
+  });
+  for(const resource of resources)resource.dispose();
+}
+
+/** One optional viewmodel, with independent weapon and skin material treatment. */
+export function installHands({gun,knife,placeholders,weaponPlaceholders=[],muzzle,renderer,loader=new GLTFLoader(),deadlineMs=8000}){
+  const stats={status:'loading',error:null,wear:0,meshes:0,rigged:false,weapon:'Service Pistol',arms:'para / MakeHuman'};
+  const roots=[],groups=[],skinMaterials=[],knifeMaterials=[];
+  let expired=false,disposed=false,timer,rejectDeadline,previousTime=0,runId=null,slide=null,slideHome=null,environment=null;
+  let cleaned=false;
+  const cleanup=()=>{
+    if(cleaned)return;cleaned=true;
+    disposeAssets([...roots,...groups],knifeMaterials);for(const group of groups)group.removeFromParent();environment?.dispose();
   };
-  for(const group of [gun,knife])group.traverse(object=>{
-    if(!object.isMesh||!object.material.isMeshStandardMaterial)return;
-    object.material=object.material.clone();object.material.onBeforeCompile=limitCloseLight;materials.push(object.material);
+  const load=name=>loader.loadAsync(new URL(`../assets/field/${name}`,import.meta.url).href).then(asset=>{
+    if(expired){disposeAssets([asset.scene]);return asset;}
+    roots.push(asset.scene);return asset;
   });
   const ready=Promise.race([
-    new GLTFLoader().loadAsync(new URL('../assets/field/hands.glb',import.meta.url).href),
-    new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;reject(new Error('Hand asset deadline'));},8000);}),
-  ]).then(gltf=>{
+    Promise.all([load('player-arms.glb'),load('service-pistol.glb')]),
+    new Promise((_,reject)=>{rejectDeadline=reject;timer=setTimeout(()=>reject(new Error('Player asset deadline')),deadlineMs);}),
+  ]).then(([arms,pistol])=>{
     if(expired)return;
-    const right=gltf.scene.getObjectByName('hand_right'),left=gltf.scene.getObjectByName('hand_left');
-    if(!right?.isMesh||!left?.isMesh)throw new Error('Hand asset missing required meshes');
-    const material=right.material.clone();material.roughness=.89;
-    material.bumpMap=material.map;material.bumpScale=.0012;
-    material.onBeforeCompile=shader=>{
-      limitCloseLight(shader);
-      shader.uniforms.handWear=wearUniform;
-      shader.fragmentShader='uniform float handWear;\n'+shader.fragmentShader;
-      shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
-        float creases=pow(1.0-abs(sin(vMapUv.y*25.1327+sin(vMapUv.x*11.0)*.25)),7.0);
-        float stains=smoothstep(.15,.8,sin(vMapUv.x*31.0+sin(vMapUv.y*22.0))*cos(vMapUv.y*45.0-vMapUv.x*12.0));
-        diffuseColor.rgb*=mix(vec3(1.0),vec3(.34,.29,.20),handWear*(.55*creases+.32*stains));`);
+    const right=arms.scene.getObjectByName('RightArm'),left=arms.scene.getObjectByName('LeftArm');
+    if(!right||!left||!pistol.scene.getObjectByName('PistolBody'))throw new Error('Player asset missing required nodes');
+    if(renderer){
+      const pmrem=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();
+      try{environment=pmrem.fromScene(room,.04);}finally{room.dispose();pmrem.dispose();}
+    }
+    const prepare=(root,skin)=>root.traverse(object=>{
+      object.layers.set(1);
+      if(!object.isMesh)return;
+      object.frustumCulled=false;stats.meshes++;if(object.isSkinnedMesh)stats.rigged=true;
+      object.material=object.material.clone();
+      object.material.envMap=environment?.texture||null;object.material.envMapIntensity=skin?.22:.4;
+      if(skin){object.material.roughness=.68;skinMaterials.push({material:object.material,base:object.material.color.clone()});}
+    });
+    const attachArm=(source,parent,position,rotation)=>{
+      const arm=cloneSkeleton(source);prepare(arm,true);
+      const pivot=new THREE.Group();pivot.add(arm);pivot.position.set(...position);pivot.rotation.set(...rotation);parent.add(pivot);groups.push(pivot);return pivot;
     };
-    materials.push(material);baseColors.push(material.color.clone());
-    const add=(source,parent,position,rotation)=>{
-      const object=source.clone();object.material=material;object.position.set(...position);object.rotation.set(...rotation);
-      object.layers.set(1);parent.add(object);groups.push(object);stats.meshes++;return object;
-    };
-    add(right,gun,[.242,-.22,-.275],[0,0,Math.PI/2]);
-    add(right,knife,[.025,-.035,.025],[0,Math.PI/2,.3]);
-    add(left,knife,[-.055,-.035,.11],[.15,-Math.PI/2,-.55]);
-    placeholders.forEach(p=>p.visible=false);
+    const grip=new THREE.Group();grip.position.set(...POSE.grip);gun.add(grip);groups.push(grip);
+    attachArm(right,grip,[0,0,0],[0,0,0]);
+    const weapon=pistol.scene;prepare(weapon,false);weapon.position.set(...POSE.pistol);grip.add(weapon);
+    slide=weapon.getObjectByName('PistolSlide');slideHome=slide?.position.clone();
+    attachArm(right,knife,POSE.knifeRight.position,POSE.knifeRight.rotation);
+    attachArm(left,knife,POSE.knifeLeft.position,POSE.knifeLeft.rotation);
+    for(const object of knife.children)if(object.isMesh&&!placeholders.includes(object)){
+      object.material=object.material.clone();object.material.envMap=environment?.texture||null;object.material.envMapIntensity=.4;
+      knifeMaterials.push(object.material);
+    }
+    if(muzzle)muzzle.position.set(...POSE.muzzle);
+    [...placeholders,...weaponPlaceholders].forEach(object=>object.visible=false);
     stats.status='ready';
-  }).catch(error=>{stats.status='fallback';stats.error=error.message;}).finally(()=>clearTimeout(timer));
-  return {ready,stats,update(game){
+  }).catch(error=>{
+    expired=true;cleanup();
+    if(!disposed){stats.status='fallback';stats.error=error.message;stats.rigged=false;stats.meshes=0;}
+  }).finally(()=>clearTimeout(timer));
+  return {ready,stats,update(game,{recoil=0,reduced=false}={}){
+    if(disposed)return;
     const target=Math.min(2,game.progress.checkpointIndex)/2;
-    if(runId!==game.runId){runId=game.runId;wearUniform.value=0;previousTime=game.elapsed;}
+    if(runId!==game.runId){runId=game.runId;stats.wear=0;previousTime=game.elapsed;}
     const dt=Math.max(0,game.elapsed-previousTime);previousTime=game.elapsed;
-    wearUniform.value+=(target-wearUniform.value)*(1-Math.exp(-dt*1.5));stats.wear=wearUniform.value;
-  },dispose(){expired=true;clearTimeout(timer);for(const m of materials)m.dispose();for(const g of groups)g.removeFromParent();}};
+    stats.wear+=(target-stats.wear)*(1-Math.exp(-dt*1.5));
+    for(const {material,base} of skinMaterials)material.color.copy(base).multiplyScalar(1-stats.wear*.17);
+    if(slide){slide.position.copy(slideHome);if(!reduced)slide.position.x-=.028*Math.sin(Math.min(1,recoil/.16)*Math.PI);}
+  },dispose(){
+    disposed=expired=true;stats.status='disposed';clearTimeout(timer);rejectDeadline(new Error('Player view disposed'));
+    cleanup();
+  }};
 }

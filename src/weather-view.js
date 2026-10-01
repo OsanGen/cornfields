@@ -166,13 +166,16 @@ export function createWeatherView(scene, weather) {
 
   const stats = {enabled: true, puddles: state.puddles.length, maxDrawCalls: 4,
     rain: state.limits.rain, activeRipples: 0, activeDrops: 0};
+  let rainScale=1,reflection=null;
   function update(camera, game, effects) {
     updatePuddles();
     nightmare.update(camera,game,effects);
     const time = state.time, active = game.mode === 'playing' || game.mode === 'paused';
     normal.offset.set(time * .012, -time * .009);
+    water.envMapIntensity=.38*(1+(state.reduced?0:state.lightning||0)*.65);
     rain.visible = active&&!effects?.amount; rings.visible = active; droplets.visible = active && !state.reduced;
-    const rainCount = state.reduced ? Math.min(100, state.limits.rain) : state.limits.rain;
+    const rainCount = Math.min(state.reduced?100:Infinity,Math.floor(state.limits.rain*rainScale));
+    stats.rain=rainCount;
     rainGeometry.setDrawRange(0, rainCount * 2);
     for (let i = 0; i < rainCount; i++) {
       const s = rainSeeds[i], y = ((s.phase - time * s.speed) % 9 + 9) % 9 + .06;
@@ -208,5 +211,9 @@ export function createWeatherView(scene, weather) {
     dropMaterial.uniforms.pixelScale.value = camera.projectionMatrix.elements[5] * 300;
     stats.activeDrops = count;
   }
-  return {update, stats};
+  return {update,stats,setQuality(profile){rainScale=profile.rain;},setSky(texture){
+    reflection?.dispose();reflection=texture.clone();reflection.mapping=THREE.EquirectangularReflectionMapping;reflection.needsUpdate=true;
+    water.envMap=reflection;water.envMapRotation.y=-Math.PI/4;water.needsUpdate=true;
+    stats.reflections='shared night sky, static approximation';
+  }};
 }

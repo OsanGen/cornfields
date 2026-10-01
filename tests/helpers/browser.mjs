@@ -60,6 +60,9 @@ export function createHarness({denyLock = false, lockRequest, audioUnlock, touch
   let frameId = 0;
   const frames = new Map();
   const audio = {
+    interruptionListeners:new Set(),
+    onInterruption(listener){this.interruptionListeners.add(listener);return()=>this.interruptionListeners.delete(listener);},
+    interrupt(){if(this.ctx)this.ctx.state='interrupted';for(const listener of this.interruptionListeners)listener();},
     ctx: null, ticks: 0, resets: 0, muted: false, volume: 0.55, events: [], weatherEvents: [],
     async unlock() {
       if (audioUnlock) await audioUnlock();
@@ -80,7 +83,7 @@ export function createHarness({denyLock = false, lockRequest, audioUnlock, touch
   };
   const view = {
     renderer: {info: {render: {calls: 0, triangles: 0}}},
-    visuals: {}, render() {}, reset() {},
+    visuals: {}, render() {}, reset() {},disposals:0,dispose(){this.disposals++;},
   };
   const maze = createMaze({survival,corridors});
   const weatherModel = weather ? createWeather(maze, {touch}) : null;

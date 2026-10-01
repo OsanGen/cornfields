@@ -8,8 +8,8 @@ const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 // Deliberate publication boundary: no art sources, scripts, tests, or local output.
 export const runtimeAssets = [
   'cornfield-kit.glb', 'corn_color.png', 'corn_normal.png',
-  'zombie.glb', 'zombie-color.jpg', 'zombie-normal.jpg', 'night-sky.jpg',
-  'hands.glb', 'hands-source.json',
+  'zombie.glb', 'zombie-clips.json', 'zombie-color.jpg', 'zombie-normal.jpg', 'night-sky.jpg',
+  'player-arms.glb', 'service-pistol.glb', 'player-viewmodel-source.json',
   'brown_mud_diff_1k.jpg', 'brown_mud_nor_gl_1k.jpg', 'brown_mud_rough_1k.jpg',
   'wood_planks_dirt_diff_1k.jpg', 'wood_planks_dirt_nor_gl_1k.jpg', 'wood_planks_dirt_rough_1k.jpg',
   'wood_planks_diff_1k.jpg', 'wood_planks_nor_gl_1k.jpg', 'wood_planks_rough_1k.jpg',
@@ -34,6 +34,8 @@ export function moduleImports(source) {
 
 export function resolveModule(specifier, importer) {
   if (specifier === 'three') return 'node_modules/three/build/three.module.js';
+  if (specifier === 'three/tsl') return 'node_modules/three/build/three.tsl.js';
+  if (specifier === 'three/webgpu') return 'node_modules/three/build/three.webgpu.js';
   if (specifier.startsWith('three/addons/')) {
     return `node_modules/three/examples/jsm/${specifier.slice('three/addons/'.length)}`;
   }

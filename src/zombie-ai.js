@@ -88,7 +88,11 @@ export function senseZombie(game, blocks) {
 
   for (const event of game.evidence) {
     if(game.enemies&&event.zone&&event.zone!==enemy.zone)continue;
-    if (game.elapsed - event.at > 1 || distance(enemy, event.position) > event.radius) continue;
+    const range=distance(enemy,event.position);
+    if (game.elapsed - event.at > 1 || range > event.radius) continue;
+    // Soft sounds lose range behind panels/closed doors. Loud shots still carry.
+    // This tests the event's recorded position, never the hidden player's position.
+    if(['footsteps','flashlight'].includes(event.type)&&range>event.radius*.45&&!lineOfSight(game.maze,enemy,event.position,blocks))continue;
     if(event.type==='rustle'&&!cornPath(game.maze.cornWorld,enemy,event.position,blocks,{allowDoors:true,sound:true,maxDistance:event.radius}).length)continue;
     if (!heard || event.priority >= heard.priority) heard = event;
   }
@@ -114,7 +118,8 @@ export function senseZombie(game, blocks) {
     memory.lastHeard = point(heard.position);
     memory.lastHeardAt = heard.at;
     const knownHide = null;
-    recordObservation(game, heard.type, heard.position, knownHide, heard.at);
+    // Hearing is retained independently, but cannot displace current visual contact.
+    if(!seen)recordObservation(game, heard.type, heard.position, knownHide, heard.at);
   }
 
   const from = actorPosition(game, 'player');
