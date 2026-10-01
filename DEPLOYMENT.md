@@ -23,6 +23,11 @@ checks, use `npm run test:upgrade` with the retained baseline package. Emulation
 and fixed-view timings do not certify physical-device performance or subjective
 animation/audio quality.
 
+The Ubuntu 24.04 worker uses its preinstalled Google Chrome through the browser
+runtime adapter and logs the browser version. Playwright stays isolated and pinned;
+the workflow does not download another browser or install operating-system packages.
+Captures wait for GPU completion and retain diagnostics if screenshot capture fails.
+
 ## Publish after target confirmation
 
 Create the repository, push the reviewed commit, and configure Pages with GitHub Actions as its source. Run `.github/workflows/pages.yml` manually. Its build job installs the pinned lockfile, tests, checks syntax, builds the artifact, then uploads only dist/. Its deployment job uses the github-pages environment with pages:write and id-token:write permissions.

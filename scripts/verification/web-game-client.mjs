@@ -1,7 +1,7 @@
-// Unmodified develop-web-game skill client, copied for the bounded CI worker.
+// develop-web-game skill client; browser import uses the shared runtime adapter.
 import fs from "node:fs";
 import path from "node:path";
-import { chromium } from "playwright";
+import { chromium } from "../browser-runtime.mjs";
 
 function parseArgs(argv) {
   const args = {
