@@ -425,6 +425,7 @@ export function createGameApp({
       ...gameSnapshot(game,{diagnostic:true}),
       audioState: audio.ctx?.state || 'uninitialized',
       audioSamples:Object.keys(audio.samples||{}),
+      weaponAudio:{...audio.weaponStats,voices:audio.weaponVoices?.size||0},
       weatherAudioSamples:Object.keys(audio.weatherSamples||{}),
       weather:weather?.snapshot(),
       audioSources:audio.transients?.size||0,

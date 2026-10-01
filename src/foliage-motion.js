@@ -15,14 +15,14 @@ export function createFoliageMotion() {
           float cornTip = clamp(position.y / 3.0, 0.0, 1.0);
           vec2 cornAway = cornWorld.xz - cornPlayer;
           float cornBend = max(0.0, 1.0 - length(cornAway) / 1.1);
-          vec2 cornDrift = vec2(sin(cornTime * 1.1 + cornWorld.x * .4 + cornWorld.z * .3), cos(cornTime * .8 + cornWorld.z * .3)) * ${PRESENTATION.field.wind};
+          vec2 cornDrift = vec2(sin(cornTime * .55 + cornWorld.x * .12 + cornWorld.z * .08), cos(cornTime * .43 + cornWorld.z * .10) * .65) * ${PRESENTATION.field.wind};
           vec2 cornOffset = (cornDrift + cornAway / max(length(cornAway), .1) * cornBend * .18) * cornTip * cornTip * cornMotion;
           vec3 cornWorldOffset = vec3(cornOffset.x, 0.0, cornOffset.y);
           transformed.x += dot(cornWorldOffset, instanceMatrix[0].xyz) / dot(instanceMatrix[0].xyz, instanceMatrix[0].xyz);
           transformed.z += dot(cornWorldOffset, instanceMatrix[2].xyz) / dot(instanceMatrix[2].xyz, instanceMatrix[2].xyz);
         `);
       };
-      material.customProgramCacheKey=()=> 'corn-motion-v1';
+      material.customProgramCacheKey=()=> 'corn-motion-v2';
       return material;
     },
     update(time,player,reduced){uniforms.cornTime.value=time;uniforms.cornMotion.value=reduced?0:1;uniforms.cornPlayer.value.set(player.x,player.z);},

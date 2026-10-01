@@ -1,0 +1,18 @@
+{
+  "source": {
+    "creator": "Kenney Vleugels",
+    "title": "Smoke particle pack",
+    "page": "https://kenney.nl/assets/smoke-particles",
+    "download": "https://kenney.nl/media/pages/assets/smoke-particles/23249a0d35-1677695171/kenney_smoke-particles.zip",
+    "archiveSHA256": "97a1d09c66e4fd6c247c8ea87f84c0cc59caaeceae19414c995afb1616a1e1c9",
+    "original": "PNG/White puff/whitePuff07.png",
+    "license": "CC0-1.0",
+    "licenseURL": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "changes": "Original file unchanged; tinted red at runtime"
+  },
+  "runtime": {
+    "file": "beacon-mist.png",
+    "bytes": 58796,
+    "sha256": "810f3959b1beea2fe2ad077c8dd01caf48e04bf4422743fe680676948ed253ee"
+  }
+}

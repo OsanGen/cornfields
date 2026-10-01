@@ -6,15 +6,16 @@ export function strugglePose(q,time,reduced=false){
   const age=Math.max(0,time-(q?.phaseStartedAt||0));
   const active=q&&['tackle','qte','stab'].includes(q.phase);
   let progress=clamp((q?.presses||0)/(q?.targetPresses||1))*.82;
-  let contact=false,recoil=0;
+  let contact=false,recoil=0,impact=0;
   if(q?.phase==='stab'){
     const t=clamp(age/Math.max(.001,q.until-q.phaseStartedAt));
     progress=t<.48?.82+.18*ease(t/.48):1;
     contact=t>=.48&&t<.65;recoil=t>.65?ease((t-.65)/.35):0;
+    impact=t>=.48&&t<.74?Math.sin((t-.48)/.26*Math.PI):0;
     progress-=recoil*.40;
   }
   const strength=active&&q.phase==='qte'?(reduced?.14:1)*(1-progress*.7):0;
-  return {active:!!active,progress,contact,recoil,
+  return {active:!!active,progress,contact,recoil,impact:reduced?0:impact,
     tremorX:strength*(Math.sin(time*47)*.0016+Math.sin(time*13)*.001),
     tremorY:strength*Math.sin(time*39+.7)*.0018,
     roll:strength*Math.sin(time*31)*.018};

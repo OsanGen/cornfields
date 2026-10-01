@@ -12,6 +12,21 @@ warnings to return. See [CORRIDOR_FIELD_UPDATE.md](CORRIDOR_FIELD_UPDATE.md) for
 corrected design, verification and release gates. SURVIVAL_UPDATE.md records the
 superseded dedicated survival detour.
 
+The local gunshot/beacon update adds a credited recorded pistol shot, a brief muzzle
+light on the weapon and nearby surfaces, and a red mist/sky beacon at the cornfield
+return door. The beacon retains its true doorway bearing beyond normal fog and draw
+distance; low quality reduces mist, while reduced effects quiet the flash and pulse.
+Weapon audio has two reserved voices so detection cues cannot cancel a shot.
+`npm run test:effects:browser` checks sound output, flashes, far-field navigation and
+optional-asset fallbacks. The workflow runs above identify what has been published.
+
+The follow-up local polish gives warnings one display priority, adds sparse instanced
+grass and small stones, slows the corn wind, fits weapon-specific finger grips and
+keeps the knife tip aligned to the animated eye at contact. Stabbing rules are
+unchanged. Three small CC0 creature recordings add a stalking growl and varied
+attack roars; provenance is in `assets/audio/creature-sources.json`.
+Use `npm run test:polish:browser` for desktop/touch captures and contact checks.
+
 On a phone, choose **BEGIN** or **SKIP INTRO**, then turn to landscape and tap **ENTER THE FIELD**. The left joystick moves; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
 
 For future changes, start with [ARCHITECTURE.md](ARCHITECTURE.md). It maps mechanics, input, UI, AI, visuals and audio to their files and verification commands.

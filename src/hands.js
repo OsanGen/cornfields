@@ -3,6 +3,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {PLAYER_VIEWMODEL as POSE} from './viewmodel-pose.js';
+import {applyHandGrip,fitKnifeForearm} from './hand-grip.js';
 
 function disposeAssets(roots,ownedMaterials=[]){
   const resources=new Set(ownedMaterials);
@@ -49,16 +50,17 @@ export function installHands({gun,knife,placeholders,weaponPlaceholders=[],muzzl
       object.material.envMap=environment?.texture||null;object.material.envMapIntensity=skin?.22:.4;
       if(skin){object.material.roughness=.68;skinMaterials.push({material:object.material,base:object.material.color.clone()});}
     });
-    const attachArm=(source,parent,position,rotation)=>{
-      const arm=cloneSkeleton(source);prepare(arm,true);
+    const attachArm=(source,parent,position,rotation,grasp,side='R')=>{
+      const arm=cloneSkeleton(source);applyHandGrip(arm,grasp,side);prepare(arm,true);
+      if(grasp==='knife'&&side==='R')fitKnifeForearm(arm);
       const pivot=new THREE.Group();pivot.add(arm);pivot.position.set(...position);pivot.rotation.set(...rotation);parent.add(pivot);groups.push(pivot);return pivot;
     };
     const grip=new THREE.Group();grip.position.set(...POSE.grip);gun.add(grip);groups.push(grip);
-    attachArm(right,grip,[0,0,0],[0,0,0]);
+    attachArm(right,grip,[0,0,0],[0,0,0],'pistol');
     const weapon=pistol.scene;prepare(weapon,false);weapon.position.set(...POSE.pistol);grip.add(weapon);
     slide=weapon.getObjectByName('PistolSlide');slideHome=slide?.position.clone();
-    attachArm(right,knife,POSE.knifeRight.position,POSE.knifeRight.rotation);
-    attachArm(left,knife,POSE.knifeLeft.position,POSE.knifeLeft.rotation);
+    attachArm(right,knife,POSE.knifeRight.position,POSE.knifeRight.rotation,'knife');
+    attachArm(left,knife,POSE.knifeLeft.position,POSE.knifeLeft.rotation,'knife','L');
     for(const object of knife.children)if(object.isMesh&&!placeholders.includes(object)){
       object.material=object.material.clone();object.material.envMap=environment?.texture||null;object.material.envMapIntensity=.4;
       knifeMaterials.push(object.material);

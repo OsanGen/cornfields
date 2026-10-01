@@ -16,7 +16,7 @@ export const GAME_CONFIG = {
     hitRadius: .42,
     targetHeight: 1.25,
     targetHalfHeight: .7,
-    muzzleFlashSeconds: .06,
+    muzzleFlashSeconds: .09,
   },
   zombie: {
     attackRange: .82,

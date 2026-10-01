@@ -1,21 +1,22 @@
 import {actorPosition} from './hiding.js';
 import {createAudioLifecycle} from './audio-lifecycle.js';
-// Local CC0 vocal recordings plus original synthesized environmental effects.
+// Locally hosted licensed recordings plus synthesized fallback effects.
 export class FieldAudio {
-  constructor({weatherEnabled=true}={}){this.ctx=null;this.volume=.55;this.muted=false;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.sources=[];this.transients=new Set();this.samples={};this.voice=null;this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;this.weatherEnabled=weatherEnabled;this.weatherSamples={};this.weatherVoices=new Set();this.rainTarget=0;this.weatherQuiet=false;}
+  constructor({weatherEnabled=true}={}){this.ctx=null;this.volume=.55;this.muted=false;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.sources=[];this.transients=new Set();this.weaponVoices=new Set();this.weaponStats={sample:'idle',played:0,fallback:0};this.samples={};this.voice=null;this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;this.weatherEnabled=weatherEnabled;this.weatherSamples={};this.weatherVoices=new Set();this.rainTarget=0;this.weatherQuiet=false;}
   async prepare(){
     if(!this.ctx){
       const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
-      this.ctx=new C();this.lifecycle=createAudioLifecycle(this.ctx,()=>{for(const listener of this.interruptionListeners||[])listener();});this.master=this.ctx.createGain();this.master.gain.value=this.volume*.48;this.master.connect(this.ctx.destination);
+      this.ctx=new C();this.lifecycle=createAudioLifecycle(this.ctx,()=>{this.stopWeaponVoices();for(const listener of this.interruptionListeners||[])listener();});this.master=this.ctx.createGain();this.master.gain.value=this.volume*.48;this.master.connect(this.ctx.destination);
       this.gameGain=this.ctx.createGain();this.gameGain.gain.value=0;this.gameGain.connect(this.master);
       this.noise=this.ctx.createBuffer(1,this.ctx.sampleRate*3,this.ctx.sampleRate);const d=this.noise.getChannelData(0);let last=0;for(let i=0;i<d.length;i++){last=(last+(Math.random()*2-1)*.045)/1.025;d[i]=last*3;}
     }
     if(!await this.lifecycle.resume())return false;
     this.applyVolume();
-    this.samplesReady ||= Promise.all(['distress','scream'].map(async name=>{
+    this.samplesReady ||= Promise.all(Object.entries({distress:'distress.wav',scream:'scream.wav',pistol:'pistol-shot.wav',growl:'creature-growl.mp3',roar:'creature-roar.mp3',roarAlt:'creature-roar-alt.mp3'}).map(async([name,file])=>{
+      if(name==='pistol')this.weaponStats.sample='loading';
       const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
-      try{const response=await fetch(new URL(`../assets/audio/${name}.wav`,import.meta.url),{signal:abort.signal});if(!response.ok)throw new Error('Optional vocal unavailable');this.samples[name]=await this.ctx.decodeAudioData(await response.arrayBuffer());}
-      catch{/* The game remains playable with synthesized fallback. */}finally{clearTimeout(timer);}
+      try{const response=await fetch(new URL(`../assets/audio/${file}`,import.meta.url),{signal:abort.signal});if(!response.ok)throw new Error('Optional audio unavailable');this.samples[name]=await this.ctx.decodeAudioData(await response.arrayBuffer());if(name==='pistol')this.weaponStats.sample='ready';}
+      catch{if(name==='pistol')this.weaponStats.sample='fallback';}finally{clearTimeout(timer);}
     }));
     return true;
   }
@@ -38,6 +39,7 @@ export class FieldAudio {
     if(this.weatherEnabled)this.weatherReady ||= this.loadWeather();
   }
   startIntro({quiet=false}={}){
+    this.stopWeaponVoices();
     this.stopIntro();
     if(!this.ctx||this.ctx.state!=='running')return;
     // Replay silences the game bus without taking ownership of its sources.
@@ -135,32 +137,55 @@ export class FieldAudio {
   setVolume(v){this.volume=v;this.applyVolume();}
   toggleMute(){this.muted=!this.muted;if(this.muted){this.stopCues();this.stopIntro();}this.applyVolume();return this.muted;}
   onInterruption(listener){this.interruptionListeners ||= new Set();this.interruptionListeners.add(listener);return()=>this.interruptionListeners.delete(listener);}
-  pause(){this.stopIntro();this.lifecycle?.pause();}
-  sound({noise=false,freq=100,end=45,duration=.3,gain=.3,pan=0,filter=900,type='sine',delay=0}={}){
-    if(!this.ctx||this.ctx.state!=='running'||this.muted||this.transients.size>=16)return;
+  pause(){this.stopWeaponVoices();this.stopIntro();this.lifecycle?.pause();}
+  sound({noise=false,freq=100,end=45,duration=.3,gain=.3,pan=0,filter=900,type='sine',delay=0,weapon=false}={}){
+    if(!this.ctx||this.ctx.state!=='running'||this.muted||(!weapon&&this.transients.size>=16))return;
+    const owner=weapon?this.weaponVoices:this.transients;if(weapon)this.reserveWeaponVoice();
     const t=this.ctx.currentTime+delay,source=noise?this.ctx.createBufferSource():this.ctx.createOscillator();
     if(noise)source.buffer=this.noise;else{source.type=type;source.frequency.setValueAtTime(freq,t);source.frequency.exponentialRampToValueAtTime(Math.max(10,end),t+duration);}
     const f=this.ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=filter;
     const g=this.ctx.createGain();g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(Math.max(.002,gain),t+.018);g.gain.exponentialRampToValueAtTime(.001,t+duration);
     const p=this.ctx.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));source.connect(f).connect(g).connect(p).connect(this.gameGain||this.master);source.start(t);source.stop(t+duration+.05);
-    this.transients.add(source);
-    source.onended=()=>{this.transients.delete(source);this.weatherVoices.delete(source);source.disconnect();f.disconnect();g.disconnect();p.disconnect();};
+    owner.add(source);
+    source.onended=()=>{owner.delete(source);this.weatherVoices.delete(source);source.disconnect();f.disconnect();g.disconnect();p.disconnect();};
     return source;
   }
-  stopCues(){for(const source of this.transients){try{source.stop();}catch{}}this.transients.clear();this.weatherVoices.clear();this.voice=null;}
+  reserveWeaponVoice(){while(this.weaponVoices.size>=2){const oldest=this.weaponVoices.values().next().value;try{oldest.stop();}catch{}this.weaponVoices.delete(oldest);}}
+  stopWeaponVoices(){for(const source of this.weaponVoices){try{source.stop();}catch{}}this.weaponVoices.clear();}
+  shot(){
+    if(!this.ctx||this.ctx.state!=='running'||this.muted)return;
+    this.weaponStats.played++;
+    const buffer=this.samples.pistol;
+    if(!buffer){
+      this.weaponStats.fallback++;
+      this.sound({noise:true,duration:.23,gain:1.1,filter:6500,weapon:true});
+      this.sound({freq:110,end:38,duration:.20,gain:.55,weapon:true});return;
+    }
+    this.reserveWeaponVoice();
+    const source=this.ctx.createBufferSource(),gain=this.ctx.createGain(),time=this.ctx.currentTime,duration=Math.min(buffer.duration,1.2);
+    source.buffer=buffer;
+    // Preserve the recorded attack instead of fading away the muzzle crack.
+    gain.gain.setValueAtTime(1.45,time);gain.gain.setValueAtTime(1.45,time+Math.max(0,duration-.06));gain.gain.linearRampToValueAtTime(0,time+duration);
+    source.connect(gain).connect(this.gameGain||this.master);this.weaponVoices.add(source);
+    source.onended=()=>{this.weaponVoices.delete(source);source.disconnect();gain.disconnect();};
+    source.start(time);source.stop(time+duration+.01);
+  }
+  stopCues({weapons=true}={}){if(weapons)this.stopWeaponVoices();for(const source of this.transients){try{source.stop();}catch{}}this.transients.clear();this.weatherVoices.clear();this.voice=null;}
   vocal(kind,g,position,priority=1,duration=1.4){
     if(!this.ctx||this.ctx.state!=='running'||this.muted||this.transients.size>=16)return;
     if(this.voice&&this.voice.priority>priority)return;
     if(this.lastVoiceAt===g.elapsed&&priority<3)return;
     if(this.voice){try{this.voice.source.stop();}catch{}}
     const player={...actorPosition(g,'player'),yaw:g.player.yaw},where=position||actorPosition(g,'enemy');
-    const d=Math.hypot(where.x-player.x,where.z-player.z),gain=(kind==='scream'?.62:.30)*Math.max(.06,1/(1+d*.12));
-    const buffer=this.samples[kind];this.lastVoiceAt=g.elapsed;
+    const d=Math.hypot(where.x-player.x,where.z-player.z),gain=(kind==='roar'?.82:kind==='scream'?.62:kind==='growl'?.43:.30)*Math.max(.06,1/(1+d*.12));
+    this.vocalSerial=(this.vocalSerial||0)+1;
+    const buffer=(kind==='roar'&&this.vocalSerial%2?this.samples.roarAlt:this.samples[kind])||this.samples[kind]||this.samples[kind==='roar'?'scream':'distress'];this.lastVoiceAt=g.elapsed;
     if(!buffer){this.sound({freq:kind==='scream'?175:135,end:55,duration,gain,type:'sawtooth',filter:650,pan:this.pan(where,player)});return;}
     const source=this.ctx.createBufferSource(),volume=this.ctx.createGain(),pan=this.ctx.createStereoPanner();
-    source.buffer=buffer;source.playbackRate.value=kind==='scream'?.86:.9;
+    source.buffer=buffer;source.playbackRate.value=(kind==='roar'?.81:kind==='growl'?.80:kind==='scream'?.86:.9)+(this.vocalSerial%3-1)*.035;
     const time=this.ctx.currentTime,length=Math.min(duration,buffer.duration/source.playbackRate.value);
-    volume.gain.setValueAtTime(.001,time);volume.gain.linearRampToValueAtTime(gain,time+.04);volume.gain.setValueAtTime(gain,time+Math.max(.04,length-.12));volume.gain.linearRampToValueAtTime(.001,time+length);
+    const attack=kind==='roar'?.008:.035;
+    volume.gain.setValueAtTime(.001,time);volume.gain.linearRampToValueAtTime(gain,time+attack);volume.gain.setValueAtTime(gain,time+Math.max(attack,length-.12));volume.gain.linearRampToValueAtTime(.001,time+length);
     pan.pan.value=this.pan(where,player);source.connect(volume).connect(pan).connect(this.gameGain||this.master);
     this.voice={source,priority};this.transients.add(source);source.start();source.stop(time+length);
     source.onended=()=>{this.transients.delete(source);if(this.voice?.source===source)this.voice=null;source.disconnect();volume.disconnect();pan.disconnect();};
@@ -169,25 +194,28 @@ export class FieldAudio {
     if(event.runId!==undefined){if(this.eventRun!==event.runId){this.stopCues();this.eventRun=event.runId;this.eventId=0;}if(event.id<=this.eventId)return;this.eventId=event.id;}
     const e=event.type,pan=this.pan(event.position||actorPosition(g,'enemy'),{...actorPosition(g,'player'),yaw:g.player.yaw});
     if(['death','win'].includes(e))this.stopCues();
-    if(e==='detection'){this.stopCues();return;}
+    if(e==='detection'){this.stopCues({weapons:false});return;}
     if(['retreat','recoil'].includes(e)){this.vocal('distress',g,event.position,1,e==='recoil'?.6:1.1);return;}
-    if(['rage','corn_rush','chase','stagger','eye_stab','hunt_resume'].includes(e)){
-      if(e==='hunt_resume')this.stopCues();
-      this.vocal('scream',g,event.position,e==='hunt_resume'?3:2,e==='eye_stab'?.7:1.4);return;
+    if(e==='eye_stab'){
+      this.vocal('scream',g,event.position,3,.85);
+      this.sound({noise:true,duration:.11,gain:.55,filter:4200,pan});
+      this.sound({freq:115,end:36,duration:.16,gain:.5,filter:800,pan});return;
+    }
+    if(['rage','corn_rush','chase','stagger','hunt_resume'].includes(e)){
+      if(e==='hunt_resume')this.stopCues({weapons:false});
+      this.vocal(e==='stagger'?'scream':'roar',g,event.position,e==='hunt_resume'?3:2,e==='stagger'?1:2.5);
+      if(e!=='stagger')this.sound({freq:72,end:31,duration:.38,gain:.15,filter:250,pan});return;
     }
     if(e==='tackle'||e==='landing'){this.sound({noise:true,duration:.22,gain:.45,filter:550});return;}
     if(e==='stab_press'){this.sound({noise:true,duration:.07,gain:.1,filter:950});return;}
     if(e==='door'){this.sound({noise:true,duration:1.1,gain:.5,filter:380});this.sound({freq:130,end:50,duration:.7,gain:.15,type:'sawtooth'});}
     if(['sound','false','near'].includes(e))this.sound({noise:true,duration:1.5,gain:.8,filter:1800,pan});
     if(e==='glimpse'){this.sound({noise:true,duration:.8,gain:.45,pan});this.sound({freq:190,end:65,duration:1.4,gain:.12});}
-    if(e==='chase'){this.sound({freq:78,end:39,duration:1.4,gain:.45,type:'sawtooth',filter:400});this.sound({noise:true,duration:1.1,gain:.6,filter:800,pan});}
     if(e==='final'||e==='death'){this.sound({freq:160,end:24,duration:1.6,gain:.6,type:'sawtooth',filter:1500});this.sound({noise:true,duration:1.1,gain:.65,filter:1800});}
     if(e==='win'){this.sound({freq:220,end:110,duration:2,gain:.15});this.sound({freq:330,end:165,duration:2,gain:.07});}
-    if(e==='shot'){this.sound({noise:true,duration:.23,gain:.9,filter:3200});this.sound({freq:95,end:28,duration:.28,gain:.5});}
+    if(e==='shot')this.shot();
     if(e==='empty'||e==='flashlight')this.sound({noise:true,duration:.06,gain:.13,filter:1900});
-    if(e==='stagger'||e==='hit'){this.sound({noise:true,duration:.48,gain:.58,filter:480,pan});this.sound({freq:87,end:30,duration:.65,gain:.3,pan});}
-    if(e==='recoil')this.sound({freq:140,end:59,duration:.6,gain:.3,type:'sawtooth',filter:700,pan});
-    if(e==='rage'||e==='corn_rush'){this.sound({noise:true,duration:1,gain:.7,filter:1700,pan});this.sound({freq:83,end:33,duration:1.2,gain:.4,type:'sawtooth',filter:650,pan});}
+    if(e==='hit'){this.sound({noise:true,duration:.48,gain:.58,filter:480,pan});this.sound({freq:87,end:30,duration:.65,gain:.3,pan});}
     if(e==='damage'){this.sound({freq:60,end:22,duration:.38,gain:.6});this.sound({noise:true,duration:.3,gain:.45,filter:550});}
     if(e==='hide'||e==='leave'||e==='rustle')this.sound({noise:true,duration:e==='rustle'?.6:.25,gain:.35,filter:2200,pan});
     if(e==='recover')this.sound({freq:80,end:51,duration:1,gain:.2,type:'sawtooth',filter:340,pan});
@@ -203,7 +231,7 @@ export class FieldAudio {
     if(g.enemy.visible&&d<18&&g.enemy.step-this.lastEnemyStep>1.4){this.lastEnemyStep=g.enemy.step;this.sound({freq:65,end:25,duration:.23,gain:Math.max(.04,.55*(1-d/18)),pan:this.pan(enemy,player)});}
     const intensity=g.threat?.intensity||0;this.threatGain?.gain.setTargetAtTime(intensity*.18,this.ctx.currentTime,.35);
     this.pulse-=dt;if(['chase','rage_chase','corn_rush'].includes(g.enemy.state)&&this.pulse<=0){this.pulse=g.enemy.state==='chase'?.55:.4;this.sound({freq:53,end:31,duration:.22,gain:.20});this.sound({freq:48,end:26,duration:.16,gain:.13,delay:.2});}
-    this.breath-=dt;if(g.enemy.visible&&d<14&&this.breath<=0&&!g.interaction&&['concealed_stalk','observe','investigate','predictive_search'].includes(g.enemy.state)){this.breath=4.2;this.vocal('distress',g,enemy,0,1.3);}
+    this.breath-=dt;if(g.enemy.visible&&d<14&&this.breath<=0&&!g.interaction&&['concealed_stalk','observe','investigate','predictive_search'].includes(g.enemy.state)){this.breath=5.2;this.vocal('growl',g,enemy,0,1.9);}
   }
   reset(){this.stopCues();this.lastVoiceAt=-10;this.eventRun=null;this.eventId=0;this.lastStep=0;this.lastEnemyStep=0;this.pulse=0;this.breath=0;this.weatherQuiet=false;this.rainTarget=0;if(this.ctx){this.rainGain?.gain.setTargetAtTime(0,this.ctx.currentTime,.03);this.master.gain.cancelScheduledValues(this.ctx.currentTime);this.applyVolume();}}
 }

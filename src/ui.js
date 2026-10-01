@@ -140,8 +140,6 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
         node('touch-light').setAttribute?.('aria-pressed', String(player.flashlightOn));
         node('touch-fire').disabled = player.ammo <= 0;
       }
-      node('hide-status').hidden = !player.hidden||locked;
-      node('caption').hidden=locked||recovering;
       text('hide-status', 'DO NOT MOVE. IT CAN HEAR YOU.');
       const corruption=horror?corruptionFrame(game,{reduced:reducedMotion,touch}):{fragments:[],taunt:null};
       for(let i=0;i<4;i++){
@@ -149,10 +147,6 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
         element.hidden=!fragment;
         if(fragment){text(`die-${i}`,fragment.text);element.className=`die-fragment slot-${fragment.slot}`;}
       }
-      const taunt=corruption.taunt&&!prompt&&!game.caption;
-      node('corn-taunt').hidden=!taunt;
-      if(taunt)text('corn-taunt',`${alias}, ${taunt}`);
-
       const message = game.threat.activeMessage;
       if (message && game.threat.lastMessageAt !== previousMessageAt) {
         readableThreat = typeof message === 'string' ? message : message.text;
@@ -164,6 +158,13 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
         : (typeof message === 'string' ? message : message?.text || '');
       text('threat-card', visibleMessage);
       node('threat-card').hidden = !playing || !visibleMessage||locked||recovering;
+      // One warning owner: danger, caption, hiding instruction, then atmosphere.
+      const quiet=!playing||locked||recovering,threat=!node('threat-card').hidden;
+      node('caption').hidden=quiet||threat||!game.caption;
+      node('hide-status').hidden=quiet||threat||!!game.caption||!player.hidden;
+      const taunt=!quiet&&!threat&&!game.caption&&!player.hidden&&!prompt&&corruption.taunt;
+      node('corn-taunt').hidden=!taunt;
+      if(taunt)text('corn-taunt',`${alias}, ${taunt}`);
       node('danger').style.opacity = playing
         ? String(Math.min(0.7, (100 - player.health) / 170 + game.threat.intensity * 0.13))
         : '0';

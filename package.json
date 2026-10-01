@@ -12,6 +12,8 @@
     "test:upgrade": "node tests/upgrade-browser.mjs",
     "test:player": "node --test tests/player-upgrade.test.mjs",
     "test:player:browser": "node tests/player-upgrade-browser.mjs",
+    "test:effects:browser": "node tests/shot-beacon-browser.mjs",
+    "test:polish:browser": "node tests/polish-browser.mjs",
     "build:renderer-trial": "node scripts/build-renderer-trial.mjs",
     "test:renderer-trial": "node tests/renderer-trial-browser.mjs",
     "test": "node --test tests/*.test.mjs",

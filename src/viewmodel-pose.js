@@ -1,7 +1,7 @@
 export const PLAYER_VIEWMODEL=Object.freeze({
   grip:[.20,-.22,-.275],pistol:[-.032,.01,-.12],muzzle:[.168,-.148,-.535],
-  knifeRight:{position:[.035,-.08,.035],rotation:[1.05,0,-.2]},
-  knifeLeft:{position:[-.055,-.14,.12],rotation:[Math.PI/2,0,.4]},
+  knifeRight:{position:[.029,-.107,.023],rotation:[Math.PI/2,0,0]},
+  knifeLeft:{position:[.0015,-.1078,.152],rotation:[0,0,-.15]},
 });
 
 /** Keep the nearby flashlight off the hands while preserving world depth. */

@@ -15,6 +15,8 @@ import {createSurvivalView} from './corn-survival-view.js';
 import {createCorridorFieldView} from './corridor-view.js';
 import {createRenderQuality} from './render-quality.js';
 import {viewmodelPose,createActorHeading,renderFirstPersonLayers} from './viewmodel-pose.js';
+import {createMuzzleBurst} from './shot-effects.js';
+import {createGroundDetails} from './ground-details.js';
 
 function seeded(seed=719){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 const material=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
@@ -137,14 +139,9 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const gunMetal=new THREE.MeshStandardMaterial({color:0x49524d,roughness:.42,metalness:.65});
   box(.075,.13,.075,darkWood,.20,-.22,-.29,gun);box(.087,.072,.30,gunMetal,.20,-.14,-.38,gun);
   box(.025,.016,.025,metal,.20,-.095,-.50,gun);
-  const flareCanvas=document.createElement('canvas');flareCanvas.width=flareCanvas.height=64;
-  const flareContext=flareCanvas.getContext('2d'),flareGradient=flareContext.createRadialGradient(32,32,0,32,32,32);
-  flareGradient.addColorStop(0,'rgba(255,255,235,1)');flareGradient.addColorStop(.16,'rgba(255,224,147,.9)');flareGradient.addColorStop(.42,'rgba(255,131,38,.3)');flareGradient.addColorStop(1,'rgba(255,80,0,0)');
-  flareContext.fillStyle=flareGradient;flareContext.fillRect(0,0,64,64);
-  const flareTexture=new THREE.CanvasTexture(flareCanvas);flareTexture.colorSpace=THREE.SRGBColorSpace;
-  const muzzle=new THREE.Sprite(new THREE.SpriteMaterial({map:flareTexture,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));
-  muzzle.layers.set(1);muzzle.scale.set(.10,.10,1);muzzle.position.set(.20,-.14,-.55);gun.add(muzzle);muzzle.visible=false;
-  let shotFlash=0,gunRecoil=0,lastRenderTime=0;
+  const shotEffect=createMuzzleBurst(gun,GAME_CONFIG.gun.muzzleFlashSeconds),muzzle=shotEffect.root;
+  muzzle.position.set(.20,-.14,-.55);
+  let gunRecoil=0,lastRenderTime=0;
   const knife=new THREE.Group();camera.add(knife);knife.visible=false;
   const handMaterial=material(0x9b7861,.9);
   const placeholderHand=box(.085,.095,.13,handMaterial,0,-.025,.08,knife);
@@ -159,7 +156,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const hands=installHands({gun,knife,placeholders:[placeholderHand,forearm,bracingHand],weaponPlaceholders:gun.children.filter(o=>o!==muzzle),muzzle,renderer});
   const headings=Array.from({length:4},()=>createActorHeading());
   for(const group of [gun,knife])group.traverse(object=>{if(object.isMesh)object.layers.set(1);});
-  const knifeStart=new THREE.Vector3(.16,-.15,-.46),eyeTarget=new THREE.Vector3(),knifeEnd=new THREE.Vector3(),knifeDirection=new THREE.Vector3(),knifeForward=new THREE.Vector3(0,0,-1);
+  const knifeStart=new THREE.Vector3(.16,-.15,-.46),eyeTarget=new THREE.Vector3(),knifeEnd=new THREE.Vector3(),knifeTip=new THREE.Vector3(),knifeDirection=new THREE.Vector3(),knifeForward=new THREE.Vector3(0,0,-1);
   // One reusable local foliage pocket. All anchors share its geometry/materials.
   const pocket=new THREE.Group();scene.add(pocket);pocket.visible=false;
   const pocketStalks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.015,.03,2.8,4),material(0x828651),100);
@@ -184,10 +181,13 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const visuals={mode,status:mode==='legacy'?'legacy':'loading',error:null,stats:null,
     sky:{status:skyEnabled?'loading':'off',error:null,stats:null}};
   visuals.hands=hands.stats;
+  visuals.shot=shotEffect.stats;
+  visuals.knife={active:false,contact:false,contactGap:null};
   const worldObjects=scene.children.filter(o=>o!==camera&&o!==enemy&&o!==dust&&!o.isHemisphereLight&&!o.isDirectionalLight);
   const originalVisible=new Map(worldObjects.map(o=>[o,o.visible]));
   const extraGroups=maze.corridorLayout?Array.from({length:3},()=>{const group=enemy.clone();scene.add(group);return group;}):[];
-  const corridorView=createCorridorFieldView(scene,maze,floor,{touch,createSign:textSign,spatial:parameters.has('test')&&parameters.get('wallbatches')==='on'});visuals.corridors=corridorView.stats;
+  const corridorView=createCorridorFieldView(scene,maze,floor,{touch,camera,createSign:textSign,spatial:parameters.has('test')&&parameters.get('wallbatches')==='on'});visuals.corridors=corridorView.stats;
+  const groundDetails=createGroundDetails(scene,{touch});visuals.ground=groundDetails.stats;
   const weatherView=weather?createWeatherView(scene,weather):null;
   const cornView=createCornView(scene,maze);visuals.corn=cornView.stats;
   const survivalView=createSurvivalView(scene,maze);
@@ -224,19 +224,19 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   function resize(){if(disposed)return;const width=canvas.clientWidth||innerWidth,height=canvas.clientHeight||innerHeight;renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();}
   const quality=createRenderQuality({mode:parameters.get('quality'),onChange(profile){
     renderer.setPixelRatio(Math.min(devicePixelRatio,profile.pixelRatio));
-    corridorView.setQuality?.(profile);weatherView?.setQuality?.(profile);resize();
+    corridorView.setQuality?.(profile);groundDetails.setQuality(profile);weatherView?.setQuality?.(profile);resize();
   }});
   addEventListener('resize',resize);
   function render(g,time,reduced=false){
     if(disposed)return;
     const renderDt=Math.max(0,Math.min(.05,time-lastRenderTime));lastRenderTime=time;
-    shotFlash=Math.max(0,shotFlash-renderDt);gunRecoil=Math.max(0,gunRecoil-renderDt);
+    gunRecoil=Math.max(0,gunRecoil-renderDt);
     const playerAt=actorPosition(g,'player'),enemyAt=actorPosition(g,'enemy');
     const q=g.interaction,locked=interactionLocked(g),inCorn=g.player.hidden||g.player.cornZoneId;
     scene.fog.density=inCorn?.30:g.cornSurvival&&!g.cornSurvival.complete&&g.player.z>84?.22:.096;pocket.visible=false;
     if(g.corridorRun)scene.fog.density=g.player.zone==='field'?.29:.075;
     if(pocket.visible){const anchor=maze.landingZones.find(a=>a.id===g.player.cornZoneId);pocket.position.set(anchor?.pocket.x??playerAt.x,0,anchor?.pocket.z??playerAt.z);}
-    gun.visible=g.mode==='playing'&&!locked;muzzle.visible=shotFlash>0;
+    gun.visible=g.mode==='playing'&&!locked;shotEffect.update(renderDt,gun.visible,reduced);
     const nearWall=g.mode==='playing'&&!locked&&!lineOfSight(g.maze,playerAt,{x:playerAt.x-Math.sin(g.player.yaw)*.75,z:playerAt.z-Math.cos(g.player.yaw)*.75},g.blocks||[]);
     const gunPose=viewmodelPose({time,steps:g.steps,moving:g.player.moving,recoil:gunRecoil,reduced,nearWall,aspect:camera.aspect});
     gun.position.set(...gunPose.position);gun.rotation.set(...gunPose.rotation);
@@ -269,22 +269,26 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
       });
     }
     knife.visible=locked&&['tackle','qte','stab'].includes(q.phase);
+    Object.assign(visuals.knife,{active:knife.visible,contact:false,contactGap:null});
     if(knife.visible){
+      const pose=strugglePose(q,time,reduced),progress=pose.progress;
       const worldEye=zombie?.getEyeWorld?.('left',eyeTarget);
       if(!worldEye)eyeTarget.set(enemyAt.x,.93,enemyAt.z);
       // Keep the actual animated face in view from the lowered struggle camera.
       const rise=eyeTarget.y-camera.position.y;
       const run=Math.hypot(eyeTarget.x-camera.position.x,eyeTarget.z-camera.position.z);
       camera.rotation.x=Math.atan2(rise,Math.max(.1,run))-.09;
+      camera.translateZ(.018*pose.impact);
       camera.updateMatrixWorld(true);
       camera.worldToLocal(eyeTarget);
-      const pose=strugglePose(q,time,reduced),progress=pose.progress;
       knifeDirection.copy(eyeTarget).sub(knifeStart).normalize();
       knifeEnd.copy(eyeTarget).addScaledVector(knifeDirection,-.37);
       knife.position.copy(knifeStart).lerp(knifeEnd,progress);
       knife.position.x+=pose.tremorX;knife.position.y+=pose.tremorY;
       knife.quaternion.setFromUnitVectors(knifeForward,knifeDirection);
-      knife.rotateZ(pose.roll);
+      knife.rotateZ(pose.roll+.035*pose.impact);
+      knife.updateMatrix();knifeTip.set(0,0,-.37).applyMatrix4(knife.matrix);
+      Object.assign(visuals.knife,{contact:pose.contact,contactGap:knifeTip.distanceTo(eyeTarget)});
       bracingHand.position.x=-.065-.025*progress;
     }
     const nightmare=parameters.get('horror')==='off'?{amount:0,rain:0,sky:g.skyRedUntil>g.elapsed?1:0}:nightmareState(g,reduced),red=nightmare.sky;
@@ -304,13 +308,13 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
       for(const {ring,id}of rewardRings)ring.visible=!field&&!g.progress.activatedCheckpoints.includes(id);
       // The old corn islands are hidden behind the new opaque wooden panels.
       // Borrow their assets/materials without drawing that redundant vegetation.
-      cornView.setVisible(!field);fieldVisuals?.setVisible(false);corridorView.update(g,reduced);
+      cornView.setVisible(!field);fieldVisuals?.setVisible(false);corridorView.update(g,reduced);groundDetails.update(g);
     }
     renderFirstPersonLayers(renderer,scene,camera,gun.visible||knife.visible);
   }
   return {renderer,scene,camera,render,resize,ready,visuals,quality,
     dispose(){
-      if(disposed)return;disposed=true;removeEventListener('resize',resize);hands.dispose();
+      if(disposed)return;disposed=true;removeEventListener('resize',resize);hands.dispose();corridorView.dispose?.();
       const resources=new Set();scene.traverse(object=>{
         if(object.geometry)resources.add(object.geometry);if(object.isSkinnedMesh)resources.add(object.skeleton);
         for(const material of [object.material].flat().filter(Boolean)){resources.add(material);for(const value of Object.values(material))if(value?.isTexture)resources.add(value);}
@@ -319,5 +323,5 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     introCorn:()=>fieldVisuals?.introCorn||null,
     creatureDiagnostics:()=>zombie?.diagnostics(),
     animationTrial:name=>zombie?.trial(name),
-    event(event){if(event.type==='shot'){shotFlash=GAME_CONFIG.gun.muzzleFlashSeconds;gunRecoil=.16;}},reset(){shotFlash=0;gunRecoil=0;lastRenderTime=0;}};
+    event(event){if(event.type==='shot'){shotEffect.trigger();gunRecoil=.16;}},reset(){shotEffect.reset();gunRecoil=0;lastRenderTime=0;}};
 }

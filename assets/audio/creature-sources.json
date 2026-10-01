@@ -1,0 +1,48 @@
+{
+  "license": "CC0-1.0",
+  "licenseURL": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "sources": [
+    {
+      "author": "Joseph SARDIN",
+      "name": "Zombie #6",
+      "url": "https://bigsoundbank.com/zombie-6-s2111.html",
+      "download": "https://bigsoundbank.com/UPLOAD/mp3/2111.mp3",
+      "file": "growl-source.mp3",
+      "sha256": "d6dd75b5469eee93b7d26cba0cc8cad924dcacce83f222feef54a517aaa5a05f"
+    },
+    {
+      "author": "Darsycho",
+      "name": "Big scary troll sounds",
+      "url": "https://opengameart.org/content/big-scary-troll-sounds",
+      "download": "https://opengameart.org/sites/default/files/troll-roars_0.ogg",
+      "file": "roar-source.ogg",
+      "sha256": "7dc09cc3c3e424b66ac564ac83ac89ee91885c964780694d13f2c4957ac813c7"
+    }
+  ],
+  "runtime": {
+    "creature-growl.mp3": {
+      "source": "growl-source.mp3",
+      "start": 0,
+      "seconds": 1.35,
+      "processing": "highpass=f=65,lowpass=f=7500,afade=t=in:d=0.008,afade=t=out:st=1.21:d=0.14; mono 44.1kHz MP3 at 96kbps",
+      "bytes": 16971,
+      "sha256": "226eed74ac865531f0f3e474e111cd73c4e851c8b3d179a6e2036fe17f96789b"
+    },
+    "creature-roar.mp3": {
+      "source": "roar-source.ogg",
+      "start": 0,
+      "seconds": 1.22,
+      "processing": "highpass=f=65,lowpass=f=7500,afade=t=in:d=0.008,afade=t=out:st=1.08:d=0.14; mono 44.1kHz MP3 at 96kbps",
+      "bytes": 15404,
+      "sha256": "271ec5a4ce0d91e5c18068e2defba87d8a40009383f0e083311f0ae42cf048e9"
+    },
+    "creature-roar-alt.mp3": {
+      "source": "roar-source.ogg",
+      "start": 7.03,
+      "seconds": 1.82,
+      "processing": "highpass=f=65,lowpass=f=7500,afade=t=in:d=0.008,afade=t=out:st=1.6800000000000002:d=0.14; mono 44.1kHz MP3 at 96kbps",
+      "bytes": 22613,
+      "sha256": "b9fcd1751b328deeb2f125350dd5d00f7dd87714cfab596a74c257b81afbf0ac"
+    }
+  }
+}

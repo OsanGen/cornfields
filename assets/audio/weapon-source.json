@@ -1,0 +1,19 @@
+{
+  "source": {
+    "creator": "Michel Baradari",
+    "title": "Chaingun, pistol, rifle, shotgun shots",
+    "page": "https://opengameart.org/content/chaingun-pistol-rifle-shotgun-shots",
+    "download": "https://opengameart.org/sites/default/files/shots.7z",
+    "archiveSHA256": "4a5d78c7520396a4a1da7617d56c456031ac0041c77cb90a019fd75918bfb618",
+    "original": "shots/pistol.wav",
+    "originalSHA256": "5b992d168ce138a53515ada2cf1b1ee26bd13534ccd587fda701b3d44056a1bb",
+    "license": "CC-BY-3.0",
+    "licenseURL": "https://creativecommons.org/licenses/by/3.0/",
+    "changes": "Converted to mono PCM16 44.1 kHz, trimmed to 0.9 seconds, last 0.1 seconds faded out"
+  },
+  "runtime": {
+    "file": "pistol-shot.wav",
+    "bytes": 79458,
+    "sha256": "7b785383f934ee984708fcbb9e925f2b25c15bcfadbadab5c4c6307eeeee929e"
+  }
+}

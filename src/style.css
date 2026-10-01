@@ -87,6 +87,9 @@
 .grappling .survival-hud,.grappling #qte-prompt{z-index:4}
 .touch .die-fragment{font-size:15px;max-width:20%}
 .touch #corn-taunt{font-size:14px;top:28%;left:24%;width:52%}
+/* Urgent warnings share the caption lane instead of covering the play area. */
+#threat-card,.reduced-motion #threat-card{inset:auto;left:15%;bottom:15%;width:70%;padding:0;display:block;text-align:center;background:none;font:bold clamp(17px,2.3vw,24px)/1.35 Georgia,serif;letter-spacing:.04em;color:#efd7be;text-shadow:0 2px 6px #000;overflow-wrap:anywhere}
+.touch #threat-card,.touch.reduced-motion #threat-card{left:25%;width:48%;bottom:112px;font-size:14px}
 .reduced-motion .die-fragment{text-shadow:none;color:#b77a6b}
 @media(orientation:landscape) and (max-height:600px){
   .touch .intro{top:30px;width:calc(100% - 64px);display:grid;grid-template-columns:1fr 1fr;column-gap:26px;align-items:start}

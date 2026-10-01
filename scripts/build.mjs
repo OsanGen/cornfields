@@ -16,9 +16,11 @@ export const runtimeAssets = [
   'rusty_metal_02_diff_1k.jpg',
   'hessian_380_diff_1k.jpg', 'hessian_380_nor_gl_1k.jpg',
   'blue_metal_plate_diff_1k.jpg', 'blue_metal_plate_rough_1k.jpg',
+  'beacon-mist.png', 'beacon-source.json',
   'LICENSES.md', 'sources.json', 'sky-source.json', 'zombie-source.json', 'prop-sources.json',
 ].map(name => `assets/field/${name}`).concat(['distress.wav','scream.wav','sources.json',
-  'rain.mp3','thunder.mp3','splash-1.mp3','splash-2.mp3','weather-sources.json','LICENSES.md',
+  'rain.mp3','thunder.mp3','splash-1.mp3','splash-2.mp3','weather-sources.json','LICENSES.md','pistol-shot.wav','weapon-source.json',
+  'creature-growl.mp3','creature-roar.mp3','creature-roar-alt.mp3','creature-sources.json',
 ].map(name=>`assets/audio/${name}`)).concat([
   'barlow-condensed.ttf','rubik-glitch.ttf','barlowcondensed-OFL.txt','rubikglitch-OFL.txt','LICENSES.md','sources.json',
 ].map(name=>`assets/fonts/${name}`));
