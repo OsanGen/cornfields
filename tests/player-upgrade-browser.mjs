@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium} from '../scripts/browser-runtime.mjs';
 import {startPreview} from '../scripts/preview-dist.mjs';
+import {captureGame} from './helpers/capture.mjs';
 
 const output='output/remaining-upgrade-2026-10-01/browser';await mkdir(output,{recursive:true});
 const preview=await startPreview({port:0,basePath:'/cornfields/',seconds:180});
@@ -18,18 +19,18 @@ try{
     const step=(seconds,input={})=>page.evaluate(({seconds,input})=>window.__test.step(seconds,input),{seconds,input});
     await page.evaluate(()=>window.__test.fixture('viewmodel'));await step(.02,{yaw:Math.PI});
     let d=await page.evaluate(()=>window.__test.diagnostics());assert.equal(d.visuals.hands.status,'ready');
-    await page.screenshot({path:`${output}/${name}-gun.png`});
-    await step(.02,{fire:true});await page.screenshot({path:`${output}/${name}-recoil.png`});
+    await captureGame(page,{path:`${output}/${name}-gun.png`});
+    await step(.02,{fire:true});await captureGame(page,{path:`${output}/${name}-recoil.png`});
     await page.evaluate(()=>window.__test.fixture('encounter'));await step(.56);
     assert.equal((await page.evaluate(()=>window.__test.state())).interaction.phase,'qte');
-    await page.screenshot({path:`${output}/${name}-qte.png`});
+    await captureGame(page,{path:`${output}/${name}-qte.png`});
     for(let i=0;i<8;i++)await step(1/60,{stab:true});await step(.1);
-    await page.screenshot({path:`${output}/${name}-stab.png`});await step(.8);
+    await captureGame(page,{path:`${output}/${name}-stab.png`});await step(.8);
     assert.equal((await page.evaluate(()=>window.__test.state())).interaction.phase,'recovery');
     await step(10.2);assert.equal((await page.evaluate(()=>window.__test.state())).interaction,null);
     await page.evaluate(()=>window.__test.fixture('field'));await step(0);
     assert.equal((await page.evaluate(()=>window.__test.diagnostics())).zone,'field');
-    await page.screenshot({path:`${output}/${name}-field.png`});
+    await captureGame(page,{path:`${output}/${name}-field.png`});
     report.devices.push({name,hands:d.visuals.hands,drawCalls:d.drawCalls,triangles:d.triangles});await page.close();
   }
   const fallback=await browser.newPage({viewport:{width:844,height:390},isMobile:true,hasTouch:true});

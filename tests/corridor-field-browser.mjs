@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium} from '../scripts/browser-runtime.mjs';
 import {startPreview} from '../scripts/preview-dist.mjs';
+import {captureGame} from './helpers/capture.mjs';
 const output=process.env.CORNFIELD_BROWSER_OUTPUT||'output/corridor-field/browser';await mkdir(output,{recursive:true});
 const preview=await startPreview({port:0,basePath:'/cornfields/',seconds:240});
 const browser=await chromium.launch({headless:process.env.CORNFIELD_HEADED!=='1',args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
@@ -13,7 +14,7 @@ try{
   page.setDefaultTimeout(15000);page.on('pageerror',e=>report.errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')report.errors.push(m.text());});
   const state=()=>page.evaluate(()=>window.__test.state());
   const step=(seconds,input={})=>page.evaluate(({seconds,input})=>window.__test.step(seconds,input),{seconds,input});
-  const shot=async name=>{const d=await page.evaluate(()=>window.__test.diagnostics());console.log(kind,name,JSON.stringify({drawCalls:d.drawCalls,triangles:d.triangles,mode:d.mode,zone:d.zone}));await page.screenshot({path:`${output}/${kind}-${name}.png`,timeout:30000,animations:'disabled'});};
+  const shot=async name=>{const d=await page.evaluate(()=>window.__test.diagnostics());console.log(kind,name,JSON.stringify({drawCalls:d.drawCalls,triangles:d.triangles,mode:d.mode,zone:d.zone}));await captureGame(page,{path:`${output}/${kind}-${name}.png`,timeout:30000,animations:'disabled'});};
   const action=async type=>{if(touch)await page.locator(type==='interact'?'#touch-interact':'#touch-stab').tap();else await page.keyboard.press(type==='interact'?'KeyE':'Space');await page.evaluate(()=>window.advanceTime(17));};
   await page.goto(preview.url+'?test=1&intro=off',{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__test?.intro().coreReady);
   await page.bringToFront();await step(0);
