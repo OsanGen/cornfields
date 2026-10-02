@@ -9,6 +9,7 @@ notes and available runtime hashes are in [sources.json](sources.json).
 - Runtime file: `cruiser.glb`.
 - Attribution: **Car Concept**, Darmstadt Graphics Group GmbH and Eric Chadwick,
   derived from the original model by **Unity Fan**.
+- Copyright © 2024, Darmstadt Graphics Group GmbH.
 - Source: [Khronos glTF Sample Assets, Car Concept](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept).
 - License for the distributed Car Concept adaptation: [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/).
 - The original Unity Fan model was released under CC0. The downloaded adaptation
