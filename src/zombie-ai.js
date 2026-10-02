@@ -344,7 +344,7 @@ export function checkpointDisengage(game, blocks) {
   transition(game, 'disengage', 'checkpoint_grace', 3, { refresh: true });
 }
 
-function resumeAfterStagger(game) {
+export function resumeAfterStagger(game) {
   const enemy = game.enemy;
   emitEvent(game, 'recover', '', actorPosition(game, 'enemy'));
   const knownCorn=enemy.memory.lastKnown&&cornZoneAt(game.maze,enemy.memory.lastKnown);

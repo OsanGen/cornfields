@@ -5,6 +5,7 @@ import * as THREE from 'three';
 export const HAND_GRIP_CONTACT=Object.freeze({
   pistol:Object.freeze([-.032,-.009,-.104]),
   knife:Object.freeze([-.029,-.008,-.107]),
+  flashlight:Object.freeze([-.029,-.008,-.107]),
 });
 
 const profiles={
@@ -16,6 +17,10 @@ const profiles={
   knife:{
     index:[60,120,200],middle:[55,130,202],ring:[40,130,190],pinky:[10,65,110],
     thumb:[[-.020,.034,-.070],[-.051,.030,-.102],[-.057,.014,-.127]],
+  },
+  flashlight:{
+    index:[62,128,200],middle:[58,134,202],ring:[46,133,193],pinky:[18,80,130],
+    thumb:[[-.020,.034,-.070],[-.052,.030,-.102],[-.059,.014,-.129]],
   },
 };
 const restPoses=new WeakMap();
@@ -56,7 +61,7 @@ export function fitKnifeForearm(arm){
 }
 
 /** Fit only joint rotations. Skin weights, bone lengths and the source rig stay intact. */
-export function applyHandGrip(arm,kind='pistol',side='R'){
+export function applyHandGrip(arm,kind='pistol',side='R',{weaponScale=1}={}){
   const profile=profiles[kind];if(!profile)throw new Error('Unknown hand grip: '+kind);
   const names=[...['index','middle','ring','pinky'].flatMap(f=>[1,2,3].map(n=>`f_${f}0${n}${side}`)),...[1,2,3].map(n=>`thumb0${n}${side}`)];
   const bones=names.map(name=>arm.getObjectByName(name));
@@ -87,7 +92,28 @@ export function applyHandGrip(arm,kind='pistol',side='R'){
   profile.thumb.forEach((point,i)=>{
     const bone=arm.getObjectByName(`thumb0${i+1}${side}`);
     bone.getWorldPosition(origin).applyMatrix4(inverseFrame);
-    aim(bone,new THREE.Vector3(point[0]*mirror,point[1],point[2]).sub(origin));
+    const target=new THREE.Vector3(point[0]*mirror,point[1],point[2]);
+    if(kind==='pistol'&&Number.isFinite(weaponScale)&&weaponScale!==1){
+      const contact=new THREE.Vector3(...HAND_GRIP_CONTACT.pistol);contact.x*=mirror;
+      target.sub(contact).multiplyScalar(weaponScale).add(contact);
+    }
+    aim(bone,target.sub(origin));
   });
+  if(kind==='pistol'&&Number.isFinite(weaponScale)&&weaponScale!==1){
+    // Enlarge the weapon about the palm, then solve fingertip contact without
+    // scaling anatomy or changing the imported bind pose and skin weights.
+    const contact=new THREE.Vector3(...HAND_GRIP_CONTACT.pistol);contact.x*=mirror;
+    for(const finger of ['index','middle','ring','pinky']){
+      const chain=[1,2,3].map(n=>arm.getObjectByName(`f_${finger}0${n}${side}`));
+      const end=chain.at(-1).children.find(child=>child.isBone);if(!end)continue;
+      const target=end.getWorldPosition(new THREE.Vector3()).applyMatrix4(inverseFrame).sub(contact).multiplyScalar(weaponScale).add(contact).applyMatrix4(frame);
+      for(let iteration=0;iteration<10;iteration++)for(const bone of [...chain].reverse()){
+        bone.getWorldPosition(origin);end.getWorldPosition(tip);tip.sub(origin);
+        desired.copy(target).sub(origin);if(tip.lengthSq()<1e-10||desired.lengthSq()<1e-10)continue;
+        delta.setFromUnitVectors(tip.normalize(),desired.normalize());bone.getWorldQuaternion(rotation);bone.parent.getWorldQuaternion(parentRotation);
+        bone.quaternion.copy(parentRotation.invert().multiply(delta).multiply(rotation));bone.updateWorldMatrix(false,true);
+      }
+    }
+  }
   return {kind,side,contact:HAND_GRIP_CONTACT[kind].map((v,i)=>i===0?v*mirror:v)};
 }

@@ -30,12 +30,12 @@ test('walk-through entrances keep the matching return and pause corridor progres
   const serial=g.fieldTrip.serial;updateGame(g,.5,{});assert.equal(g.fieldTrip.serial,serial);assert.equal(g.player.zone,'corridor');
  }
 });
-test('sprint is faster than walking and ends on release or pause without diagonal boost',()=>{
+test('corridors have one walking speed without Shift or diagonal boost',()=>{
  const walk=setup(),run=setup(),diagonal=setup();
  for(const g of [walk,run,diagonal])Object.assign(g.player,g.maze.corridorLayout.sections[1].anchor,{yaw:Math.PI,flashlightOn:false});
  const start={x:run.player.x,z:run.player.z};updateGame(walk,.2,{forward:1});updateGame(run,.2,{forward:1,sprint:true});updateGame(diagonal,.1,{forward:1,strafe:1,sprint:true});
- assert(run.player.z-start.z>walk.player.z-start.z);assert.equal(run.player.sprinting,true);
- assert(Math.hypot(diagonal.player.x-start.x,diagonal.player.z-start.z)<=.481);
+ assert.equal(run.player.z,walk.player.z);assert.equal(run.player.sprinting,false);
+ assert(Math.abs(Math.hypot(diagonal.player.x-start.x,diagonal.player.z-start.z)-.395)<1e-8);
  updateGame(run,.02,{});assert.equal(run.player.sprinting,false);
  run.mode='paused';const before={...run.player};updateGame(run,1,{forward:1,sprint:true});assert.deepEqual(run.player,before);
 });
@@ -44,8 +44,8 @@ test('crossing buffer and occupied return point cannot flicker zones or overlap 
  const g=setup(),d=g.maze.cornDoors.find(d=>d.fieldEntrance);Object.assign(g.player,{x:d.x,z:d.z-.7});assert(enterOpenField(g,d));
  Object.assign(g.player,{x:0,z:-.7});corridorMovement(g,{x:0,z:-.6},.1);
  assert.equal(g.player.zone,'field');assert.equal(g.player.z,-.6);
- Object.assign(g.enemies[0],{active:true,zone:'corridor',x:d.x,z:d.z+.9});assert.equal(leaveOpenField(g),false);
- g.enemies[0].z+=2;assert.equal(leaveOpenField(g),true);assert.equal(g.player.zone,'corridor');
+ Object.assign(g.enemies[0],{active:true,zone:'corridor',x:d.x,z:d.z+.9});assert.equal(leaveOpenField(g),true);
+ assert.equal(g.player.zone,'corridor');assert(Math.hypot(g.player.x-g.enemies[0].x,g.player.z-g.enemies[0].z)>.59);
 });
 
 test('pushing against an occupied entrance cannot credit stationary qualification distance',()=>{

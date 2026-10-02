@@ -12,7 +12,7 @@ const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 export const runtimeAssets = [
   'cornfield-kit.glb', 'corn_color.png', 'corn_normal.png',
   'zombie.glb', 'zombie-clips.json', 'zombie-color.jpg', 'zombie-normal.jpg', 'night-sky.jpg',
-  'player-arms.glb', 'service-pistol.glb', 'player-viewmodel-source.json',
+  'player-arms.glb', 'service-pistol.glb', 'handheld-flashlight.glb', 'player-viewmodel-source.json',
   'brown_mud_diff_1k.jpg', 'brown_mud_nor_gl_1k.jpg', 'brown_mud_rough_1k.jpg',
   'wood_planks_dirt_diff_1k.jpg', 'wood_planks_dirt_nor_gl_1k.jpg', 'wood_planks_dirt_rough_1k.jpg',
   'wood_planks_diff_1k.jpg', 'wood_planks_nor_gl_1k.jpg', 'wood_planks_rough_1k.jpg',
@@ -26,7 +26,9 @@ export const runtimeAssets = [
   'creature-growl.mp3','creature-roar.mp3','creature-roar-alt.mp3','creature-sources.json',
 ].map(name=>`assets/audio/${name}`)).concat([...new Set(Object.values(FOOTSTEP_FILES))].filter(name=>name.startsWith('footsteps/')).map(name=>`assets/audio/${name}`),['assets/audio/footsteps/sources.json']).concat([
   'barlow-condensed.ttf','rubik-glitch.ttf','barlowcondensed-OFL.txt','rubikglitch-OFL.txt','LICENSES.md','sources.json',
-].map(name=>`assets/fonts/${name}`)).concat([...PROLOGUE_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/prologue/${name}`)).concat([...SURVIVAL_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/survival/${name}`));
+].map(name=>`assets/fonts/${name}`)).concat([
+  'cruiser.glb','cast.glb','asphalt_diff.jpg','asphalt_nor_gl.jpg','asphalt_rough.jpg','sources.json','LICENSES.md',
+].map(name=>`assets/intro/${name}`)).concat([...PROLOGUE_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/prologue/${name}`)).concat([...SURVIVAL_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/survival/${name}`));
 
 // The game's static ES-module imports, including multiline import/export lists.
 export function moduleImports(source) {

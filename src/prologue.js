@@ -1,6 +1,7 @@
 import {PROLOGUE,PROLOGUE_FOLLOW_LINES,createPrologueTimeline} from './prologue-script.js';
 import {sampleInteractivePrologueMotion} from './prologue-motion.js';
 import {GAME_CONFIG} from './game-config.js';
+import {samplePrologueDriving} from './prologue-driving.js';
 export {PROLOGUE,PROLOGUE_CHAPTERS,PROLOGUE_LINES,createPrologueTimeline} from './prologue-script.js';
 
 const clamp=value=>Math.max(0,Math.min(1,value));
@@ -15,12 +16,14 @@ export function prologueFrame(seconds,{reduced=false,timeline,durations}={}){
   const current=script.lines.find(line=>time>=line.start&&time<line.end)||null;
   const subtitle=current?.subtitles.find(chunk=>time>=chunk.start&&time<chunk.end);
   const rupture=script.chapters.find(chapter=>chapter.id==='rupture'),crash=script.cues.find(([id])=>id==='crash')[1];
-  return {
+  const frame={
     time,chapter:chapter.id,chapterTime:time-chapter.start,chapterProgress:clamp((time-chapter.start)/(chapter.end-chapter.start)),
     speaker:current?.speaker||'',spoken:subtitle?.text||'',line:current,nextLine:current?null:script.lines.find(line=>line.start>time)||null,
     red:smooth((time-crash)/(reduced?1.5:.8)),mist:smooth((time-(crash+2))/Math.max(1,rupture.end-crash-4)),
     reduced,returning:false,returnTime:0,
   };
+  frame.driving=samplePrologueDriving(frame,{timeline:script});
+  return frame;
 }
 
 export function createPrologue({onCue=()=>{},durations={},timeline}={}){
@@ -66,7 +69,7 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
     if(movable){
       player.y=GAME_CONFIG.player.eyeHeight;
       const forward=Number(controls.forward)||0,strafe=Number(controls.strafe)||0,n=Math.max(1,Math.hypot(forward,strafe));
-      const speed=(controls.sprint?4.8:3.8)*dt/n;
+      const speed=GAME_CONFIG.player.moveSpeed*dt/n;
       const x=player.x+(-Math.sin(player.yaw)*forward+Math.cos(player.yaw)*strafe)*speed;
       const z=player.z+(-Math.cos(player.yaw)*forward-Math.sin(player.yaw)*strafe)*speed;
       const room=c.id==='redroom',nx=Math.max(room?-2.75:-10,Math.min(room?2.75:10,x)),nz=Math.max(room?-4.35:-55,Math.min(room?3.5:7,z));

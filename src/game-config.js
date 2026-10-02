@@ -3,8 +3,7 @@ export const GAME_CONFIG = {
   grapple:{targetPresses:8,inputReadyGrace:.2,fullHealthSeconds:3,tackleSeconds:.3,
     stabSeconds:.2,throwSeconds:.5,recoverySeconds:10,redSkySeconds:3,retackleGrace:1},
   player: {
-    moveSpeed: 3.8,
-    sprintSpeed: 4.8,
+    moveSpeed: 3.95,
     maxHealth: 100,
     startAmmo: 2,
     checkpointAmmo: 2,

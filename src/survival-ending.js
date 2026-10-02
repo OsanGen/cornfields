@@ -46,7 +46,7 @@ function movePresentation(game,dt,input,room=false){
   if(input.flashlight)game.player.flashlightOn=!game.player.flashlightOn;
   const f=Number(input.forward)||0,r=Number(input.strafe)||0,n=Math.hypot(f,r),before={x:p.x,z:p.z};
   if(n){
-    const speed=room?2.5:(input.sprint?C.player.sprintSpeed:C.player.moveSpeed);
+    const speed=room?2.5:C.player.moveSpeed;
     let x=p.x+(-Math.sin(p.yaw)*f+Math.cos(p.yaw)*r)/n*speed*dt;
     let z=p.z+(-Math.cos(p.yaw)*f-Math.sin(p.yaw)*r)/n*speed*dt;
     if(room){x=Math.max(-2.8,Math.min(2.8,x));z=Math.max(-4.35,Math.min(4.35,z));
@@ -59,7 +59,7 @@ function movePresentation(game,dt,input,room=false){
     p.x=x;p.z=z;
   }
   const moved=Math.hypot(p.x-before.x,p.z-before.z);
-  game.player.moving=moved>.0001;game.player.sprinting=!room&&!!input.sprint&&game.player.moving;game.steps+=moved;
+  game.player.moving=moved>.0001;game.player.sprinting=false;game.steps+=moved;
 }
 
 // Returns true only while a story/end presentation owns this substep. During

@@ -116,7 +116,7 @@ export class FieldAudio {
   weatherEvent(event,game){
     if(!this.ctx||this.ctx.state!=='running'||this.muted||game.mode!=='playing')return;
     if(event.type==='footstep'){
-      this.footstep({surface:event.surface||'soft',wet:event.wet,gain:game.player?.sprinting?.82:.65});return;
+      this.footstep({surface:event.surface||'soft',wet:event.wet,gain:.65});return;
     }
     const thunder=event.type==='thunder';
     if(thunder&&(this.weatherQuiet||this.weatherVoices.size))return;
@@ -233,7 +233,7 @@ export class FieldAudio {
   update(g,dt,{footsteps=true}={}){
     if(!this.ctx||g.mode!=='playing')return;
     if(g.steps<this.lastStep||g.player.hidden||g.interaction)this.lastStep=g.steps;
-    if(footsteps&&g.player.moving&&!g.player.hidden&&!g.interaction&&g.steps-this.lastStep>1.55){this.lastStep=g.steps;this.footstep({surface:'soft',gain:g.player.sprinting?.82:.65});}
+    if(footsteps&&g.player.moving&&!g.player.hidden&&!g.interaction&&g.steps-this.lastStep>1.55){this.lastStep=g.steps;this.footstep({surface:'soft',gain:.65});}
     const player={...actorPosition(g,'player'),yaw:g.player.yaw},enemy=actorPosition(g,'enemy'),d=Math.hypot(player.x-enemy.x,player.z-enemy.z);
     this.enemySteps ||= new WeakMap();
     for(const actor of g.enemies||[g.enemy]){

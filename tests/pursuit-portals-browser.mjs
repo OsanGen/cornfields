@@ -30,14 +30,14 @@ try{
    await page.evaluate(ms=>window.advanceTime(ms),seconds*1000);
    if(touch)await page.mouse.up();else{await page.keyboard.up('KeyW');await page.keyboard.up('ShiftLeft');}
   }
-  await move(.97);assert.equal((await state()).zone,'field');assert.equal((await state()).player.sprinting,true);
+  await move(1.2);assert.equal((await state()).zone,'field');assert.equal((await state()).player.sprinting,false);
   const trip=(await state()).fieldTrip,time=(await state()).corridorRun.elapsed;
   await step(.5);assert.equal((await state()).corridorRun.elapsed,time);assert.equal((await state()).player.sprinting,false);
   assert.equal((await state()).interactionPrompt,'');await step(.017,{yaw:0});await captureGame(page,{path:`${output}/${name}-field-return.png`});
   await move(.8);assert.equal((await state()).zone,'corridor');assert.equal((await state()).fieldTrip.doorId,trip.doorId);await step(.4);assert.equal((await state()).zone,'corridor');
   for(const offset of [-.515,.515]){
    await page.evaluate(()=>window.__test.fixture('gate'));
-   await step(Math.abs(offset)/3.8,{strafe:Math.sign(offset)});
+   await step(Math.abs(offset)/3.95,{strafe:Math.sign(offset)});
    await move(.55,{sprint:false});assert.equal((await state()).zone,'field');
    assert.equal((await diagnostics()).visuals.corridors.activeZone,'field');
    const edgeTrip=(await state()).fieldTrip,edgeTime=(await state()).corridorRun.elapsed;
@@ -55,7 +55,7 @@ try{
   await page.evaluate(()=>window.__test.fixture('corridor'));await step(.017,{yaw:0});const first=await state(),e=first.enemies[0],gap=Math.hypot(e.x-first.player.x,e.z-first.player.z);
   await step(1.2);const later=await state(),enemy=later.enemies[0];assert.equal(enemy.state,'chase');assert(Math.hypot(enemy.x-later.player.x,enemy.z-later.player.z)<gap-3);
   await captureGame(page,{path:`${output}/${name}-pursuer.png`});
-  report.devices.push({name,walkThrough:true,sprint:true,edgeEntries:[-.515,.515],edgeReturns:true,matchingReturn:trip.doorId,timerPaused:true,reducedEffects:true,chaseCloses:true,portalDrawCap:d.visuals.corridors.portals.maxVisible*4});await page.close();
+  report.devices.push({name,walkThrough:true,sprint:false,edgeEntries:[-.515,.515],edgeReturns:true,matchingReturn:trip.doorId,timerPaused:true,reducedEffects:true,chaseCloses:true,portalDrawCap:d.visuals.corridors.portals.maxVisible*4});await page.close();
  }
  const baselinePath=process.env.CORNFIELD_BASELINE_DIST;
  if(baselinePath){const baseline=await startPreview({root:path.resolve(baselinePath),port:0,basePath:'/cornfields/',seconds:120});

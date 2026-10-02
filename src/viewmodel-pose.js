@@ -1,7 +1,13 @@
+const PISTOL_SCALE=1.15,GRIP=[.20,-.22,-.275],CONTACT=[-.032,-.009,-.104];
+const expand=(point,contact)=>point.map((value,i)=>contact[i]+(value-contact[i])*PISTOL_SCALE);
 export const PLAYER_VIEWMODEL=Object.freeze({
-  grip:[.20,-.22,-.275],pistol:[-.032,.01,-.12],muzzle:[.168,-.148,-.535],
+  grip:GRIP,pistolScale:PISTOL_SCALE,pistol:expand([-.032,.01,-.12],CONTACT),
+  muzzle:expand([.168,-.148,-.535],CONTACT.map((value,i)=>value+GRIP[i])),
   knifeRight:{position:[.029,-.107,.023],rotation:[Math.PI/2,0,0]},
   knifeLeft:{position:[.0015,-.1078,.152],rotation:[0,0,-.15]},
+  flashlightLeft:{position:[-.029,-.107,.038],rotation:[Math.PI/2,0,0]},
+  // The source bulb faces +Z. Turn it down the camera's -Z beam.
+  flashlight:{position:[0,0,0],rotation:[0,Math.PI,0]},
 });
 
 /** Keep the nearby flashlight off the hands while preserving world depth. */
@@ -27,6 +33,16 @@ export function viewmodelPose({time=0,steps=0,moving=false,recoil=0,reduced=fals
     position:[-.035+(aspect<1.3?-.045:0)+Math.sin(steps*3.5)*.006*walk*motion,
       .02+Math.sin(time*1.8)*.002*motion+Math.cos(steps*7)*.005*walk*motion-(nearWall?.07:0),-.20+kick*.025],
     rotation:[kick*.10-(nearWall?.3:0),Math.sin(steps*3.5)*.01*walk*motion,Math.sin(time*1.3)*.004*motion],
+  };
+}
+
+/** Left hand carries a forward-facing torch, independently of pistol recoil. */
+export function flashlightPose({time=0,steps=0,moving=false,reduced=false,nearWall=false,aspect=16/9}={}){
+  const motion=reduced?0:1,walk=moving?1:0;
+  return {
+    position:[-.26+(aspect<1.3?.055:0)-Math.sin(steps*3.5)*.004*walk*motion,
+      -.22+Math.sin(time*1.8+.6)*.0015*motion+Math.cos(steps*7)*.004*walk*motion-(nearWall?.06:0),-.43],
+    rotation:[nearWall?-.20:0,-.09,Math.sin(time*1.3+.8)*.003*motion],
   };
 }
 

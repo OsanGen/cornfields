@@ -2,7 +2,7 @@
 
 **[Published playtest](https://osangen.github.io/cornfields/)** · Automatically selects desktop or touch controls.
 
-This source includes rain and puddles, the hands/QTE/enterable-corn update and a cinematic story before the psychedelic intro, with recorded footsteps in gameplay and the cinematic. The cinematic uses temporary playtest artwork and synthetic voices; publication status and deployed commit are available in the [Pages workflow runs](https://github.com/OsanGen/cornfields/actions/workflows/pages.yml).
+This source includes rain and puddles, the hands/QTE/enterable-corn update and a cinematic story before the psychedelic intro, with recorded footsteps in gameplay and the cinematic. The cinematic uses optional textured car and character assets, asphalt surface maps and synthetic voices; publication status and deployed commit are available in the [Pages workflow runs](https://github.com/OsanGen/cornfields/actions/workflows/pages.yml).
 
 The progressive upgrade adds graphics tiers, corn motion/detail, animation blending, safer phone interruptions and pacing controls. It also replaces the first-person placeholders with a CC0 textured pistol and rigged arms, improves timber and wet-ground presentation, and provides repeatable asset exports. See [UPGRADE.md](UPGRADE.md) for the authoring guide, experiment outcomes and remaining device acceptance. The workflow runs above identify the deployed revision.
 
@@ -27,17 +27,17 @@ unchanged. Three small CC0 creature recordings add a stalking growl and varied
 attack roars; provenance is in `assets/audio/creature-sources.json`.
 Use `npm run test:polish:browser` for desktop/touch captures and contact checks.
 
-The corridor pursuer continually routes toward the player around corners. Walking
-loses distance; Shift or the outer edge of the touch joystick sprints. Gun stagger,
+The corridor pursuer continually routes toward the player around corners. Movement
+uses one walking speed across keyboard and touch controls. Gun stagger,
 flashlight recoil and the ten-second escape recovery keep their existing rules.
 Walk through a neon **HIDE HERE** opening to enter corn without an interaction.
 The pursuer follows its last corridor doorway clue, then searches using field
 sight and sound. Quiet hiding still works; field time does not advance the main
 three-minute goal. Openings use a shared fractal/liquid border and the existing
 CC0 mist texture, with at most two nearby effects (one on phones/low quality).
-Reduced effects freezes the border motion. No new asset download is required.
+Reduced effects freezes the border motion. These doorway effects reuse existing textures.
 
-On a phone, turn to landscape and choose **BEGIN STORY**. Gameplay follows the story and titles automatically. **Skip Story** retains the titles; **Skip Opening** goes straight to the brief return shot. The left joystick moves and its outer edge sprints; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
+On a phone, turn to landscape and choose **BEGIN STORY**. Gameplay follows the story and titles automatically. **Skip Story** retains the titles; **Skip Opening** goes straight to the brief return shot. The left joystick moves; drag the right side to look. Buttons control firing, the flashlight, interaction and pause.
 
 For future changes, start with [ARCHITECTURE.md](ARCHITECTURE.md). It maps mechanics, input, UI, AI, visuals and audio to their files and verification commands.
 
@@ -56,23 +56,30 @@ Open <http://127.0.0.1:4173>. Choose sound/reduced effects, then click **BEGIN S
 
 The opening plays once per page session. Escape pauses; J skips the story and K skips the opening. Switching away pauses until **Continue**; retry bypasses it. **Replay Opening** preserves the paused run. `?intro=off` restores direct entry; `?prologue=off` restores the previous title-only opening; `?introfx=off` uses the direct-render title fallback. See [PROLOGUE_UPDATE.md](PROLOGUE_UPDATE.md) for story, assets and verification. [INTRO_UPDATE.md](INTRO_UPDATE.md) documents the retained title controller.
 
+The staged approach uses a textured cruiser, rigged cast, asphalt maps and restrained
+roadside mist. A continuous path drives the car, passenger viewpoint, steering,
+wheel travel and braking into the shoulder; its parked position matches the existing
+exit and walking route. Speech timing controls the maneuver, including retimed lines.
+Optional art failure retains the staged fallback. Asset credits and modifications are
+in [assets/intro/LICENSES.md](assets/intro/LICENSES.md); source metadata is in
+`assets/intro/sources.json`.
+
 | Control | Action |
 | --- | --- |
 | WASD / arrow keys | Move |
-| Shift while moving | Sprint in the corridor/field game |
 | Mouse | Look |
 | Left click | Fire one scarce, nonlethal round |
 | E | Open the main entrance; hiding openings require no interaction |
-| Esc | Skip an active intro; otherwise pause and release the mouse |
+| Esc | Pause and release the mouse |
 | F | Toggle flashlight |
 | Space, repeatedly while grabbed | Drive the knife forward and break free |
 | M | Mute or unmute |
 
-Walking is 3.8 m/s; sprinting is 4.8 m/s and makes louder footsteps. The corridor pursuer moves at 4.0 to 4.2 m/s. The pause menu includes volume, reduced motion, fullscreen and restart. Switching away pauses the simulation. Headphones are recommended. Death restarts at the entrance; checkpoints are one-time rewards, not saved respawn points.
+Walking is 3.95 m/s in gameplay and the interactive story. The corridor pursuer moves at 4.0 to 4.2 m/s. The pause menu includes volume, reduced motion, fullscreen and restart. Switching away pauses the simulation. Headphones are recommended. Death restarts at the entrance; checkpoints are one-time rewards, not saved respawn points.
 
 ## Phone controls
 
-Use landscape and tap BEGIN STORY. Drag the right side to look, tap EXIT when prompted, then use the left joystick to follow and LIGHT for the flashlight. The story gun is visible but cannot fire. Gameplay starts immediately after credits or SKIP OPENING. In gameplay, push the stick to the outer edge to sprint; FIRE spends one round per tap. The contextual button opens the main entrance. Walk directly through a glowing HIDE HERE opening to enter corn and through the red return frame to leave. Pause opens settings and restart. Fullscreen is optional and appears only when supported.
+Use landscape and tap BEGIN STORY. Drag the right side to look, tap EXIT when prompted, then use the left joystick to follow and LIGHT for the flashlight. The story gun is visible but cannot fire. Gameplay starts immediately after credits or SKIP OPENING. In gameplay, FIRE spends one round per tap. The contextual button opens the main entrance. Walk directly through a glowing HIDE HERE opening to enter corn and through the red return frame to leave. Pause opens settings and restart. Fullscreen is optional and appears only when supported.
 
 When grabbed, repeatedly tap the contextual **STAB** button. Eight fresh taps free you;
 holding it does not count. Existing health drains during the struggle. After a successful
@@ -119,8 +126,11 @@ original 3 / 2.5 / 2 seconds, depending on checkpoint progress.
 
 Fixed open passages return the player from the open cornfield to the same corridor
 entrance. Their transition covers the full walkable opening at the glowing frame,
-including diagonal approaches and recovery from inside the doorway recess. A blocked
-destination keeps the player on the current side until a safe crossing is possible.
+including diagonal approaches and recovery from inside the doorway recess. If a zombie
+occupies the usual landing, the return selects a nearby clear spot at the same corridor
+entrance, checked against walls and enemies. If all nearby spots are occupied, the player
+stays on the current side and sees an obstruction cue. Zombie stagger recovery completes
+even while the player is in the other area, avoiding a permanently blocked return.
 Going deeper triggers warnings and up to three additional field zombies.
 Standing still can conceal the player without locking movement or deleting enemy
 memory. Rustling can trigger a nearby rush, while distant input does not reveal
@@ -133,7 +143,11 @@ game snapshots, AI state, storage and network requests. Sparse authored corn tau
 use only this name. QTE corruption text is presentation, separate from tactical warnings.
 
 CC0 rigged hands use a 1K skin texture and a fitted grip around the textured service
-pistol. The original knife has a narrower blade and shaped handle. Weapon motion,
+pistol, enlarged 15% around the palm with corresponding finger and muzzle placement.
+While the flashlight is on, the left hand carries a textured CC0 torch; it lowers for
+the knife struggle. The torch has independent optional loading, so a missing model
+preserves the gun, hands and gameplay light. The original knife has a narrower blade
+and shaped handle. Weapon motion,
 slide recoil, near-wall lowering and gradual dirt remain presentation only; knife
 progress follows the existing interaction clock. Reduced effects suppress idle
 motion, blood rain and excessive tremor. Optional model failure retains the primitive
@@ -159,7 +173,8 @@ fallback. Use `?test=1&intro=off&lab=1&horror=off` and the Viewmodel scene for i
 - `src/corn-layout.js`, `src/corn-survival.js`: pooled corridor footprints, protected recycling, committed entry, hidden qualification and original-gate return.
 - `src/corn-survival-view.js`: fixed-capacity dynamic corn instances driven by the run's geometry revision.
 - `src/corridor-layout.js`, `src/corridor-run.js`, `src/corridor-view.js`: current main-game layout, qualification, field trips and world presentation.
-- `src/hands.js`, `src/viewmodel-pose.js`: optional pistol/rigged-hand loading, fit settings, recoil and bounded presentation motion.
+- `src/hands.js`, `src/viewmodel-pose.js`: optional pistol/rigged-hand/flashlight loading, fit settings, recoil and bounded presentation motion.
+- `src/prologue-driving.js`: shared absolute-clock car path, steering, braking and parked transform.
 - `src/horror-presentation.js`: derived QTE/taunt presentation.
 - `src/grapple.js`: tackle, timestamped knife input, health drain, safe throw and recovery deadlines.
 - `src/zombie-poses.js`: original per-bone choreography over the existing Pixelhouse rig.
@@ -253,7 +268,7 @@ background from opposite directions, compares sky on/off, and checks missing-ass
 fallback. See `progress.md` for which generation and checks have actually run.
 
 `tests/field-visuals.mjs` compares identical entrance, corridor and close-up views
-at 1280 x 720, checks sprinting through the first corner and exercises asset-load
+at 1280 x 720, checks movement through the first corner and exercises asset-load
 failure. Its report records warm browser frame intervals, submitted triangles
 and draw calls. The 10% p95 target is a local browser comparison, not a universal
 hardware guarantee or a subjective realism score. See `progress.md` for the

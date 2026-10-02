@@ -254,8 +254,7 @@ function resolvePlayerInput(game, dt, input) {
   const forward = Number.isFinite(input.forward) ? input.forward : 0;
   const strafe = Number.isFinite(input.strafe) ? input.strafe : 0;
   const length = Math.hypot(forward, strafe);
-  const sprint=!!game.corridorRun&&!!input.sprint&&length>0;
-  const speed=sprint?C.player.sprintSpeed:C.player.moveSpeed;
+  const speed=C.player.moveSpeed;
   const blocks = blocksFor(game);
   if (length) {
     moveBody(game.maze, player,
@@ -267,7 +266,7 @@ function resolvePlayerInput(game, dt, input) {
   survivalLocomotion(game,moved);
   updateCornPresence(game,input,wasInCorn);
   player.moving = moved > .0001;
-  player.sprinting = sprint&&player.moving;
+  player.sprinting = false;
   game.steps += moved;
   return blocks;
 }
@@ -331,7 +330,7 @@ function tick(game, dt, input) {
   const blocks=blocksFor(game);
   game.footstepTimer -= dt;
   if (player.moving && game.footstepTimer <= 0) {
-    addEvidence(game, 'footsteps', player, C.hearing.footstepRadius*(player.sprinting?1.35:1), 2);
+    addEvidence(game, 'footsteps', player, C.hearing.footstepRadius, 2);
     game.footstepTimer = C.hearing.footstepInterval;
   }
   if (input.fire) fireGun(game, blocks);

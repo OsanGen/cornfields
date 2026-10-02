@@ -1,5 +1,5 @@
 import {GAME_CONFIG as C,distance,emitEvent,addEvidence} from './game-config.js';
-import {createEnemy,updateZombie} from './zombie-ai.js';
+import {createEnemy,updateZombie,resumeAfterStagger} from './zombie-ai.js';
 import {cornPath,openDoor,cornOccupy} from './corn-world.js';
 import {recycleCorridor,prepareCorridorExit} from './corridor-layout.js';
 import {fieldPortalCrossing} from './field-portal.js';
@@ -40,12 +40,30 @@ export function enterOpenField(g,door,entry=g.player){
   emitEvent(g,'hide','Stay still to hide. Sadie Yates is back in the corridors.',p);
   return true;
 }
+// Preserve the ordinary landing whenever possible. A body at that one point
+// must not seal the entire opening: search only the connected corridor apron.
+export function fieldReturnLanding(g,entry=g.player){
+  const p=g.player,d=g.fieldTrip.returnDoor,w=g.corridorMaze.cornWorld;
+  const origin={x:d.x-entry.x,z:d.z+.9};
+  if(!cornOccupy(w,origin.x,origin.z,p.radius,g.blocks))return null;
+  const occupied=point=>g.enemies.some(e=>e.active&&e.zone==='corridor'&&distance(e,point)<e.radius+p.radius+.1);
+  for(const [dx,dz]of [[0,0],[0,.7],[-.4,.7],[.4,.7],[0,1.4],[-.4,1.4],[.4,1.4]]){
+    const point={x:origin.x+dx,z:origin.z+dz};
+    if(occupied(point))continue;
+    const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.1));let clear=true;
+    for(let i=0;i<=steps;i++)if(!cornOccupy(w,origin.x+dx*i/steps,origin.z+dz*i/steps,p.radius,g.blocks)){clear=false;break;}
+    if(clear)return point;
+  }
+  return null;
+}
 export function leaveOpenField(g,entry=g.player){
   if(!g.fieldTrip.active||g.interaction)return false;
   const p=g.player,door=g.fieldTrip.returnDoor;
-  const destination={x:door.x-entry.x,z:door.z+.9};
-  if(!cornOccupy(g.corridorMaze.cornWorld,destination.x,destination.z,p.radius,g.blocks))return false;
-  if(g.enemies.some(e=>e.active&&e.zone==='corridor'&&distance(e,destination)<e.radius+p.radius+.1))return false;
+  const destination=fieldReturnLanding(g,entry);
+  if(!destination){
+    if(g.elapsed-(g.fieldTrip.blockedAt??-10)>2){g.fieldTrip.blockedAt=g.elapsed;emitEvent(g,'portal_blocked','The entrance is blocked. Move along the opening.');}
+    return false;
+  }
   g.maze=g.corridorMaze;g.fieldTrip.active=false;g.fieldTrip.crossingUntil=g.elapsed+.3;
   Object.assign(p,destination,{yaw:p.yaw-Math.PI,zone:'corridor',hidden:false,cornZoneId:null,stillSince:g.elapsed});
   const primary=g.enemies[0];
@@ -109,6 +127,10 @@ function updateFieldPressure(g){
 function followAcrossDoor(g,e,dt){
   e.attackCooldown=Math.max(0,e.attackCooldown-dt);e.timer=Math.max(0,e.timer-dt);
   if(['staggered','flashlight_recoil'].includes(e.state)&&e.timer>0)return;
+  if(e.state==='staggered'){
+    const previous=g.maze;g.maze=e.zone==='field'?g.fieldMaze:g.corridorMaze;
+    try{withEnemy(g,e,()=>resumeAfterStagger(g));}finally{g.maze=previous;}
+  }
   if(e.followDoor==null||g.elapsed<(e.followAfter||0))return;
   const d=g.corridorMaze.cornDoors[e.followDoor],fromField=e.zone==='field';
   const maze=fromField?g.fieldMaze:g.corridorMaze;

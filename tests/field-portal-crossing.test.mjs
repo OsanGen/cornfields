@@ -85,12 +85,11 @@ test('an occupied field destination rejects atomically and succeeds after it cle
   assert.equal(g.player.zone,'field');assert.equal(g.fieldTrip.serial,1);
 });
 
-test('diagonal returns use a safe crossing point and reject blocked corridor landings',()=>{
+test('diagonal returns use a nearby clear landing when the crossing point is occupied',()=>{
   const {g,d}=setup();assert(enterOpenField(g,d));g.elapsed=1;
   const field=g.maze,before={x:.49,z:.09};Object.assign(g.player,{x:.56,z:.02});
   Object.assign(g.enemies[0],{active:true,zone:'corridor',x:d.x-.515,z:d.z+.9});
-  assert.equal(corridorMovement(g,before,.1),0);assert.equal(g.maze,field);assert.equal(g.player.zone,'field');
-  g.enemies[0].active=false;Object.assign(g.player,{x:.56,z:.02});corridorMovement(g,before,.1);
+  corridorMovement(g,before,.1);assert.notEqual(g.maze,field);
   assert.equal(g.player.zone,'corridor');assert(canOccupy(g.maze,g.player.x,g.player.z,g.player.radius,blocksFor(g)));
   assert(enterOpenField(g,d));const maze=g.maze;Object.assign(g.player,{x:1000,z:0});
   assert.equal(leaveOpenField(g),false);assert.equal(g.maze,maze);assert.equal(g.player.zone,'field');

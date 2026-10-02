@@ -175,7 +175,7 @@ test('actual QTE protects its route, excludes throw distance and retains exact r
   assert.equal(g.maze.cornWorld.revision,revision);
   for(let i=0;i<8;i++)updateGame(g,.01,{stab:true});
   updateGame(g,1);assert.equal(g.interaction.phase,'recovery');assert.equal(g.cornSurvival.distance,meters);
-  assert.equal(g.interaction.recoveryDeadline-g.interaction.phaseStartedAt,10);
+  assert.ok(Math.abs((g.interaction.recoveryDeadline-g.interaction.phaseStartedAt)-10)<1e-9);
   const deadline=g.interaction.recoveryDeadline;updateGame(g,deadline-g.elapsed+.02);
   assert.equal(g.interaction,null);assert(Math.abs(g.skyRedUntil-deadline-3)<1e-6);
   assert.equal(g.events.filter(e=>e.type==='hunt_resume').length,1);

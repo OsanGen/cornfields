@@ -5,6 +5,7 @@ import {prologueBlocking,prologueWorldTransition,withPrologueWorld,prologueVisio
 import {createPrologueActor} from '../src/prologue-actors.js';
 import {createPrologueEquipment} from '../src/scene.js';
 import {GAME_CONFIG} from '../src/game-config.js';
+import {createPrologue} from '../src/prologue.js';
 
 test('prologue starts with Mike in the passenger seat and exits at standing height',()=>{
   const car=prologueBlocking({chapter:'car',chapterProgress:0,time:0});
@@ -123,6 +124,17 @@ function rendererStub(onRender){
     getRenderTarget:()=>null,setRenderTarget(){},getScissorTest:()=>false,setScissorTest(){},getViewport:target=>target.copy(viewport),getScissor:target=>target.copy(viewport),setViewport(){},setScissor(){},getClearColor:target=>target.copy(color),getClearAlpha:()=>1,setClearColor(){},
     render(scene,camera){scene.updateMatrixWorld(true);this.info.render.calls++;onRender(scene,camera);}};
 }
+
+test('repeated driving frames never accumulate a half-turn in the seated actor',()=>{
+  let scene;const renderer=rendererStub(s=>{scene=s;}),view=createPrologueVisuals(renderer);
+  const story=createPrologue();story.begin();story.tick(2);const frame=story.frame();
+  for(let i=0;i<8;i++){
+    view.render(frame);const driver=scene.getObjectByName('Prologue Clarence');
+    const forward=new THREE.Vector3(0,0,1).applyQuaternion(driver.quaternion);
+    assert.ok(forward.z<-.99,`driver faces the windshield on frame ${i}`);
+  }
+  view.dispose();story.dispose();
+});
 
 test('rendering consumes live motion, draws the red room and capped ascent, then restores owned resources',()=>{
   let scene,drawnCamera,stageDraws=0,equipmentDraws=0;

@@ -14,7 +14,7 @@ import {createCornView} from './corn-view.js';
 import {createSurvivalView} from './corn-survival-view.js';
 import {createCorridorFieldView} from './corridor-view.js';
 import {createRenderQuality} from './render-quality.js';
-import {viewmodelPose,createActorHeading,renderFirstPersonLayers} from './viewmodel-pose.js';
+import {viewmodelPose,flashlightPose,createActorHeading,renderFirstPersonLayers} from './viewmodel-pose.js';
 import {createMuzzleBurst} from './shot-effects.js';
 import {createGroundDetails} from './ground-details.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
@@ -25,15 +25,15 @@ const material=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughn
 const up=new THREE.Vector3(0,1,0);
 
 /** Story-only clones retain the player's skin/gun assets without touching gameplay. */
-export function createPrologueEquipment(renderer,{gun,skinMaterial,getAssetVersion=()=>gun.children.length}={}){
+export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAssetVersion=()=>gun.children.length}={}){
   const overlay=new THREE.Scene(),camera=new THREE.PerspectiveCamera();overlay.add(camera);
   const fill=new THREE.HemisphereLight(0xb4bdad,0x514234,.8),key=new THREE.DirectionalLight(0xe7e9d8,1.5);
   key.position.set(-.5,.6,.25);overlay.add(fill,key);key.target.position.set(0,-.2,-.6);overlay.add(key.target);
   const materials=new Set(),geometries=new Set(),skeletons=new Set(),treatments=[];
-  let pistol=null,radio=null,version=null,disposed=false;
+  let pistol=null,radio=null,handheld=null,version=null,disposed=false;
   const stats={active:false,kind:null,source:'existing player gun and hands',liquid:0,opacity:0,meshes:0};
   function clear(){
-    pistol?.removeFromParent();radio?.removeFromParent();pistol=radio=null;
+    pistol?.removeFromParent();radio?.removeFromParent();handheld?.removeFromParent();pistol=radio=handheld=null;
     for(const resource of [...materials,...geometries,...skeletons])resource.dispose();
     materials.clear();geometries.clear();skeletons.clear();treatments.length=0;
   }
@@ -78,10 +78,14 @@ export function createPrologueEquipment(renderer,{gun,skinMaterial,getAssetVersi
   function ensure(){
     const next=getAssetVersion();if(pistol&&version===next)return;
     clear();version=next;pistol=cloneGun(false);radio=cloneGun(true);
-    stats.meshes=0;for(const root of [pistol,radio])root.traverse(o=>{if(o.isMesh)stats.meshes++;});
+    if(torch?.children.length){
+      handheld=cloneSkeleton(torch);handheld.name='Story hand and flashlight';camera.add(handheld);
+      handheld.traverse(o=>{o.layers.set(0);if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.isMesh)o.material=Array.isArray(o.material)?o.material.map(ownMaterial):ownMaterial(o.material);});
+    }
+    stats.meshes=0;for(const root of [pistol,radio,handheld].filter(Boolean))root.traverse(o=>{if(o.isMesh)stats.meshes++;});
   }
   function reset(){
-    if(pistol)pistol.visible=false;if(radio)radio.visible=false;
+    if(pistol)pistol.visible=false;if(radio)radio.visible=false;if(handheld)handheld.visible=false;
     for(const t of treatments){t.uniforms.amount.value=0;t.material.opacity=t.opacity;if(t.material.transparent!==t.transparent){t.material.transparent=t.transparent;t.material.needsUpdate=true;}}
     Object.assign(stats,{active:false,kind:null,liquid:0,opacity:0});
   }
@@ -95,6 +99,12 @@ export function createPrologueEquipment(renderer,{gun,skinMaterial,getAssetVersi
     pistol.visible=outside;radio.visible=dispatch;
     pistol.position.set(-.035-(storyCamera.aspect<1.3?.045:0),-.035,-.20);pistol.rotation.set(-.09,0,0);
     radio.position.set(-.025,.045,-.10);radio.rotation.set(-.05,-.10,.10);
+    if(handheld){
+      handheld.visible=outside&&!!frame.player?.flashlightOn;
+      const pose=flashlightPose({time:frame.elapsed??frame.time,steps:frame.player?.distance||0,moving:frame.player?.moving,reduced:frame.reduced,aspect:storyCamera.aspect});
+      handheld.position.fromArray(pose.position);handheld.rotation.set(...pose.rotation);
+    }
+    stats.flashlight=!!handheld?.visible;
     for(const t of treatments){t.uniforms.amount.value=vision.liquid;t.uniforms.time.value=Number(frame.time)||0;t.material.opacity=t.opacity*fade;const transparent=t.transparent||fade<.999;if(t.material.transparent!==transparent){t.material.transparent=transparent;t.material.needsUpdate=true;}}
     camera.projectionMatrix.copy(storyCamera.projectionMatrix);camera.projectionMatrixInverse.copy(storyCamera.projectionMatrixInverse);camera.near=storyCamera.near;camera.far=storyCamera.far;
     const clear=renderer.autoClear,resetInfo=renderer.info.autoReset;
@@ -214,7 +224,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     limbs.push(box(.13,.85,.15,skin,side*.16,.43,0,enemy));
     box(.049,.025,.035,new THREE.MeshStandardMaterial({color:0xe6cc8b,emissive:0xb39b4a,emissiveIntensity:1.3}),side*.078,2.25,.18,enemy);
   }
-  const flashlight=new THREE.SpotLight(0xe9edce,38,15,.53,.75,1.65);flashlight.position.set(.16,-.14,-.12);camera.add(flashlight);const beamTarget=new THREE.Object3D();beamTarget.position.set(0,0,-8);camera.add(beamTarget);flashlight.target=beamTarget;
+  const flashlight=new THREE.SpotLight(0xe9edce,38,15,.53,.75,1.65);flashlight.position.set(-.26,-.22,-.53);camera.add(flashlight);const beamTarget=new THREE.Object3D();beamTarget.position.set(0,0,-8);camera.add(beamTarget);flashlight.target=beamTarget;
   camera.layers.enable(1);
   const handLight=new THREE.HemisphereLight(0xb4bdad,0x514234,.8);handLight.layers.set(1);camera.add(handLight);
   const handKey=new THREE.DirectionalLight(0xe7e9d8,1.5),handTarget=new THREE.Object3D();handKey.layers.set(1);handKey.position.set(-.5,.6,.25);handTarget.position.set(0,-.2,-.6);handKey.target=handTarget;camera.add(handKey,handTarget);
@@ -236,10 +246,11 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   blade.rotation.x=-Math.PI/2;blade.position.z=-.08;knife.add(blade);
   const forearm=box(.085,.09,.34,handMaterial,.02,-.055,.29,knife);forearm.rotation.x=-.12;
   const bracingHand=box(.09,.085,.14,handMaterial,-.065,-.055,.08,knife);
-  const hands=installHands({gun,knife,placeholders:[placeholderHand,forearm,bracingHand],weaponPlaceholders:gun.children.filter(o=>o!==muzzle),muzzle,renderer});
-  const prologueEquipment=createPrologueEquipment(renderer,{gun,skinMaterial:handMaterial,getAssetVersion:()=>`${hands.stats.status}:${hands.stats.meshes}`});
+  const torch=new THREE.Group();torch.name='Left hand flashlight';camera.add(torch);torch.visible=false;
+  const hands=installHands({gun,knife,torch,placeholders:[placeholderHand,forearm,bracingHand],weaponPlaceholders:gun.children.filter(o=>o!==muzzle),muzzle,renderer});
+  const prologueEquipment=createPrologueEquipment(renderer,{gun,torch,skinMaterial:handMaterial,getAssetVersion:()=>`${hands.stats.status}:${hands.stats.meshes}:${hands.stats.flashlightStatus}`});
   const headings=Array.from({length:4},()=>createActorHeading());
-  for(const group of [gun,knife])group.traverse(object=>{if(object.isMesh)object.layers.set(1);});
+  for(const group of [gun,knife,torch])group.traverse(object=>{if(object.isMesh)object.layers.set(1);});
   const knifeStart=new THREE.Vector3(.16,-.15,-.46),eyeTarget=new THREE.Vector3(),knifeEnd=new THREE.Vector3(),knifeTip=new THREE.Vector3(),knifeDirection=new THREE.Vector3(),knifeForward=new THREE.Vector3(0,0,-1);
   // One reusable local foliage pocket. All anchors share its geometry/materials.
   const pocket=new THREE.Group();scene.add(pocket);pocket.visible=false;
@@ -326,6 +337,9 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     const nearWall=g.mode==='playing'&&!locked&&!lineOfSight(g.maze,playerAt,{x:playerAt.x-Math.sin(g.player.yaw)*.75,z:playerAt.z-Math.cos(g.player.yaw)*.75},g.blocks||[]);
     const gunPose=viewmodelPose({time,steps:g.steps,moving:g.player.moving,recoil:gunRecoil,reduced,nearWall,aspect:camera.aspect});
     gun.position.set(...gunPose.position);gun.rotation.set(...gunPose.rotation);
+    torch.visible=gun.visible&&!!g.player.flashlightOn;
+    const torchPose=flashlightPose({time,steps:g.steps,moving:g.player.moving,reduced,nearWall,aspect:camera.aspect});
+    torch.position.fromArray(torchPose.position);torch.rotation.set(...torchPose.rotation);
     if(g.mode==='menu'){
       camera.position.set(maze.spawn.x+1.9,1.66,maze.spawn.z+1.7);
       const entrance=maze.corridorLayout?maze.cornDoors[maze.corridorLayout.entrance]:maze.survivalLayout?maze.cornWorld.doors[maze.survivalLayout.outer]:doorPos;
@@ -399,7 +413,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     if(g.survivalEnding?.phase==='transform'){
       scene.fog.color.set(0x310206);scene.fog.density=.075+Math.min(1,g.survivalEnding.time/3)*.85;
     }
-    renderFirstPersonLayers(renderer,scene,camera,gun.visible||knife.visible);
+    renderFirstPersonLayers(renderer,scene,camera,gun.visible||knife.visible||torch.visible);
   }
   return {renderer,scene,camera,render,resize,ready,visuals,quality,renderPrologueEquipment:(storyCamera,frame)=>prologueEquipment.render(storyCamera,frame),
     dispose(){
