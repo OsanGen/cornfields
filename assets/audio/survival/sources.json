@@ -72,6 +72,12 @@
       "bytes": 9644,
       "sha256": "36ae577f786b2090d7cf322fb0ed1e13e7ed4617181c01a797c22ef7aa57a22c",
       "duration": 1.2887
+    },
+    "GATE-HEAL.mp3": {
+      "bytes": 30140,
+      "sha256": "8ba349fe3ead9d5362e7d38ee11745928576a9f1bda34237f40b53844d488a8f",
+      "duration": 4.2028
     }
-  }
+  },
+  "additional_script": "Approved healing checkpoint briefing: Find the glowing scarecrows. They will restore you. Each one answers only once."
 }

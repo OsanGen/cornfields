@@ -19,6 +19,9 @@ import {createMuzzleBurst} from './shot-effects.js';
 import {createGroundDetails} from './ground-details.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {attachPrologueLiquid,prologueVisionState} from './prologue-visuals.js';
+import {attachLiquidMaterial} from './liquid-material.js';
+import {checkpointVisionState} from './checkpoint-vision.js';
+import {createScarecrowView} from './scarecrow-view.js';
 
 function seeded(seed=719){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 const material=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
@@ -178,6 +181,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   // A modest pool of light at the threshold.
   const doorLight=new THREE.PointLight(0xf1c087,28,11,1.6);doorLight.position.set(doorPos.x,3.1,doorPos.z+1.1);scene.add(doorLight);
   box(.15,.22,.15,new THREE.MeshStandardMaterial({color:0xffd29a,emissive:0xffb55f,emissiveIntensity:2}),doorPos.x,3.3,doorPos.z+.7);
+  const scarecrowAnchors=[];
   function scarecrow(x,z,scale=1,broken=false){
     const group=new THREE.Group();group.position.set(x,0,z);group.scale.setScalar(scale);scene.add(group);
     box(.13,2.6,.13,darkWood,0,1.3,0,group);const arm=box(1.65,.12,.14,wood,0,2,0,group);if(broken)arm.rotation.z=-.28;
@@ -192,7 +196,11 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
       box(.10,2.5,.10,wood,l.x-.75,1.25,l.z);
       box(.26,.36,.26,new THREE.MeshStandardMaterial({color:0xaf5132,emissive:0xb83415,emissiveIntensity:1.8}),l.x-.75,2.35,l.z);
       const glow=new THREE.PointLight(0xff5728,20,8,1.8);glow.position.set(l.x-.65,2.3,l.z);scene.add(glow);
-    }else if(l.id==='cross'){scarecrow(l.x,l.z-.63,.85,true);}
+    }else if(maze.checkpoints.some(cp=>cp.id===l.id)){
+      const group=new THREE.Group();group.position.set(l.x,0,l.z-.63);scene.add(group);
+      const fallback=scarecrow(0,0,1,l.id==='cross');fallback.removeFromParent();group.add(fallback);
+      scarecrowAnchors.push({group,fallback,checkpoint:maze.checkpoints.find(cp=>cp.id===l.id)});
+    }
     else for(let i=0;i<3;i++){
       const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.25,.28,.8,9),barrelPaint);barrel.position.set(l.x+.64,.4,l.z+(i-1)*.6);scene.add(barrel);
       for(const y of [.15,.65]){const band=new THREE.Mesh(new THREE.TorusGeometry(.269,.018,3,9),barrelBands);band.rotation.x=Math.PI/2;band.position.set(barrel.position.x,y,barrel.position.z);scene.add(band);}
@@ -283,6 +291,18 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   const originalVisible=new Map(worldObjects.map(o=>[o,o.visible]));
   const extraGroups=maze.corridorLayout?Array.from({length:3},()=>{const group=enemy.clone();scene.add(group);return group;}):[];
   const corridorView=createCorridorFieldView(scene,maze,floor,{touch,camera,createSign:textSign,spatial:parameters.has('test')&&parameters.get('wallbatches')==='on'});visuals.corridors=corridorView.stats;
+  const scarecrows=createScarecrowView(scene,scarecrowAnchors,{touch,cloth});visuals.scarecrows=scarecrows.stats;
+  const liquidMaterials=new Set(),liquidTreatments=[];
+  function registerLiquid(){
+    if(disposed)return;
+    for(const root of scene.children){
+      if(root===camera||root===enemy||extraGroups.includes(root))continue;
+      root.traverse(object=>{for(const m of [object.material].flat().filter(Boolean))if(m.isMeshStandardMaterial&&!liquidMaterials.has(m)){
+        liquidMaterials.add(m);const uniforms=attachLiquidMaterial(m);uniforms.scale.value=.45;liquidTreatments.push(uniforms);
+      }});
+    }
+  }
+  registerLiquid();scarecrows.ready.then(registerLiquid);
   const groundDetails=createGroundDetails(scene,{touch});visuals.ground=groundDetails.stats;
   const weatherView=weather?createWeatherView(scene,weather):null;
   const cornView=createCornView(scene,maze);visuals.corn=cornView.stats;
@@ -298,6 +318,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
       survivalView.setCorn(result.introCorn);
       corridorView.setAssets(result.introCorn,result.materials,result.farCorn);
       if(detailsEnabled)reuseFieldMaterials({wood,darkWood,bands:barrelBands},result.materials);
+      registerLiquid();
     }).catch(error=>{visuals.status='fallback';visuals.error=error.message;console.warn('Field visuals unavailable; using original scene.',error.message);});
   let nightSky=null;
   const skyReady=skyEnabled?installNightSky({scene,camera}).then(result=>{
@@ -325,6 +346,8 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   addEventListener('resize',resize);
   function render(g,time,reduced=false){
     if(disposed)return;
+    const checkpoint=checkpointVisionState(g,reduced);visuals.checkpointVision=checkpoint;
+    for(const uniforms of liquidTreatments){uniforms.amount.value=checkpoint.amount;uniforms.time.value=g.elapsed;uniforms.red.value=checkpoint.red;}
     prologueEquipment.release();
     const renderDt=Math.max(0,Math.min(.05,time-lastRenderTime));lastRenderTime=time;
     gunRecoil=Math.max(0,gunRecoil-renderDt);
@@ -360,12 +383,12 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     enemy.visible=g.enemy.visible&&(!g.enemies||(g.enemy.active&&g.enemy.zone===g.player.zone));enemy.position.set(enemyAt.x,reduced?0:Math.sin(time*3)*.025,enemyAt.z);enemy.rotation.y=headings[0].sample(g.enemy,g.runId,renderDt,{immediate:locked||reduced});
     if(!zombie){enemy.rotation.z=g.enemy.state==='staggered'?-1.15:g.enemy.state==='flashlight_recoil'?.3:0;}
     if(!reduced)limbs.forEach((l,i)=>l.rotation.x=Math.sin(g.enemy.step*4+i*Math.PI)*.12);
-    zombie?.update(g,time);
+    zombie?.update(g,time,{reduced});
     if(g.enemies){
       const others=g.enemies.filter(e=>e!==g.enemy&&e.active&&e.zone===g.player.zone);
       extraGroups.forEach((group,i)=>{const e=others[i];group.visible=!!e;if(!e)return;
         group.position.set(e.x,0,e.z);group.rotation.set(0,headings[i+1].sample(e,g.runId,renderDt,{immediate:reduced}),0);
-        zombie?.copies?.[i]?.update({...g,enemy:e,interaction:null},time);
+        zombie?.copies?.[i]?.update({...g,enemy:e,interaction:null},time,{reduced,suppressed:!!g.interaction});
       });
     }
     knife.visible=locked&&['tackle','qte','stab'].includes(q.phase);
@@ -393,14 +416,16 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
     }
     const nightmare=parameters.get('horror')==='off'?{amount:0,rain:0,sky:g.skyRedUntil>g.elapsed?1:0}:nightmareState(g,reduced),red=nightmare.sky;
     const flash=reduced||g.interaction||red>0?0:weather?.state.lightning||0;
-    scene.background.copy(baseBackground).lerp(redBackground,red);
+    scene.background.copy(baseBackground).lerp(redBackground,Math.max(red,checkpoint.red*.72));
     scene.background.lerp(stormBackground,flash*.40);
-    scene.fog.color.copy(baseBackground).lerp(stormBackground,flash*.16);
+    scene.fog.color.copy(baseBackground).lerp(redBackground,checkpoint.red*.8).lerp(stormBackground,flash*.16);
+    scene.fog.density+=checkpoint.mist;
     moon.intensity=1.4+flash*2.2;
     for(const {ring,id}of rewardRings)ring.visible=!g.progress.activatedCheckpoints.includes(id);
     dust.position.set(camera.position.x,0,camera.position.z);dust.rotation.y=reduced?0:Math.sin(time*.018)*.1;
     dust.visible=!weather?.state.enabled;
-    hands.update(g,{recoil:gunRecoil,reduced});cornView.update(g);survivalView.update(g);fieldVisuals?.update(g);nightSky?.update(red,flash);weatherView?.update(camera,g,nightmare);
+    scarecrows.update(g,g.elapsed,reduced,camera);
+    hands.update(g,{recoil:gunRecoil,reduced});cornView.update(g);survivalView.update(g);fieldVisuals?.update(g);nightSky?.update(Math.max(red,checkpoint.red*.72),flash);weatherView?.update(camera,g,nightmare);
     if(g.corridorRun){
       const field=g.player.zone==='field';
       for(const o of worldObjects)o.visible=!field&&originalVisible.get(o);
@@ -417,7 +442,7 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
   }
   return {renderer,scene,camera,render,resize,ready,visuals,quality,renderPrologueEquipment:(storyCamera,frame)=>prologueEquipment.render(storyCamera,frame),
     dispose(){
-      if(disposed)return;disposed=true;removeEventListener('resize',resize);prologueEquipment.dispose();hands.dispose();corridorView.dispose?.();
+      if(disposed)return;disposed=true;removeEventListener('resize',resize);prologueEquipment.dispose();hands.dispose();corridorView.dispose?.();scarecrows.dispose();
       const resources=new Set();scene.traverse(object=>{
         if(object.geometry)resources.add(object.geometry);if(object.isSkinnedMesh)resources.add(object.skeleton);
         for(const material of [object.material].flat().filter(Boolean)){resources.add(material);for(const value of Object.values(material))if(value?.isTexture)resources.add(value);}

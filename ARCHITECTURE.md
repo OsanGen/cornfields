@@ -28,9 +28,11 @@ This is a JavaScript/Three.js game with desktop and landscape touch input. It ha
 | Start, pause, resume, restart, event dispatch | src/app.js | npm run test:runtime |
 | HUD, menus, readable threat text | src/ui.js; index.html; src/style.css | Runtime tests and browser screenshots |
 | Checkpoints, objectives, action ordering | src/game.js | Gameplay scenarios |
+| Derived checkpoint visions, shared liquid shader, scarecrow assets | src/checkpoint-vision.js; src/liquid-material.js; src/scarecrow-view.js | tests/checkpoint-vision.test.mjs; tests/checkpoints-browser.mjs |
 | Shooting, hits, damage | src/combat.js | Combat and timed recovery scenarios |
 | Tackle, QTE, corn throws and recovery | src/grapple.js; src/maze.js | tests/grapple.test.mjs |
 | Rigged creature presentation and eyes | src/zombie-poses.js; src/zombie.js | tests/zombie-poses.test.mjs; browser screenshots |
+| Red-eye searchlight cones and wall clipping | src/zombie-beams.js | tests/zombie-beams.test.mjs; tests/checkpoints-browser.mjs |
 | Physical corn presence and rustling | src/hiding.js | tests/corn-world.test.mjs; information-boundary regressions |
 | Shared corn topology, gates, collision and navigation | src/corn-world.js; src/corn-view.js | Gate coverage, component cycles, swept routes, checkpoint cuts |
 | Hand asset and gradual dirt | src/hands.js; scripts/build-hands.py | Actual rendered asset, grip and progression review |

@@ -14,7 +14,7 @@ export class FieldAudio {
     if(!await this.lifecycle.resume())return false;
     this.applyVolume();
     this.footsteps ||= createFootstepBank(this);void this.footsteps.load();
-    this.samplesReady ||= Promise.all(Object.entries({distress:'distress.wav',scream:'scream.wav',pistol:'pistol-shot.wav',growl:'creature-growl.mp3',roar:'creature-roar.mp3',roarAlt:'creature-roar-alt.mp3'}).map(async([name,file])=>{
+    this.samplesReady ||= Promise.all(Object.entries({distress:'distress.wav',scream:'scream.wav',pistol:'pistol-shot.wav',growl:'creature-growl.mp3',roar:'creature-roar.mp3',roarAlt:'creature-roar-alt.mp3',unity:'prologue/LIQ-01.mp3'}).map(async([name,file])=>{
       if(name==='pistol')this.weaponStats.sample='loading';
       const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
       try{const response=await fetch(new URL(`../assets/audio/${file}`,import.meta.url),{signal:abort.signal});if(!response.ok)throw new Error('Optional audio unavailable');this.samples[name]=await this.ctx.decodeAudioData(await response.arrayBuffer());if(name==='pistol')this.weaponStats.sample='ready';}
@@ -143,7 +143,7 @@ export class FieldAudio {
   setVolume(v){this.volume=v;this.applyVolume();}
   toggleMute(){this.muted=!this.muted;if(this.muted){this.stopCues();this.stopIntro();}this.applyVolume();return this.muted;}
   onInterruption(listener){this.interruptionListeners ||= new Set();this.interruptionListeners.add(listener);return()=>this.interruptionListeners.delete(listener);}
-  pause(){this.stopWeaponVoices();this.stopIntro();this.footsteps?.stop();this.lifecycle?.pause();}
+  pause(){this.stopWeaponVoices();this.stopCheckpointVoice();this.stopIntro();this.footsteps?.stop();this.lifecycle?.pause();}
   footstep(options){this.footsteps ||= createFootstepBank(this);return this.footsteps.play(options);}
   sound({noise=false,freq=100,end=45,duration=.3,gain=.3,pan=0,filter=900,type='sine',delay=0,weapon=false}={}){
     if(!this.ctx||this.ctx.state!=='running'||this.muted||(!weapon&&this.transients.size>=16))return;
@@ -177,7 +177,21 @@ export class FieldAudio {
     source.onended=()=>{this.weaponVoices.delete(source);source.disconnect();gain.disconnect();};
     source.start(time);source.stop(time+duration+.01);
   }
-  stopCues({weapons=true}={}){if(weapons)this.stopWeaponVoices();this.footsteps?.stop('game');for(const source of this.transients){try{source.stop();}catch{}}this.transients.clear();this.weatherVoices.clear();this.voice=null;}
+  stopCues({weapons=true}={}){if(weapons)this.stopWeaponVoices();this.footsteps?.stop('game');for(const source of this.transients){try{source.stop();}catch{}}this.transients.clear();this.weatherVoices.clear();this.voice=null;this.unityVoice=null;}
+  stopCheckpointVoice(){if(this.unityVoice){try{this.unityVoice.stop();}catch{}this.transients.delete(this.unityVoice);this.unityVoice=null;}}
+  checkpointVoice(tier=1){
+    if(!this.ctx||this.ctx.state!=='running'||this.muted||!this.samples.unity)return;
+    this.stopCheckpointVoice();
+    const source=this.ctx.createBufferSource(),filter=this.ctx.createBiquadFilter(),level=this.ctx.createGain(),time=this.ctx.currentTime;
+    source.buffer=this.samples.unity;source.playbackRate.value=tier>1?.80:.95;
+    const duration=Math.min(1.18,source.buffer.duration/source.playbackRate.value);
+    filter.type='lowpass';filter.frequency.value=tier>1?1350:2100;
+    level.gain.setValueAtTime(0,time);level.gain.linearRampToValueAtTime(tier>1?.9:.65,time+.025);
+    level.gain.setValueAtTime(tier>1?.9:.65,time+Math.max(.025,duration-.08));level.gain.linearRampToValueAtTime(0,time+duration);
+    source.connect(filter).connect(level).connect(this.gameGain||this.master);this.transients.add(source);this.unityVoice=source;
+    source.onended=()=>{this.transients.delete(source);if(this.unityVoice===source)this.unityVoice=null;source.disconnect();filter.disconnect();level.disconnect();};
+    source.start(time);source.stop(time+duration+.01);
+  }
   vocal(kind,g,position,priority=1,duration=1.4){
     if(!this.ctx||this.ctx.state!=='running'||this.muted||this.transients.size>=16)return;
     if(this.voice&&this.voice.priority>priority)return;
@@ -226,7 +240,7 @@ export class FieldAudio {
     if(e==='damage'){this.sound({freq:60,end:22,duration:.38,gain:.6});this.sound({noise:true,duration:.3,gain:.45,filter:550});}
     if(e==='hide'||e==='leave'||e==='rustle')this.sound({noise:true,duration:e==='rustle'?.6:.25,gain:.35,filter:2200,pan});
     if(e==='recover')this.sound({freq:80,end:51,duration:1,gain:.2,type:'sawtooth',filter:340,pan});
-    if(e==='checkpoint'){this.sound({freq:260,end:260,duration:.5,gain:.12});this.sound({freq:390,end:390,duration:.7,gain:.08,delay:.15});}
+    if(e==='checkpoint'){this.checkpointVoice(event.tier);this.sound({freq:260,end:260,duration:.5,gain:.12});this.sound({freq:390,end:390,duration:.7,gain:.08,delay:.15});}
     if((e==='win'||e==='death')&&this.ctx)this.master.gain.setTargetAtTime(0,this.ctx.currentTime+1,.8);
   }
   pan(source,player){const dx=source.x-player.x,dz=source.z-player.z;return (dx*Math.cos(player.yaw)-dz*Math.sin(player.yaw))/Math.max(3,Math.hypot(dx,dz));}

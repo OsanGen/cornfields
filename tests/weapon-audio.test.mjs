@@ -18,6 +18,16 @@ test('a shot survives a detection cue from the same simulation tick',()=>{
   assert(sources.length>0);assert(sources.every(s=>!s.stops.includes(undefined)));
 });
 
+test('checkpoint speech escalates once per event and stops with pause or mute',()=>{
+  const {audio,sources,game}=fixture();audio.samples.unity={duration:.75};
+  const send=(id,tier)=>audio.event({type:'checkpoint',id,runId:1,tier,position:{x:0,z:0}},game);
+  send(1,1);const first=sources.find(s=>s.buffer===audio.samples.unity);assert(first);
+  const count=sources.length;send(1,1);assert.equal(sources.length,count);
+  game.elapsed=1;send(2,2);const second=sources.filter(s=>s.buffer===audio.samples.unity).at(-1);assert.ok(second.playbackRate.value<first.playbackRate.value);
+  assert(first.stops.includes(undefined));audio.pause();assert(second.stops.includes(undefined));
+  audio.muted=true;const stopped=sources.length;send(3,2);assert.equal(sources.length,stopped);
+});
+
 test('creature attacks vary recorded roars and the eye-stab adds contact impact once',()=>{
   const {audio,sources,send,game}=fixture();audio.samples.roar={duration:1.2};audio.samples.roarAlt={duration:1.8};audio.samples.scream={duration:1};
   send('chase',1);const first=sources.find(s=>s.buffer===audio.samples.roarAlt);assert(first);assert(sources.some(s=>!s.buffer));

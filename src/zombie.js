@@ -4,6 +4,7 @@ import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {optionalAsset} from './asset-safety.js';
 import {createZombiePoses} from './zombie-poses.js';
 import {createZombieAnimation} from './zombie-animation.js';
+import {createZombieBeams} from './zombie-beams.js';
 
 function disposeModel(model) {
   model.traverse(object => {
@@ -17,7 +18,7 @@ function disposeModel(model) {
 }
 
 /** Reusable adapter also exercised with the real rig by the headless pose tests. */
-export function attachZombieModel(enemy, gltf) {
+export function attachZombieModel(enemy, gltf, {primary = true} = {}) {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(model);
@@ -56,18 +57,27 @@ export function attachZombieModel(enemy, gltf) {
   const animation=createZombieAnimation(model,gltf.animations);
   let trial=null;
   for (const child of enemy.children) if (child !== centered) child.visible = false;
+  const beams = createZombieBeams({space:enemy, head, eyes, primary});
+  let presentation = {name:'painful', eyes:'white', age:0};
   let previousTime = null, previousState = '', previousPosition = null, clipTime = 0,previousOwner=null;
 
   return {
     model,
     trial(name){trial=name;previousTime=null;animation.reset();},
-    update(subject, time, suppliedGame) {
+    update(subject, time, suppliedGameOrOptions, options = {}) {
+      // Keep update(enemy,time,game) compatible with pose tools while the scene
+      // can pass update(game,time,{reduced}) without manufacturing another game.
+      const suppliedGame = suppliedGameOrOptions?.enemy ? suppliedGameOrOptions : null;
+      const settings = suppliedGame ? options : suppliedGameOrOptions || options;
       const game = suppliedGame || (subject?.enemy ? subject : {enemy:subject});
       const state = game.enemy;
       const owner=`${game.runId??0}:${state.id??'enemy'}`;
       if(previousOwner!==owner){previousTime=null;previousPosition=null;clipTime=0;poses.resetCycle();animation.reset();previousOwner=owner;}
       const signature = `${state.state}:${state.stateStartedAt}:${game.interaction?.phase}:${game.interaction?.presses}`;
-      if (!Number.isFinite(time) || (time === previousTime && signature === previousState)) return;
+      if (!Number.isFinite(time) || (time === previousTime && signature === previousState)) {
+        beams.update(game,time,{...settings,trial,presentation});
+        return;
+      }
       if (previousTime !== null && time < previousTime) {
         clipTime = 0;
         previousPosition = null;
@@ -85,11 +95,12 @@ export function attachZombieModel(enemy, gltf) {
       poses.reset();
       animation.update({state,game,time,walkTime:clipTime,travelled,dt,trial});
       model.updateWorldMatrix(false, true);
-      const presentation = trial?{name:'trial',eyes:'white',age:0}:poses.update(state, time, game, travelled);
+      presentation = trial?{name:'trial',eyes:'white',age:0}:poses.update(state, time, game, travelled);
       const colors = {white:0xdfedda, dim:0x243025, red:0xff170c, burst:0xff4130, off:0x000000};
       eyeMaterial.color.setHex(colors[presentation.eyes]);
       for (const [index, eye] of eyes.entries()) eye.visible = presentation.eyes !== 'off' &&
         !(index === 0 && presentation.name === 'stab' && presentation.age > .08);
+      beams.update(game,time,{...settings,trial,presentation});
     },
     getEyeWorld(side = 'left', target = new THREE.Vector3()) {
       return eyes[side === 'right' ? 1 : 0].getWorldPosition(target);
@@ -97,9 +108,10 @@ export function attachZombieModel(enemy, gltf) {
     diagnostics() {
       return {...poses.diagnostics(), eyeWorldLeft:eyes[0].getWorldPosition(new THREE.Vector3()).toArray(),
         eyeWorldRight:eyes[1].getWorldPosition(new THREE.Vector3()).toArray(),
-        sourceClips:gltf.animations.map(clip=>clip.name), externalClipsIntegrated:gltf.animations.length>1,animation:animation.snapshot(),trial};
+        sourceClips:gltf.animations.map(clip=>clip.name), externalClipsIntegrated:gltf.animations.length>1,animation:animation.snapshot(),trial,beams:beams.diagnostics()};
     },
     dispose() {
+      beams.dispose();
       centered.removeFromParent();
       disposeModel(model);
     },
@@ -112,7 +124,7 @@ export async function installZombie(enemy,additional=[]) {
     new URL('../assets/field/zombie.glb', import.meta.url).href), 8000,
   late => disposeModel(late.scene));
   gltf.animations.push(...await clips);
-  const copies=additional.map(group=>attachZombieModel(group,{...gltf,scene:cloneSkeleton(gltf.scene)}));
+  const copies=additional.map(group=>attachZombieModel(group,{...gltf,scene:cloneSkeleton(gltf.scene)},{primary:false}));
   return {...attachZombieModel(enemy,gltf),copies};
 }
 

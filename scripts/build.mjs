@@ -13,6 +13,7 @@ export const runtimeAssets = [
   'cornfield-kit.glb', 'corn_color.png', 'corn_normal.png',
   'zombie.glb', 'zombie-clips.json', 'zombie-color.jpg', 'zombie-normal.jpg', 'night-sky.jpg',
   'player-arms.glb', 'service-pistol.glb', 'handheld-flashlight.glb', 'player-viewmodel-source.json',
+  'scarecrow.glb','scarecrow-source.json',
   'brown_mud_diff_1k.jpg', 'brown_mud_nor_gl_1k.jpg', 'brown_mud_rough_1k.jpg',
   'wood_planks_dirt_diff_1k.jpg', 'wood_planks_dirt_nor_gl_1k.jpg', 'wood_planks_dirt_rough_1k.jpg',
   'wood_planks_diff_1k.jpg', 'wood_planks_nor_gl_1k.jpg', 'wood_planks_rough_1k.jpg',

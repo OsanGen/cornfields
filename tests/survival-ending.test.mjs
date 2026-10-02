@@ -36,7 +36,8 @@ test('active seconds include corn and grapple time, but actual pause freezes the
 test('room is free movement, bounded, harmless, complete script, no premature timer',()=>{
   const g=setup(true);g.survivalEnding.phase='room';const health=g.player.health;
   updateGame(g,1,{forward:1,yaw:.2,pitch:.3,fire:true});assert.notEqual(g.survivalEnding.roomPlayer.z,3);assert.equal(g.player.health,health);assert.equal(g.player.ammo,2);assert.equal(g.survivalEnding.remaining,180);
-  assert.equal(SURVIVAL_LINES.filter(l=>l.chapter==='room').length,8);assert.ok(ROOM_DURATION+3.5<=30);
+  assert.equal(SURVIVAL_LINES.filter(l=>l.chapter==='room').length,9);assert.ok(ROOM_DURATION+3.5<=30);
+  assert.match(SURVIVAL_LINES.find(l=>l.id==='GATE-HEAL').text,/glowing scarecrows.*restore you.*only once/);
   for(const line of SURVIVAL_LINES.filter(l=>l.chapter==='room'))assert.equal(survivalLine({phase:'room',time:line.start+.01}).id,line.id);
   assert.equal(g.elapsed,0,'room presentation must not age combat/AI clocks');
 });

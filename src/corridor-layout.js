@@ -55,7 +55,7 @@ export function installCorridorLayout(maze){
   maze.spawn=pt(w,48,2);maze.door={x:16,z:1};maze.daughter=pt(w,48,97);maze.center={...maze.daughter};maze.gate={x:16,z:28};
   maze.landmarks=[{id:'red',name:'THE RED LANTERN',...sections[0].anchor,color:0xc15b38},
     {id:'cross',name:'THE BROKEN WATCHMAN',...sections[4].anchor,color:0xd2b984},
-    {id:'barrels',name:'THE WATER BARRELS',...sections[7].anchor,color:0x8faaa3}];
+    {id:'barrels',name:'THE INNER WATCHMAN',...sections[7].anchor,color:0x8faaa3}];
   maze.checkpoints=maze.landmarks.slice(1).map((p,index)=>({...p,index}));
   maze.corridorLayout={sections,entrance:entrance.index,exit:exit.index,clearWidth:4*w.size,enemySpawn:sections[0].anchor};
   maze.grid=maze.grid.map((row,z)=>row.map((_,x)=>w.walk[(z*3+1)*w.width+x*3+1]?0:1));

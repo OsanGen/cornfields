@@ -1,0 +1,28 @@
+{
+  "source": {
+    "title": "Scarecrow On Post (Halloween Slasher Street)",
+    "creator": "3D Assets",
+    "page": "https://3dassets.dev/assets/halloween-slasher-street-scarecrow-on-post-02cc268c",
+    "download": "https://cdn.3dassets.dev/assets/27292/v1/model.glb",
+    "license": "CC0-1.0",
+    "licenseURL": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "AIUsed": true,
+    "changes": "Local package; original sway is not played. Missing clothing UVs are generated once, with existing Hessian maps and muted colors. Shared Cornfields liquid, emissive, mist and checkpoint treatments are applied at runtime."
+  },
+  "runtime": {
+    "file": "scarecrow.glb",
+    "bytes": 51656,
+    "sha256": "9a1911746ad4ed5d9b915964fcd20fc9b6b2c5d109842352350d9210ea6261be"
+  },
+  "publishedGeometry": {
+    "triangles": 1004,
+    "materials": 4,
+    "textures": 1
+  },
+  "preferredAsset": {
+    "page": "https://sketchfab.com/3d-models/scarecrow-000137945ada4c7fad0bea4255a9db21",
+    "license": "CC-BY-4.0",
+    "downloadHTTP": 401,
+    "note": "Approved direct-download fallback used; no authentication performed."
+  }
+}

@@ -365,9 +365,9 @@ be skipped; the first entry then continues through the short briefing.
 
 Blood-room geometry and its anonymous procedural face are shared with the earlier
 vision. The temporary face continues moving independently of the voice. There is
-no stock human/video asset in this build. Eleven new local synthetic projector
+no stock human/video asset in this build. Twelve local synthetic projector
 utterances and their provenance are in `assets/audio/survival/`. The room visit
-is about 22.1 active seconds including entry and exit, using measured audio durations.
+is about 26.7 active seconds including entry and exit, using measured audio durations.
 Missing audio preserves the complete subtitles and sequence. Reduced effects cap
 rain at 24 streaks and reduce ember motion. The pit uses borrowed corn assets,
 bounded particles and simple geometry; walking cannot trigger the fall. E or the
@@ -379,5 +379,27 @@ pause, grapple expiry, field expiry and voluntary-ending checks. Run
 desktop/touch rendering and controls. Fear, voice delivery and physical phone
 performance require human playtesting. Publication is verified separately in the
 local release receipts.
+
+Both existing ordered checkpoints now use a local 51,656-byte CC0 scarecrow with
+weathered Hessian fabric and an original fractal halo. The short briefing teaches
+that glowing scarecrows restore health once. Rewards remain full health, two
+rounds up to the existing six-round cap, and the existing grace period. Death
+still restarts at the entrance. Revisited checkpoints stay spent.
+
+Each first activation produces a 1.25-second liquid `WE ARE ONE` vision using
+the shared prologue shader and existing recording. The second vision is stronger
+and redder. Walking and the trial timer continue; pause freezes the effect, while
+QTE and ending presentation take priority. Reduced effects lower displacement.
+The shader skips liquid calculations while the effect is idle.
+
+The creature's existing red-eye states drive two pooled smoky red searchlight
+cones anchored to its animated eyes. Rage broadens the reach and sweep. Collision
+sampling clips the cones ahead of wooden walls, and only the primary pursuer adds
+one shadowless light. Recovery, QTE, death and other-zone creatures suppress the
+effect. No AI, damage or detection rules are changed. Verify with
+`node --test tests/checkpoint-vision.test.mjs tests/zombie-beams.test.mjs` and
+`node tests/checkpoints-browser.mjs`. Model provenance is in
+`assets/field/scarecrow-source.json`; browser screenshots, fallbacks and local
+render measurements are in `output/scarecrow-checkpoints-2026-10-02/`.
 
 Stop the exact preview process with Ctrl+C. Generated `dist/` and local `output/` are disposable build and verification artifacts. Source snapshots were captured outside the served root before the refactor and mobile update. After the first GitHub release, redeploy a known-good commit to roll back the hosted game.

@@ -1,4 +1,4 @@
-// Exact approved gatekeeper script. Timings follow the local voice recordings.
+// Approved trial briefing, including the healing cue. Timings follow recordings.
 import {SURVIVAL_VOICE_TIMING} from './survival-voice-timing.js';
 const script=[
   ['GATE-01','Trial access has been granted.'],
@@ -7,6 +7,7 @@ const script=[
   ['GATE-04','The corridors will not remain where you left them.'],
   ['GATE-05','There is no reliable way back. Proceed forward.'],
   ['GATE-06','When passage fails, enter the corn. Remain still.'],
+  ['GATE-HEAL','Find the glowing scarecrows. They will restore you. Each one answers only once.'],
   ['GATE-07','These rules are not mine. They remain binding.'],
   ['GATE-08','Begin.'],
 ];

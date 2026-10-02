@@ -15,6 +15,7 @@ import {setReturnOpen} from './corn-layout.js';
 import {enterOpenField} from './corridor-run.js';
 import {createOpening} from './opening.js';
 import {PROLOGUE_END_LINE} from './prologue-script.js';
+import {checkpointVisionState} from './checkpoint-vision.js';
 
 /**
  * Owns one game session and its browser lifecycle.
@@ -515,11 +516,24 @@ export function createGameApp({
     startLoop() {
       if (frameId === null && !disposed) frameId = requestFrame(frame);
     },
-    snapshot: (diagnostic=false) => ({...gameSnapshot(game,{diagnostic}), ...(weather ? {weather: weather.snapshot()} : {}),...(prologueEnabled&&intro.active?{opening:{...intro.snapshot(),subtitle:intro.frame(reducedMotion).spoken||'',speaker:intro.frame(reducedMotion).speaker||''}}:{})}),
+    snapshot: (diagnostic=false) => ({...gameSnapshot(game,{diagnostic}),checkpointVision:checkpointVisionState(game,reducedMotion), ...(weather ? {weather: weather.snapshot()} : {}),...(prologueEnabled&&intro.active?{opening:{...intro.snapshot(),subtitle:intro.frame(reducedMotion).spoken||'',speaker:intro.frame(reducedMotion).speaker||''}}:{})}),
     weatherSurfaces: () => weather ? weather.state.puddles.map(p => ({...p})) : [],
     preview(time){manual=true;view.render(game,time,reducedMotion);},
     animationTrial(name){view.animationTrial?.(name);},
     fixture(name){
+      if(/^checkpoint-[12]$/.test(name)||/^beam-(chase|rage|stagger)$/.test(name)){
+        const index=name==='checkpoint-2'?1:0,checkpoint=maze.checkpoints[index];
+        game=createGame(maze);game.mode='playing';game.entered=true;game.corridorRun.started=true;game.grace=100;game.elapsed=10;
+        attachSurvivalEnding(game,{briefing:false});
+        Object.assign(game.player,{x:checkpoint.x,z:checkpoint.z+4,yaw:0,pitch:0,flashlightOn:true,health:40,ammo:2});
+        game.enemies.forEach(enemy=>{enemy.active=false;enemy.visible=false;});
+        if(index){game.progress.activatedCheckpoints=[maze.checkpoints[0].id];game.progress.checkpointIndex=1;game.progress.escalationTier=1;game.metrics.checkpointTimes=[1];}
+        if(name.startsWith('beam-')){
+          const at=maze.corridorLayout.sections[1].anchor;Object.assign(game.player,at,{z:at.z+2,flashlightOn:false});
+          Object.assign(game.enemy,{x:at.x,z:at.z-2,state:name==='beam-rage'?'rage_chase':name==='beam-stagger'?'staggered':'chase',stateStartedAt:8,timer:100,visible:true,active:true,zone:'corridor',yaw:Math.PI,target:{...game.player}});
+        }
+        input.clear();clock.reset();manual=true;present();return;
+      }
       if(name.startsWith('survival-')){
         endingAt=null;game=createGame(maze);game.mode='playing';game.entered=true;game.corridorRun.started=true;game.grace=400;
         attachSurvivalEnding(game,{briefing:false});Object.assign(game.player,game.maze.corridorLayout.sections[4].anchor);

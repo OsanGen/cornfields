@@ -4,6 +4,7 @@ import {interactionLocked} from './grapple.js';
 import {corruptionFrame} from './horror-presentation.js';
 import {INTRO} from './intro.js';
 import {survivalTime} from './survival-ending.js';
+import {checkpointVisionState} from './checkpoint-vision.js';
 
 /** Presentation only: it never advances gameplay, captures the mouse or plays audio. */
 export function createUI(document, {debug = false, reducedMotion = false, touch = false, horror = true} = {}) {
@@ -225,11 +226,16 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
         : (typeof message === 'string' ? message : message?.text || '');
       text('threat-card', visibleMessage);
       node('threat-card').hidden = !playing || !visibleMessage||locked||recovering;
-      // One warning owner: danger, caption, hiding instruction, then atmosphere.
-      const quiet=!playing||locked||recovering,threat=!node('threat-card').hidden;
-      node('caption').hidden=quiet||threat||!game.caption;
-      node('hide-status').hidden=quiet||threat||!!game.caption||!player.hidden;
-      const taunt=!quiet&&!threat&&!game.caption&&!player.hidden&&!prompt&&corruption.taunt;
+      const vision=checkpointVisionState(game,reducedMotion);
+      if(vision.active)node('threat-card').hidden=true;
+      text('caption',vision.active?vision.caption:game.caption);
+      node('caption').className=vision.active?'checkpoint-vision':'';
+      node('caption').style.setProperty('--checkpoint-red',String(vision.red));
+      // One warning owner: the protected checkpoint vision, danger, then caption.
+      const quiet=!playing||locked||recovering,threat=!node('threat-card').hidden,caption=vision.active||!!game.caption;
+      node('caption').hidden=quiet||threat||!caption;
+      node('hide-status').hidden=quiet||threat||caption||!player.hidden;
+      const taunt=!quiet&&!threat&&!caption&&!player.hidden&&!prompt&&corruption.taunt;
       node('corn-taunt').hidden=!taunt;
       if(taunt)text('corn-taunt',`${alias}, ${taunt}`);
       node('danger').style.opacity = playing

@@ -19,6 +19,10 @@ the fictional entity. Model weights and corpus recordings are excluded from the 
 Local filenames, output hashes, generator, model hash and corpus speaker ID appear
 in sources.json. Generated October 2, 2026 for the blood-room and pit sequence.
 
+GATE-HEAL adds the approved one-time scarecrow healing instruction, generated
+with the same model and voice. The checkpoint vision reuses LIQ-01 from the
+existing prologue with runtime filtering and pitch changes; see ../prologue/LICENSES.md.
+
 The blood room, projection, rain, pit and embers use original procedural graphics.
 The pit corn reuses the existing licensed cornfield asset recorded in
 ../../field/LICENSES.md. No external video or additional model is bundled.

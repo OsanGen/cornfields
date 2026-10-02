@@ -5,6 +5,8 @@ import {createBloodRoom} from './blood-room.js';
 import {createPrologueAssets,prepareCruiser} from './prologue-assets.js';
 import {createTexturedPrologueActor} from './prologue-model-actor.js';
 import {samplePrologueDriving} from './prologue-driving.js';
+import {attachLiquidMaterial as attachPrologueLiquid} from './liquid-material.js';
+export {attachPrologueLiquid};
 export {prologueBlocking,prologueWorldTransition} from './prologue-motion.js';
 
 const clamp = value => Math.max(0, Math.min(1, Number(value) || 0));
@@ -33,26 +35,6 @@ export function prologueVisionState(frame={}){
 export function applyPrologueCamera(camera,motion,player={}){
   camera.position.fromArray(motion.blocking.camera);
   camera.rotation.set(Number(player.pitch)||0,Number(player.yaw)||0,0,'YXZ');
-}
-
-/** Shared treatment for owned scenery, escorts and the borrowed equipment clone. */
-export function attachPrologueLiquid(material){
-  if(material.userData.prologueLiquid)return material.userData.prologueLiquid;
-  const uniforms={amount:{value:0},time:{value:0}},before=material.onBeforeCompile,key=material.customProgramCacheKey?.bind(material);
-  material.onBeforeCompile=shader=>{
-    before?.(shader);
-    shader.uniforms.prologueLiquid=uniforms.amount;shader.uniforms.prologueLiquidTime=uniforms.time;
-    shader.vertexShader='uniform float prologueLiquid,prologueLiquidTime;\n'+shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
-      float liquidPhase=position.y*3.2+position.z*1.7+prologueLiquidTime*1.6;
-      transformed.x+=sin(liquidPhase)*.17*prologueLiquid;
-      transformed.z+=sin(position.x*2.1+prologueLiquidTime*1.3)*.13*prologueLiquid;
-      transformed.y+=sin(position.x*2.8+position.z*1.4+prologueLiquidTime)*.12*prologueLiquid;`);
-    shader.fragmentShader='uniform float prologueLiquid,prologueLiquidTime;\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-      diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.23,.36,.35)+diffuseColor.rgb*.35,prologueLiquid*.62);`)
-      .replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,.16,prologueLiquid);');
-  };
-  const baseKey=key?key():'';material.customProgramCacheKey=()=>baseKey+'|prologue-liquid-v1';
-  material.userData.prologueLiquid=uniforms;material.needsUpdate=true;return uniforms;
 }
 
 /** Temporary presentation borrowing is transactional, including renderer errors. */
