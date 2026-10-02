@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import {PROLOGUE,PROLOGUE_CHAPTERS,PROLOGUE_LINES,PROLOGUE_AUDIO_LINES,PROLOGUE_FOLLOW_LINES,PROLOGUE_END_LINE,createPrologueTimeline} from '../src/prologue-script.js';
 import {PROLOGUE_VOICE_TIMING} from '../src/prologue-voice-timing.js';
 
-const ids=['car','dispatch','emergence','exit','flashlight','walk','undead','history','redroom','return_walk','disappearance','liquid','arrival','rupture'];
+const ids=['car','dispatch','emergence','bang','cabin','exit','flashlight','walk','undead','history','redroom','return_walk','disappearance','liquid','arrival','rupture'];
 function verifyTimeline(timeline){
   assert.deepEqual(timeline.chapters.map(c=>c.id),ids);
   let end=0;for(const chapter of timeline.chapters){assert.equal(chapter.start,end);assert(chapter.end>chapter.start);end=chapter.end;}
@@ -24,7 +24,7 @@ function verifyTimeline(timeline){
 
 test('fast opening keeps one contiguous, complete script and independent follow/end cues',()=>{
   verifyTimeline({chapters:PROLOGUE_CHAPTERS,lines:PROLOGUE_LINES,duration:PROLOGUE.duration});
-  assert.equal(new Set(PROLOGUE_AUDIO_LINES.map(line=>line.id)).size,39);
+  assert.equal(new Set(PROLOGUE_AUDIO_LINES.map(line=>line.id)).size,42);
   assert(PROLOGUE.duration+20+4<223,'baseline has room for tutorial reactions');
   assert.deepEqual(PROLOGUE_FOLLOW_LINES.map(line=>line.id),['FOL-01','FOL-02','FOL-03']);
   assert.equal(PROLOGUE_END_LINE.text,'Where did they go? Am I going crazy?');
@@ -37,6 +37,8 @@ test('source wording, provenance and unanswered identity survive the fast adapta
   assert.equal(line('CAR-01').basis,'A');assert.equal(line('CAR-02').basis,'R');assert.equal(line('RAD-01').basis,'N');
   assert.equal(line('WAL-14').text,'Then I spun around, and she was nowhere to be seen.');
   assert.equal(line('ARR-01').text,'Officer, my name is Stanley Yates and my daughter Sadie has gone missing.');
+  assert.equal(line('FLA-03').voice,'mike');assert.equal(line('FLA-03').chapter,'cabin');
+  assert.equal(PROLOGUE_LINES.filter(item=>/fucking insane/.test(item.text)).length,1);
   assert.equal(line('LIQ-01').text,'WE ARE ONE');assert.equal(line('LIQ-01').speaker,'');
   assert.equal(line('RED-01').speaker,'PROJECTED FACE');
   for(const fact of [/2002/,/Sadie Yates/,/gray jacket with holes in it/,/seven hundred acres/,/compass.*lost/,/mind sees north/,/Sadie knew that rule/,/dog was barking wild/,/Were there footsteps\?/,/She just vanished/])assert.match(text,fact);

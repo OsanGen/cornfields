@@ -45,7 +45,7 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args),lin
     void pump();
   }
   function atmosphere(frame){
-    const ctx=audio.ctx,inCar=['car','dispatch'].includes(frame.chapter),quiet=frame.chapter==='rupture';
+    const ctx=audio.ctx,inCar=frame.motion?.blocking?.inCar??['car','dispatch','emergence','bang','cabin'].includes(frame.chapter),quiet=frame.chapter==='rupture';
     if(!ambience){
       const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),level=ctx.createGain();
       source.buffer=audio.noise;source.loop=true;filter.type='lowpass';level.gain.value=0;
@@ -75,8 +75,9 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args),lin
     stopVoice();
     if(!line||!buffer||offset>=buffer.duration-.03)return;
     const ctx=audio.ctx,source=ctx.createBufferSource(),level=ctx.createGain(),filter=ctx.createBiquadFilter();
-    source.buffer=buffer;filter.type=line.voice==='dispatch'||line.voice==='face'?'bandpass':'lowpass';filter.frequency.value=line.voice==='dispatch'?1700:line.voice==='face'?2100:line.voice==='unknown'?1100:9500;filter.Q.value=line.voice==='dispatch'?.65:line.voice==='face'?.8:.7;
-    level.gain.value=line.voice==='dispatch'?1.25:line.id==='FLA-03'?.82:line.id.startsWith('FOL-')?1.12:1;
+    const outside=line.voice==='stanley'&&frame.motion?.blocking?.inCar;
+    source.buffer=buffer;filter.type=line.voice==='dispatch'||line.voice==='face'?'bandpass':'lowpass';filter.frequency.value=line.voice==='dispatch'?1700:line.voice==='face'?2100:line.voice==='unknown'?1100:outside?2600:9500;filter.Q.value=line.voice==='dispatch'?.65:line.voice==='face'?.8:.7;
+    level.gain.value=line.voice==='dispatch'?1.25:line.id==='FLA-03'?.74:line.id==='CAB-01'?1.15:line.id.startsWith('FOL-')?1.12:outside?.9:1;
     source.connect(filter).connect(level).connect(bus);
     const item={source,nodes:[source,filter,level],offset,started:ctx.currentTime};voice=item;current=line.id;played++;
     source.onended=()=>{if(voice===item)voice=null;for(const node of item.nodes)node.disconnect();};source.start(0,offset);
@@ -84,9 +85,9 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args),lin
   function cue(id){
     if(!ensureBus(!!lastFrame?.gameplay)||effects.size>=4)return;
     const ctx=audio.ctx,t=ctx.currentTime,source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),level=ctx.createGain();
-    const crash=id==='crash',duration=crash?3.4:id==='corn_burst'?.85:.28;
-    source.buffer=audio.noise;source.loop=crash;filter.type='lowpass';filter.frequency.value=crash?450:id==='radio'?2100:1400;
-    level.gain.setValueAtTime(0,t);level.gain.linearRampToValueAtTime(crash?1.3:.28,t+.01);level.gain.exponentialRampToValueAtTime(.001,t+duration);
+    const crash=id==='crash',bang=id.startsWith('car_bang_'),duration=crash?3.4:id==='corn_burst'?.85:bang?.16:.28;
+    source.buffer=audio.noise;source.loop=crash;filter.type='lowpass';filter.frequency.value=crash?450:id==='radio'?2100:bang?620:1400;
+    level.gain.setValueAtTime(0,t);level.gain.linearRampToValueAtTime(crash?1.3:bang?.48:.28,t+.01);level.gain.exponentialRampToValueAtTime(.001,t+duration);
     source.connect(filter).connect(level).connect(bus);
     const item={source,nodes:[source,filter,level]};effects.add(item);source.onended=()=>{effects.delete(item);for(const node of item.nodes)node.disconnect();};source.start();source.stop(t+duration+.02);
     if(crash){

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {reachPrologueArm} from './prologue-confrontation.js';
 
 // Original articulated playtest cast. No imported character or motion capture.
 // Clothing contours and facial details are authored here; this is not MakeHuman.
@@ -139,9 +140,10 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
     mat.customProgramCacheKey=()=> 'prologue-body-decay-v1';
   }
   let lastPose='standing',lastCorpse=false,lastDissolve=0;
+  let windowContacts=[],windowTargets=[];
   return {
     root,
-    pose({time=0,phase=0,mode='standing',speaking=false,distress=0,look=0,gesture=0,reduced=false,corpse=false,dissolve=0}={}) {
+    pose({time=0,phase=0,mode='standing',speaking=false,distress=0,look=0,gesture=0,reduced=false,corpse=false,dissolve=0,bang=0,bangTargets=null}={}) {
       lastPose=mode;
       lastCorpse=!!corpse;lastDissolve=Math.max(0,Math.min(1,dissolve));decay.value=lastDissolve;
       materials.forEach((mat,i)=>mat.color.copy(colors[i]));
@@ -183,7 +185,12 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
         for(const {shoulder,elbow,hand,sign}of arms){shoulder.rotation.set(.03,0,sign*.09);elbow.rotation.set(-.04,0,0);hand.rotation.set(.50,0,sign*.15);}
         for(const {thigh,knee,sign}of legs){thigh.rotation.set(sign*.055,0,sign*.015);knee.rotation.set(.13,0,0);}
       }
+      windowContacts=[];windowTargets=[];
+      if(mode==='bang'&&bangTargets)for(const [index,arm]of arms.entries()){
+        const contact=new THREE.Vector3().fromArray(bangTargets[1-index]),target=contact.clone();target.z-=.20*(1-Math.max(0,Math.min(1,bang)));
+        windowTargets.push(contact.toArray());windowContacts.push(reachPrologueArm(root,arm.shoulder,arm.elbow,arm.hand,target,new THREE.Vector3(arm.sign*.40,1.1,.12)));
+      }
     },
-    diagnostics:()=>({name,kind:police?'uniformed police officer':'civilian father',pose:lastPose,corpse:lastCorpse,dissolve:lastDissolve,provenance:PROLOGUE_CAST_PROVENANCE}),
+    diagnostics:()=>({name,kind:police?'uniformed police officer':'civilian father',pose:lastPose,corpse:lastCorpse,dissolve:lastDissolve,provenance:PROLOGUE_CAST_PROVENANCE,windowTargets,windowContacts}),
   };
 }

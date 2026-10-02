@@ -3,6 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium} from '../scripts/browser-runtime.mjs';
 import {createPrologueTimeline} from '../src/prologue-script.js';
 import {PROLOGUE_VOICE_TIMING} from '../src/prologue-voice-timing.js';
+import {captureGame} from './helpers/capture.mjs';
 
 const output=process.env.CORNFIELD_PROLOGUE_OUTPUT||'output/interactive-prologue-2026-10-02/browser';
 const base=process.env.CORNFIELD_TEST_URL||'http://127.0.0.1:4180/cornfields/';
@@ -15,7 +16,7 @@ const intro=()=>page.evaluate(()=>window.__test.intro());
 const state=()=>page.evaluate(()=>window.__test.state());
 const advance=ms=>page.evaluate(ms=>window.advanceTime(ms),ms);
 const gameOnly=state=>{const {opening,...game}=state;return game;};
-async function shot(name){await page.screenshot({path:`${output}/${name}.png`});report.shots.push(name);}
+async function shot(name){await captureGame(page,{path:`${output}/${name}.png`});report.shots.push(name);}
 async function runTo(time){
   return page.evaluate(target=>{
     for(let n=0;n<12000;n++){
@@ -48,6 +49,17 @@ try{
   const yaw=(await intro()).story.player.yaw;await page.mouse.move(340,270);await advance(20);
   assert.notEqual((await intro()).story.player.yaw,yaw);await page.evaluate(()=>window.__test.step(.05,{yaw:0,pitch:0}));
   await runTo(5);await shot('01-free-look-cruiser');await runTo(at('dispatch',1));await shot('02-handheld-radio');
+  await runTo(at('emergence')+(at('bang')-at('emergence'))*.52);await shot('02a-father-in-headlights');
+  await page.keyboard.press('KeyE');await advance(20);assert.equal((await intro()).story.waitingForExit,false);assert.equal((await intro()).story.player.x,.5);
+  await runTo(at('bang',.60));await page.evaluate(()=>window.__test.step(.001,{yaw:-1.52,pitch:.30}));await advance(0);await shot('02b-window-bang');
+  const bang=(await intro()).prologueVisuals;assert.equal(bang.error,null);
+  const father=bang.actors.find(actor=>actor.name==='Stanley Yates');assert.equal(father.pose,'bang');assert.equal(father.windowContacts.length,2);
+  for(let i=0;i<2;i++)assert(Math.hypot(...father.windowContacts[i].map((v,j)=>v-father.windowTargets[i][j]))<.035,'hands contact the car window');
+  const privateLine=timeline.lines.find(l=>l.id==='FLA-03');await runTo(privateLine.start+.1);await advance(0);
+  assert.equal(await page.locator('#story-speaker').textContent(),'MIKE');assert.equal((await intro()).story.escorts.clarence.x,-.45);assert.equal((await intro()).story.player.x,.5);assert.equal((await intro()).story.fired.includes('door_open'),false);
+  await page.evaluate(()=>window.__test.step(.001,{yaw:1.22,pitch:0}));await advance(0);await shot('02c-private-mike-line');
+  assert.deepEqual((await intro()).story.fired.filter(id=>id.startsWith('car_bang_')),['car_bang_1','car_bang_2']);
+  report.checks.push('Stopped-car father interruption, early exit blocked, two window contacts/knocks, private Mike line, Clarence remains seated and door sound waits for action');
   await runTo(at('exit'));assert.equal((await intro()).story.waitingForExit,true);await shot('03-exit-prompt');
   await page.keyboard.press('KeyE');await advance(1000);assert.equal((await intro()).story.waitingForExit,false);
   await page.keyboard.press('KeyF');await advance(50);assert.equal((await intro()).story.player.flashlightOn,true);
@@ -74,6 +86,10 @@ try{
   await touchSession.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:500,y:160}]});
   await touchSession.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:560,y:150}]});await advance(50);
   await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touchSession.detach();assert.notEqual((await intro()).story.player.yaw,0);
+  await runTo(at('bang',.60));await page.evaluate(()=>window.__test.step(.001,{yaw:-1.52,pitch:.30}));await advance(0);await shot('14a-touch-window-bang');
+  assert.equal((await intro()).prologueVisuals.confrontation.cameraImpact,0);
+  assert.equal(await page.locator('#touch-interact').isVisible(),false);assert.equal((await intro()).story.player.x,.5);
+  await runTo(privateLine.start+.1);await advance(0);assert.equal(await page.locator('#story-speaker').textContent(),'MIKE');assert.equal((await intro()).story.escorts.clarence.x,-.45);await shot('14b-touch-private-exchange');
   await runTo(at('exit'));await page.locator('#touch-interact').tap();await advance(1000);assert.equal((await intro()).story.waitingForExit,false);
   await page.locator('#touch-light').tap();await advance(50);assert.equal((await intro()).story.player.flashlightOn,true);
   await runTo(at('walk',2));await shot('14-phone-controls-captions');assert.ok(await page.locator('#story-subtitle').evaluate(el=>el.scrollWidth<=el.clientWidth+1));

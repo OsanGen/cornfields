@@ -2,6 +2,7 @@ import {PROLOGUE,PROLOGUE_FOLLOW_LINES,createPrologueTimeline} from './prologue-
 import {sampleInteractivePrologueMotion} from './prologue-motion.js';
 import {GAME_CONFIG} from './game-config.js';
 import {samplePrologueDriving} from './prologue-driving.js';
+import {sampleRoadsideConfrontation} from './prologue-confrontation.js';
 export {PROLOGUE,PROLOGUE_CHAPTERS,PROLOGUE_LINES,createPrologueTimeline} from './prologue-script.js';
 
 const clamp=value=>Math.max(0,Math.min(1,value));
@@ -38,7 +39,7 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
   };
   reset();
   const fired=new Set(),dropped=new Set();
-  const emergenceEnd=script.chapters.find(c=>c.id==='emergence').end;
+  const cabinEnd=script.chapters.find(c=>c.id==='cabin').end;
   const chapter=()=>script.chapters.find(c=>time<c.end-1e-8)||script.chapters.at(-1);
   const walking=new Set(['walk','history','return_walk','disappearance','arrival']);
   const vision=new Set(['undead','redroom','liquid']);
@@ -60,7 +61,9 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
     if(controls.lookDelta>0||Number.isFinite(controls.yaw)&&Math.abs(controls.yaw-player.yaw)>.001||Number.isFinite(controls.pitch)&&Math.abs(controls.pitch-player.pitch)>.001)player.looked=true;
     if(Number.isFinite(controls.yaw))player.yaw=controls.yaw;
     if(Number.isFinite(controls.pitch))player.pitch=Math.max(-1.25,Math.min(1.25,controls.pitch));
-    if(!exited&&time>=emergenceEnd-1e-8&&controls.interact)exited=true;
+    if(!exited&&time>=cabinEnd-1e-8&&controls.interact){
+      exited=true;fired.add('door_open');onCue('door_open');
+    }
     const exit=c.id==='exit'?clamp((time-c.start)/.85):exited?1:0;
     if(exited&&exit<1){player.x=.5+1.35*smooth(exit);player.z=.35-.7*smooth(exit);player.y=1.13+(GAME_CONFIG.player.eyeHeight-1.13)*smooth(exit);}
     const movable=exited&&exit>=1&&c.id!=='rupture';
@@ -79,8 +82,13 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
       const distance=Math.hypot(sx-player.x,sz-player.z);player.distance+=distance;player.moving=distance>.00001;player.x=sx;player.z=sz;
     }
     for(const actor of Object.values(escorts))actor.moving=false;
-    if(c.id==='emergence')moveActor(escorts.stanley,2.1,-2.25,dt,2.7);
-    if(c.id==='emergence'&&time-c.start>.65)moveActor(escorts.clarence,-1.45,-2.1,dt,1.5);
+    // Roadside Stanley is sampled from the same authored motion as his hands.
+    // Clarence stays seated until Mike accepts the exit action.
+    const roadside=sampleRoadsideConfrontation({chapter:c.id,chapterTime:time-c.start,chapterProgress:clamp((time-c.start)/(c.end-c.start))});
+    if(roadside){
+      const a=escorts.stanley;const distance=Math.hypot(roadside.position[0]-a.x,roadside.position[2]-a.z);
+      a.distance+=distance;a.x=roadside.position[0];a.z=roadside.position[2];a.moving=roadside.moving&&distance>.00001;
+    }
     if(exited&&['exit','flashlight'].includes(c.id))moveActor(escorts.clarence,-.84,-2.1,dt,2);
     const distance=Math.hypot(player.x-(escorts.clarence.x+escorts.stanley.x)/2,player.z-(escorts.clarence.z+escorts.stanley.z)/2);
     if(walking.has(c.id)){
@@ -103,7 +111,7 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
     }else{held=false;if(!vision.has(c.id))separationTime=0;}
     if(follow&&elapsed>=follow.end){follow=null;held=distance>8;}
     elapsed+=dt;
-    const waiting=!exited&&time>=emergenceEnd-1e-8;
+    const waiting=!exited&&time>=cabinEnd-1e-8;
     if(!waiting&&!held){
       const previous=time;time=Math.min(c.end,time+dt);
       if(c.end-time<1e-8)time=c.end;
@@ -135,15 +143,15 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
     frame(reduced=false){
       const frame=prologueFrame(time,{reduced,timeline:script});
       frame.player={...player};frame.elapsed=elapsed;frame.exitProgress=exited?(frame.chapter==='exit'?clamp(frame.chapterTime/.85):1):0;
-      frame.waitingForExit=!exited&&time>=emergenceEnd-1e-8;
-      if(frame.waitingForExit){frame.chapter='emergence';frame.spoken='';frame.line=null;}
+      frame.waitingForExit=!exited&&time>=cabinEnd-1e-8;
+      if(frame.waitingForExit){frame.chapter='cabin';frame.chapterTime=script.chapters.find(c=>c.id==='cabin').end-script.chapters.find(c=>c.id==='cabin').start;frame.chapterProgress=1;frame.spoken='';frame.line=null;}
       if(follow){Object.assign(frame,{time:elapsed,line:follow,nextLine:null,spoken:follow.text,speaker:follow.speaker});}
       frame.storyTime=time;frame.followHeld=held;frame.canMove=exited&&frame.exitProgress>=1&&frame.chapter!=='rupture';
       frame.motion=sampleInteractivePrologueMotion(frame,escorts);
       if(phase==='paused'){frame.spoken='';frame.speaker='';}
       return frame;
     },
-    snapshot(){return {phase,time,elapsed,delaySeconds:Math.max(0,elapsed-time),duration:script.duration,skipped,chapter:chapterId,player:{...player},escorts:structuredClone(escorts),waitingForExit:!exited&&time>=emergenceEnd-1e-8,followHeld:held,followCalls:callCount,fired:[...fired],dropped:[...dropped]};},
+    snapshot(){return {phase,time,elapsed,delaySeconds:Math.max(0,elapsed-time),duration:script.duration,skipped,chapter:chapterId,player:{...player},escorts:structuredClone(escorts),waitingForExit:!exited&&time>=cabinEnd-1e-8,followHeld:held,followCalls:callCount,fired:[...fired],dropped:[...dropped]};},
     dispose(){disposed=true;phase='finished';fired.clear();dropped.clear();},
   };
 }

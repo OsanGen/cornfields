@@ -27,6 +27,18 @@ export const PROLOGUE_VOICE_TIMING = Object.freeze({
   "RAD-02": {
     "duration": 1.394
   },
+  "ARR-00": {
+    "duration": 2.38
+  },
+  "CAB-01": {
+    "duration": 2.2059
+  },
+  "FLA-03": {
+    "duration": 3.2624
+  },
+  "CAB-02": {
+    "duration": 1.2655
+  },
   "ARR-01": {
     "duration": 4.0171
   },
@@ -38,9 +50,6 @@ export const PROLOGUE_VOICE_TIMING = Object.freeze({
   },
   "FLA-02": {
     "duration": 4.4931
-  },
-  "FLA-03": {
-    "duration": 3.3553
   },
   "WAL-01": {
     "duration": 5.7353

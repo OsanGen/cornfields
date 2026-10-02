@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
 import {createPrologueActor} from './prologue-actors.js';
+import {reachPrologueArm} from './prologue-confrontation.js';
 
 export const TEXTURED_CAST_PROVENANCE = 'NPC male Steve by supersteve, CC0; fitted and animated for the Cornfields prologue';
 const TAU = Math.PI * 2;
@@ -90,6 +91,7 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
     fingers:[`f1${side}`, `f2${side}`, `f1${side}002`, `f2${side}002`].map(id => bones.get(id)).filter(Boolean),
   }));
   const wristTargets = [];
+  let windowContacts = [], windowTargets = [];
   // AnimationMixer skips unchanged channels. Restore its last sampled pose before
   // applying the next sample so procedural head/hand offsets never accumulate.
   const sampled = [...bones.values()].map(bone => ({bone, position:bone.position.clone(), quaternion:bone.quaternion.clone(), scale:bone.scale.clone()}));
@@ -147,7 +149,7 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
 
   return {
     root,
-    pose({time = 0, phase = 0, mode = 'standing', speaking = false, distress = 0, look = 0, reduced = false, corpse = false, dissolve = 0, steer = 0} = {}) {
+    pose({time = 0, phase = 0, mode = 'standing', speaking = false, distress = 0, look = 0, reduced = false, corpse = false, dissolve = 0, steer = 0, bang = 0, bangTargets = null} = {}) {
       if (disposed) return;
       for (const state of sampled) {state.bone.position.copy(state.position); state.bone.quaternion.copy(state.quaternion); state.bone.scale.copy(state.scale);}
       lastPose = mode; lastCorpse = !!corpse; decay.value = clamp(dissolve, 0, 1);
@@ -183,12 +185,21 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
       }
       if (mouth && speaking) mouth.rotation.x += Math.max(0, Math.sin(time * 17)) * (reduced ? .04 : .13);
       if (mode === 'limp') { fit.rotation.x = .10; fit.rotation.z = police ? .05 : -.05; }
+      windowContacts = []; windowTargets = [];
+      if (mode === 'bang' && bangTargets) for (const [index, arm] of arms.entries()) {
+        if (!arm.upper || !arm.lower || !arm.hand) continue;
+        const contact = new THREE.Vector3().fromArray(bangTargets[index]);
+        const target = contact.clone(); target.z -= .20 * (1 - clamp(bang, 0, 1));
+        windowTargets.push(contact.toArray());
+        windowContacts.push(reachPrologueArm(root, arm.upper, arm.lower, arm.hand, target, new THREE.Vector3(arm.sign*.40,1.1,.12), true));
+        for (const finger of arm.fingers) finger.rotation.x = 0;
+      }
       // SkinnedMesh overrides updateMatrixWorld to refresh bindMatrixInverse.
       // updateWorldMatrix alone moves the control bones but leaves CPU skinning
       // and any renderer using the current matrices with the old mesh transform.
       root.updateMatrixWorld(true);
     },
-    diagnostics:() => ({name, kind:police ? 'uniformed police officer' : 'civilian father', pose:lastPose, corpse:lastCorpse, dissolve:decay.value, provenance:TEXTURED_CAST_PROVENANCE, textured:true, clip:clipName, height:1.8, wristTargets:wristTargets.map(point => [...point])}),
+    diagnostics:() => ({name, kind:police ? 'uniformed police officer' : 'civilian father', pose:lastPose, corpse:lastCorpse, dissolve:decay.value, provenance:TEXTURED_CAST_PROVENANCE, textured:true, clip:clipName, height:1.8, wristTargets:wristTargets.map(point => [...point]),windowTargets,windowContacts}),
     dispose() {
       if (disposed) return;
       disposed = true; mixer.stopAllAction(); mixer.uncacheRoot(model);

@@ -1,6 +1,6 @@
 {
   "type": "temporary synthetic playtest dialogue",
-  "story": "Jacob Nangle; approved fast interactive adaptation with retained/adapted/new/user cue provenance",
+  "story": "Jacob Nangle; approved roadside confrontation and private Mike cabin exchange; existing cast, natural synthetic playtest delivery",
   "generator": "Installed Piper, offline ONNX CPU, two intra-op threads",
   "model": "en_US-libritts_r-medium",
   "model_url": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/libritts_r/medium",
@@ -63,6 +63,26 @@
       "sha256": "a60593109857c7873838816674fed89567c4ad28cebda340cc96631ed81de053",
       "duration": 1.394
     },
+    "ARR-00.mp3": {
+      "bytes": 17372,
+      "sha256": "4453e41528dc89ec882adbb51a1b4477c0e5a4baddacb775f5307d0f39c6f9ca",
+      "duration": 2.38
+    },
+    "CAB-01.mp3": {
+      "bytes": 16028,
+      "sha256": "0feda9d9f059d6559b0b4458c4e6b94ab0ba6000e9ab5f1089b6717bde5192fa",
+      "duration": 2.2059
+    },
+    "FLA-03.mp3": {
+      "bytes": 23420,
+      "sha256": "99dadfab412e610b938c2111dcdb232646f9ec357578a2a85fe465c07025d984",
+      "duration": 3.2624
+    },
+    "CAB-02.mp3": {
+      "bytes": 9476,
+      "sha256": "705aa2aa4512aafd244394097c14016a3422af3bab6b1b8fc8802e67227ad171",
+      "duration": 1.2655
+    },
     "ARR-01.mp3": {
       "bytes": 28796,
       "sha256": "27d5ac8a867db91ab779d49756e5ab0a00eef8e9a223f72d33ce2eb5d1f8d03f",
@@ -82,11 +102,6 @@
       "bytes": 32156,
       "sha256": "4bb6ed664d01c84850bc9c7805b017248542a3ad8241bbf2266353374f2e9bbf",
       "duration": 4.4931
-    },
-    "FLA-03.mp3": {
-      "bytes": 24092,
-      "sha256": "c5d92aa7e8dc049bb3cf3a8fdcb80f4032dc1ed1286670dd2dcdd01d87037de3",
-      "duration": 3.3553
     },
     "WAL-01.mp3": {
       "bytes": 40724,

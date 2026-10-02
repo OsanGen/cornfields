@@ -1,5 +1,6 @@
 // Fast playtest adaptation. R=retained, A=adapted, N=new draft, U=user wording.
 // Cue IDs and provenance match CORNFIELDS_FAST_INTERACTIVE_PROLOGUE_REFINEMENT.md.
+import {BANG_TIMES} from './prologue-confrontation.js';
 const freeze=Object.freeze;
 const VOICE_TAIL=.12,LINE_GAP=.18;
 const raw=(id,voice,chapter,basis,text)=>freeze({id,voice,chapter,basis,text,speaker:voice==='face'?'PROJECTED FACE':voice==='unknown'?'':voice.toUpperCase()});
@@ -13,11 +14,14 @@ const SOURCE=freeze([
   raw('CAR-07','mike','car','R',"That's what'll make you the man who tells the story back and wears it like a crown."),
   raw('RAD-01','dispatch','dispatch','N','Chief Hartmouth, Edwards. Missing child reported just down the road. Sadie Yates. Her father is at the cornfield.'),
   raw('RAD-02','clarence','dispatch','N',"That's close. Pulling over."),
-  raw('ARR-01','stanley','emergence','R','Officer, my name is Stanley Yates and my daughter Sadie has gone missing.'),
+  raw('ARR-00','stanley','emergence','U','The call was about me! My daughter! Please, help!'),
+  raw('CAB-01','mike','cabin','U','Calm the hell down! Step back. Give us a second.'),
+  raw('FLA-03','mike','cabin','A',"This guy's fucking insane. Let's just make sure he didn't kill his own daughter."),
+  raw('CAB-02','clarence','cabin','N',"All right. Let's talk to him."),
+  raw('ARR-01','stanley','exit','R','Officer, my name is Stanley Yates and my daughter Sadie has gone missing.'),
   raw('ARR-02','stanley','exit','N','Please. Come with me.'),
   raw('FLA-01','mike','flashlight','N','Need some light.'),
   raw('FLA-02','stanley','flashlight','N',"Be careful. There are tales of undead in there. They don't like the light. Don't shine it at them."),
-  raw('FLA-03','clarence','flashlight','N',"This guy's fucking insane. Let's just make sure he didn't kill his own daughter."),
   raw('WAL-01','stanley','walk','A',"It didn't start today. A few weeks ago, at dinner, Sadie asked who lived in the cornfields behind our house."),
   raw('WAL-02','stanley','walk','N','I told her,'),
   raw('WAL-03','stanley','walk','R','Nothing lives in the cornfields, dearie.'),
@@ -44,6 +48,8 @@ const CHAPTERS=freeze([
   {id:'car',title:'Police car',lead:.45},
   {id:'dispatch',title:'Dispatch call',lead:.3},
   {id:'emergence',title:'Stanley emerges',lead:.65},
+  {id:'bang',title:'At the window',duration:2},
+  {id:'cabin',title:'A private word',lead:.15},
   {id:'exit',title:'Leave the cruiser',lead:.85},
   {id:'flashlight',title:'Light and warning',lead:.2},
   {id:'walk',title:'Sadie saw someone',lead:.15},
@@ -101,7 +107,7 @@ export function createPrologueTimeline({durations={}}={}){
     chapters.push(freeze({id:chapter.id,title:chapter.title,start,end:cursor}));
   }
   const chapter=id=>chapters.find(item=>item.id===id);
-  const cues=[['radio',chapter('dispatch').start+.04],['corn_burst',chapter('emergence').start+.04],['door_open',chapter('exit').start],['undead',chapter('undead').start],['redroom',chapter('redroom').start],['liquid',chapter('liquid').start],['crash',chapter('rupture').start]];
+  const cues=[['radio',chapter('dispatch').start+.04],['corn_burst',chapter('emergence').start+.04],...BANG_TIMES.map((at,index)=>['car_bang_'+(index+1),chapter('bang').start+at]),['undead',chapter('undead').start],['redroom',chapter('redroom').start],['liquid',chapter('liquid').start],['crash',chapter('rupture').start]];
   return freeze({duration:cursor,chapters:freeze(chapters),lines:freeze(lines),cues:freeze(cues.map(freeze))});
 }
 const baseline=createPrologueTimeline();

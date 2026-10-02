@@ -36,13 +36,34 @@ test('free look is immediate and persists; Mike exits only after a valid stopped
   assert.equal(story.frame().player.yaw,1.12);assert.equal(story.frame().player.pitch,.42);
   assert.equal(story.frame().player.x,.5);assert.equal(story.frame().canMove,false);
   story.tick(1);assert.equal(story.frame().player.yaw,1.12);
-  story.tick(chapter('emergence').end+2);const wait=story.snapshot();
-  assert.equal(wait.waitingForExit,true);assert.equal(wait.time,chapter('emergence').end);
-  assert(wait.escorts.clarence.x<-1.02,'Clarence has exited before Mike chooses to leave');
+  story.tick(chapter('cabin').end+2);const wait=story.snapshot();
+  assert.equal(wait.waitingForExit,true);assert.equal(wait.time,chapter('cabin').end);
+  assert.equal(wait.escorts.clarence.x,-.45,'Clarence stays seated for the private exchange');
   story.tick(20,{forward:1});assert.equal(story.snapshot().time,wait.time);assert.equal(story.frame().player.x,.5);
   story.tick(.05,{interact:true});story.tick(.86);assert.equal(story.frame().waitingForExit,false);assert.equal(story.frame().canMove,true);
   const before=story.frame().player.z;story.tick(.2,{forward:1,yaw:0});assert(story.frame().player.z<before);
   story.dispose();
+});
+
+test('confrontation stays in the stopped car, Mike speaks privately, and door/knocks fire once',()=>{
+  const {story,cues}=fixture();
+  drive(story,f=>f.chapter==='bang',{controls:()=>({interact:true})});
+  assert.equal(story.frame().driving.parked,true);
+  assert.equal(story.frame().canMove,false);
+  assert.equal(story.frame().exitProgress,0);
+  assert.equal(cues.includes('door_open'),false);
+  story.tick(.61,{interact:true});assert.equal(cues.filter(x=>x==='car_bang_1').length,1);
+  story.pause();const before=story.snapshot();story.tick(10,{interact:true});assert.deepEqual(story.snapshot(),before);story.resume();
+  drive(story,f=>f.line?.id==='FLA-03',{controls:()=>({interact:true})});
+  assert.equal(story.frame().speaker,'MIKE');assert.equal(story.frame().chapter,'cabin');
+  assert.equal(story.snapshot().escorts.clarence.z,.09);
+  assert.equal(cues.filter(x=>x==='car_bang_2').length,1);
+  drive(story,f=>f.waitingForExit,{controls:()=>({})});
+  assert.equal(cues.includes('door_open'),false);
+  story.tick(.05,{interact:true});story.tick(.2,{interact:true});
+  assert.equal(cues.filter(x=>x==='door_open').length,1);
+  assert.equal(story.frame().line,null);
+  story.skip();story.begin();assert.deepEqual(story.snapshot().fired,[]);assert.equal(story.snapshot().escorts.clarence.z,.09);story.dispose();
 });
 
 test('flashlight actions toggle once per input tick and pause freezes motion and authored time',()=>{

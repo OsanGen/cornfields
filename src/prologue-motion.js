@@ -1,4 +1,5 @@
 import {GAME_CONFIG} from './game-config.js';
+import {sampleRoadsideConfrontation,ROADSIDE_DISTANCE} from './prologue-confrontation.js';
 
 const clamp=value=>Math.max(0,Math.min(1,Number(value)||0));
 const smooth=value=>{const t=clamp(value);return t*t*(3-2*t);};
@@ -6,7 +7,7 @@ const mix=(a,b,t)=>a+(b-a)*t;
 const WALK={walk:[0,.27],history:[.27,.62],disappearance:[.62,.84],arrival:[.84,1]};
 const CHAPTERS=Object.keys(WALK),IDS=['mike','clarence','stanley'],EYE=GAME_CONFIG.player.eyeHeight;
 const STEP={mike:.50,clarence:.45,stanley:.48},OFFSET={mike:0,clarence:.37,stanley:.73};
-const RUN_DISTANCE=Math.hypot(4.5-2.1,7.5-2.25),RUN_STEP=.85;
+const RUN_DISTANCE=ROADSIDE_DISTANCE,RUN_STEP=.85;
 
 export function prologueWorldTransition(frame={},available=false){
   const p=clamp(frame.chapterProgress),arrival=frame.chapter==='arrival';
@@ -18,7 +19,7 @@ export function prologueBlocking(frame={}){
   const chapter=frame.chapter||'car',p=clamp(frame.chapterProgress),t=Number(frame.time)||0;
   const returning=!!frame.returning,walk=WALK[chapter];
   const travel=returning||chapter==='rupture'?1:walk?mix(...walk,smooth(p)):0;
-  const exit=chapter==='emergence'?smooth((p-.65)/.3):walk||chapter==='rupture'||returning?1:0;
+  const exit=walk||chapter==='flashlight'||chapter==='rupture'||returning?1:chapter==='exit'?smooth(p/.25):0;
   const camera=[mix(.50,1.85,exit),mix(1.13,EYE,exit),mix(.35,-.35,exit)];
   const look=[mix(-.08,2.2,exit),mix(1.12,1.5,exit),mix(-8,-3.1,exit)];
   if(walk||chapter==='rupture'||returning){camera[0]=1.85*(1-smooth(travel*3));camera[1]=EYE;camera[2]=mix(-.35,-48,travel);look[0]=0;look[1]=EYE;look[2]=camera[2]-8;}
@@ -80,20 +81,21 @@ export function samplePrologueMotion(frame={}, {worldAvailable=true}={}){
       grounded=!returning;mode=moving?'walk':id==='stanley'?'breathe':'standing';surface='soft';
       yaw=id==='stanley'?mix(-.35,Math.PI+(speaking?1.5:0),turn):Math.PI-(speaking?1.5:0);
     }else if(id==='mike'){
-      position=[...b.camera];stepOut=chapter==='emergence'&&b.exit>=.95;grounded=stepOut;mode=grounded?'standing':'seated';
+      position=[...b.camera];stepOut=b.exit>=.95;grounded=stepOut;mode=grounded?'standing':'seated';
     }else if(id==='clarence'){
       const step=smooth((b.exit-.15)/.85);position=[mix(-.45,-.84,step),mix(-.38,0,step),mix(.09,-2.1,step)];
-      stepOut=chapter==='emergence'&&step>=.98;grounded=stepOut;mode=step<.15?'drive':step<1?'walk':'standing';
+      stepOut=chapter==='exit'&&step>=.98;grounded=stepOut;mode=step<.15?'drive':step<1?'walk':'standing';
       // The exit is one authored landing contact, not a walking treadmill.
       phase=clamp(step/.98)*Math.PI;
     }else{
-      const emerge=chapter==='emergence'?smooth(p/.34):0;
-      position=[mix(4.5,2.1,emerge),0,mix(-7.5,-2.25,emerge)];yaw=mix(-1.5,-.35,emerge);
-      distance=RUN_DISTANCE*emerge;phase=(distance/RUN_STEP+OFFSET[id])*Math.PI;
-      moving=chapter==='emergence'&&p>0&&p<.34;grounded=chapter==='emergence';mode=moving?'run':'breathe';
-      surface=emerge<.72?'soft':'hard';
+      const roadside=sampleRoadsideConfrontation(frame);
+      position=roadside?.position||(['exit','flashlight'].includes(chapter)?[2.1,0,-2.25]:[4.5,0,-7.5]);
+      yaw=roadside?.yaw??-.35;moving=roadside?.moving||false;grounded=!!roadside||['exit','flashlight'].includes(chapter);mode=roadside?.mode||'breathe';
+      distance=roadside?.travel??(grounded?RUN_DISTANCE:0);phase=(distance/RUN_STEP+OFFSET[id])*Math.PI;
+      surface='hard';
     }
     actors[id]={id,position,yaw,mode,moving,grounded,surface,distance,phase,contactIndex:Math.floor(phase/Math.PI+1e-9),segment,stepOut};
+    if(id==='stanley')Object.assign(actors[id],sampleRoadsideConfrontation(frame)||{});
   }
   return {time:Number(frame.time)||0,chapter,returning,blocking:b,...transition,listener:{position:[...b.camera],yaw:Math.atan2(b.camera[0]-b.look[0],b.camera[2]-b.look[2])},actors};
 }
@@ -104,13 +106,15 @@ export function sampleInteractivePrologueMotion(frame,escorts){
   const camera=[player.x,player.y,player.z],inCar=exit<.999;
   const actors={};
   for(const id of IDS){
-    const a=id==='mike'?player:escorts[id],visibleGround=id==='mike'?!inCar:chapter==='emergence'||!inCar;
+    const a=id==='mike'?player:escorts[id],roadside=id==='stanley'?sampleRoadsideConfrontation(frame):null;
+    const visibleGround=id==='mike'?!inCar:!!roadside||!inCar;
     const phase=(a.distance/STEP[id]+OFFSET[id])*Math.PI;
     const seated=id==='clarence'&&a.z>-.2;
     actors[id]={id,position:[a.x,id==='mike'?player.y:seated?-.38:0,a.z],
       yaw:id==='mike'?player.yaw:Math.PI,mode:seated?'drive':a.moving?'walk':'standing',
       moving:a.moving,grounded:visibleGround&&!room,surface:room||Math.abs(a.x)<2.5?'hard':'soft',distance:a.distance,phase,
       contactIndex:Math.floor(phase/Math.PI+1e-9),segment:room?'redroom':'outdoors',stepOut:id==='mike'&&exit>=1};
+    if(roadside)Object.assign(actors[id],roadside);
   }
   if(room)actors.mike.grounded=true;
   return {time:frame.elapsed,chapter,returning:false,world:false,cover:0,

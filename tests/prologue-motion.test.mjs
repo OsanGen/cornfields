@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {samplePrologueMotion,createPrologueContactTracker} from '../src/prologue-motion.js';
 import {createPrologueActor} from '../src/prologue-actors.js';
 
-const durations={car:60,dispatch:23,emergence:25,walk:68,history:60,disappearance:50,arrival:16,rupture:24};
+const durations={car:60,dispatch:23,emergence:6,bang:2,cabin:12,exit:8,walk:68,history:60,disappearance:50,arrival:16,rupture:24};
 const actors=['mike','clarence','stanley'];
 function frame(chapter,p,time=100+p){return {chapter,chapterProgress:p,time,chapterTime:p*durations[chapter]};}
 
@@ -18,20 +18,20 @@ test('guided paths and cumulative distances join without invented travel',()=>{
     const a=samplePrologueMotion(frame(before,1)),b=samplePrologueMotion(frame(after,0));
     for(const id of actors){assert.deepEqual(a.actors[id].position,b.actors[id].position);assert.equal(a.actors[id].distance,b.actors[id].distance);assert.equal(a.actors[id].phase,b.actors[id].phase);}
   }
-  const roadside=samplePrologueMotion(frame('emergence',1)),walk=samplePrologueMotion(frame('walk',0));
+  const roadside=samplePrologueMotion(frame('exit',1)),walk=samplePrologueMotion(frame('walk',0));
   for(const id of actors)for(let axis=0;axis<3;axis++)assert.ok(Math.abs(roadside.actors[id].position[axis]-walk.actors[id].position[axis])<1e-10);
 });
 
 test('Stanley keeps running until his translation ends and then stops contacts',()=>{
-  const running=samplePrologueMotion(frame('emergence',.32)),stopped=samplePrologueMotion(frame('emergence',.34)),later=samplePrologueMotion(frame('emergence',.60));
-  assert.equal(running.actors.stanley.mode,'run');assert.equal(stopped.actors.stanley.mode,'breathe');
+  const running=samplePrologueMotion(frame('emergence',.32)),stopped=samplePrologueMotion(frame('emergence',1)),later=samplePrologueMotion(frame('bang',0));
+  assert.equal(running.actors.stanley.mode,'run');assert.equal(stopped.actors.stanley.mode,'standing');
   assert.deepEqual(stopped.actors.stanley.position,later.actors.stanley.position);assert.equal(stopped.actors.stanley.phase,later.actors.stanley.phase);
 });
 
 test('Clarence steps out onto a planted foot and remains planted before the walk',()=>{
-  const a=samplePrologueMotion(frame('emergence',.91)).actors.clarence;
+  const a=samplePrologueMotion(frame('exit',.91)).actors.clarence;
   assert.equal(a.stepOut,true);assert.equal(a.grounded,true);assert.equal(a.phase,Math.PI);
-  assert.equal(samplePrologueMotion(frame('emergence',1)).actors.clarence.phase,Math.PI);
+  assert.equal(samplePrologueMotion(frame('exit',1)).actors.clarence.phase,Math.PI);
 });
 
 function collect(fps){

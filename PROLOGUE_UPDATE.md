@@ -7,14 +7,25 @@ phone architecture, hunt, corridor progression and HIDE HERE transitions remain.
 ## Experience and controls
 
 Mike is the passenger; Clarence drives. Mouse/touch look stays free throughout.
-The dispatch report has a visible handheld radio. Clarence exits first; Mike
-leaves only after E or the touch EXIT button. F/LIGHT works, then normal movement
+The dispatch report has a visible handheld radio. Once the car stops, Stanley
+rushes into the headlights, rounds the hood and bangs twice on Mike's window.
+Mike tells him to calm down, then privately calls him insane while both officers
+remain seated. Only after that exchange does E or the touch EXIT button let Mike
+leave, with Clarence getting out during the same sequence. Door audio is tied to
+the accepted exit action. Stanley's introduction follows outside. F/LIGHT works, then normal movement
 follows Stanley and Clarence along a compact outdoor route. The gun stays visible
 without firing, ammo loss, enemies, QTE or live-game time during the story.
 
 Distance from the group triggers sentence-boundary dialogue holds and spaced
 follow calls. Returning resumes the next sentence without replaying the account.
 There is no automatic following, forced exit or teleport to meet a time budget.
+
+The window contacts and knock cues share one pair of timestamps. Existing rig
+bones provide the hand reaches for textured and fallback actors. The knocks use
+the existing local noise source with a short, filtered impact envelope; reduced
+effects disable the small camera nudge. Four regenerated natural synthetic voice
+clips use the existing offline cast. Gameplay rules and the survival timer are
+unchanged.
 
 - After WAL-05: a two-second corpse vision of the escorts, with live controls.
 - After WAL-09: ten seconds in a walkable red room with a projector and an original

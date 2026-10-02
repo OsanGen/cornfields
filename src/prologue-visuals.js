@@ -5,6 +5,7 @@ import {createBloodRoom} from './blood-room.js';
 import {createPrologueAssets,prepareCruiser} from './prologue-assets.js';
 import {createTexturedPrologueActor} from './prologue-model-actor.js';
 import {samplePrologueDriving} from './prologue-driving.js';
+import {sampleRoadsideConfrontation,BANG_WINDOW_TARGET} from './prologue-confrontation.js';
 import {attachLiquidMaterial as attachPrologueLiquid} from './liquid-material.js';
 export {attachPrologueLiquid};
 export {prologueBlocking,prologueWorldTransition} from './prologue-motion.js';
@@ -285,6 +286,8 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     const moving=chapter==='car'||chapter==='dispatch';
     car.position.fromArray(drive.position);car.rotation.set(drive.bodyPitch,drive.yaw,drive.bodyRoll,'YXZ');car.updateMatrix();
     if(b.inCar&&!vision.room){camera.position.applyMatrix4(car.matrix);camera.quaternion.premultiply(car.quaternion);}
+    const confrontation=sampleRoadsideConfrontation(frame)||{bang:0,impact:0};
+    if(b.inCar&&!reduced&&confrontation.impact){camera.position.x+=confrontation.impact*.012;camera.rotation.z+=confrontation.impact*.008;}
     sky.position.copy(camera.position);
     road.visible=!frame.returning;
     field.visible=chapter!=='car'&&(chapter!=='dispatch'||p>.8);car.visible=!frame.returning;
@@ -297,9 +300,11 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     clarence.root.position.fromArray(driver.position);clarence.root.position.y+=vision.rise;clarence.root.rotation.set(0,driver.yaw,0,'YXZ');
     if(driver.mode==='drive'){clarence.root.position.applyMatrix4(car.matrix);clarence.root.quaternion.premultiply(car.quaternion);}
     stanley.root.position.fromArray(father.position);stanley.root.position.y+=vision.rise;stanley.root.rotation.set(0,father.yaw,0,'YXZ');
+    const bangTargets=father.mode==='bang'?[1,-1].map(sign=>stanley.root.worldToLocal(location.localToWorld(new THREE.Vector3(BANG_WINDOW_TARGET[0],BANG_WINDOW_TARGET[1],BANG_WINDOW_TARGET[2]+sign*.18))).toArray()):null;
     const effect={corpse:vision.corpse,dissolve:vision.dissolve};
     clarence.pose({time,phase:driver.phase,mode:vision.limp?'limp':driver.mode,speaking:isClarence,look:isClarence?(roadside?-.38:-.65):.1,reduced,steer:drive.steer,...effect});
-    stanley.pose({time,phase:father.phase,mode:vision.limp?'limp':father.mode,speaking:isStanley,distress:roadside?1:chapter==='disappearance'?.7:.32,look:roadside?-.35:isStanley?.60:0,gesture:isStanley?(roadside?.22:.25+.10*Math.sin(time*.8)):0,reduced,...effect});
+    stanley.pose({time,phase:father.phase,mode:vision.limp?'limp':father.mode,speaking:isStanley,distress:roadside?1:chapter==='disappearance'?.7:.32,look:roadside?-.35:isStanley?.60:0,gesture:isStanley?(roadside?.22:.25+.10*Math.sin(time*.8)):0,bang:father.bang??confrontation.bang,bangTargets,reduced,...effect});
+    stats.confrontation={...confrontation,windowTargets:bangTargets,cameraImpact:reduced?0:confrontation.impact};
     updateBinary(vision,time,reduced);
     const red=chapter==='rupture'?vision.red:clamp(frame.red),mist=chapter==='rupture'?vision.mist:clamp(frame.mist),cover=Math.max(mist,transition.cover||0);scene.background.copy(skyNormal).lerp(skyRed,red);scene.fog.color.copy(fogNormal).lerp(fogRed,red);scene.fog.density=vision.room?.018:.019+cover*.14;
     sky.material.uniforms.red.value=red;sky.material.uniforms.liquid.value=vision.liquid;sky.material.uniforms.clock.value=time;haze.material.uniforms.red.value=red;haze.material.uniforms.amount.value=Math.max(mist*1.34,(transition.cover||0)*1.34);haze.material.uniforms.clock.value=reduced?0:time;haze.visible=!vision.room&&cover>.001;

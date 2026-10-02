@@ -4,6 +4,8 @@ import {readFile} from 'node:fs/promises';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {createTexturedPrologueActor} from '../src/prologue-model-actor.js';
+import {createPrologueActor} from '../src/prologue-actors.js';
+import {BANG_TIMES,sampleRoadsideConfrontation} from '../src/prologue-confrontation.js';
 
 // Keep actual animation, skinning, and geometry, without requiring browser image
 // decoding in Node. Texture ownership is checked with an injected texture below.
@@ -25,6 +27,24 @@ async function castFixture() {
   return new GLTFLoader().parseAsync(output.buffer, '');
 }
 const cast = await castFixture();
+
+test('roadside approach, two contacts and cabin retreat share continuous endpoints',()=>{
+  assert.deepEqual(sampleRoadsideConfrontation({chapter:'emergence',chapterProgress:1}).position,sampleRoadsideConfrontation({chapter:'bang',chapterTime:0}).position);
+  assert.deepEqual(sampleRoadsideConfrontation({chapter:'bang',chapterTime:2}).position,sampleRoadsideConfrontation({chapter:'cabin',chapterTime:0}).position);
+  for(const chapterTime of BANG_TIMES){const sample=sampleRoadsideConfrontation({chapter:'bang',chapterTime});assert.equal(sample.bang,1);assert.equal(sample.impact,1);}
+  assert.deepEqual(sampleRoadsideConfrontation({chapter:'cabin',chapterTime:.7}).position,[2.1,0,-2.25]);
+});
+
+test('both cast rigs reach the passenger-window targets and retract between impacts',()=>{
+  const targets=[[.18,1.08,.395],[-.18,1.08,.395]];
+  for(const actor of [createTexturedPrologueActor({gltf:cast,police:false}),createPrologueActor({police:false})]){
+    actor.root.position.set(1.42,0,-.48);actor.root.rotation.y=-Math.PI/2;
+    actor.pose({mode:'bang',bang:1,bangTargets:targets});const contact=actor.diagnostics();
+    for(let i=0;i<2;i++)assert.ok(Math.hypot(...contact.windowContacts[i].map((v,j)=>v-contact.windowTargets[i][j]))<.015);
+    actor.pose({mode:'bang',bang:0,bangTargets:targets});const retreat=actor.diagnostics();
+    assert.ok(retreat.windowContacts.every((point,i)=>point[2]<contact.windowContacts[i][2]-.15));actor.dispose?.();
+  }
+});
 function bones(actor) {
   const result = new Map(); actor.root.traverse(object => { if (object.isBone) result.set(object.name, object); }); return result;
 }

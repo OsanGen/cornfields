@@ -10,12 +10,12 @@ import {createPrologue} from '../src/prologue.js';
 test('prologue starts with Mike in the passenger seat and exits at standing height',()=>{
   const car=prologueBlocking({chapter:'car',chapterProgress:0,time:0});
   assert.ok(car.camera[0]>0);assert.equal(car.inCar,true);assert.equal(car.camera[1],1.13);
-  const exit=prologueBlocking({chapter:'emergence',chapterProgress:1});
+  const exit=prologueBlocking({chapter:'exit',chapterProgress:1});
   assert.equal(exit.inCar,false);assert.equal(exit.camera[1],GAME_CONFIG.player.eyeHeight);
 });
 
 test('guided chapters join at identical camera positions',()=>{
-  const chapters=['emergence','walk','history','disappearance','arrival','rupture'];
+  const chapters=['exit','walk','history','disappearance','arrival','rupture'];
   for(let i=0;i<chapters.length-1;i++){
     const end=prologueBlocking({chapter:chapters[i],chapterProgress:1});
     const next=prologueBlocking({chapter:chapters[i+1],chapterProgress:0});
