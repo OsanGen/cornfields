@@ -2,7 +2,7 @@ import {mkdir, readFile, realpath, rm, writeFile, lstat} from 'node:fs/promises'
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
-import {PROLOGUE_LINES} from '../src/prologue-script.js';
+import {PROLOGUE_AUDIO_LINES as PROLOGUE_LINES} from '../src/prologue-script.js';
 import {FOOTSTEP_FILES} from '../src/footsteps.js';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));

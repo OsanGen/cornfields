@@ -88,6 +88,7 @@ export function createInput({document, canvas, isPlaying, onPause, onMute,onEsca
       return input;
     },
     clearEdges(){pending=emptyEdges();stabs=[];},
+    quarantineActions(){for(const code of physical)if(!MOVE_KEYS.has(code)&&!code.startsWith('Shift')){quarantined.add(code);keys.delete(code);}this.clearEdges();},
     quarantine(){for(const code of physical)quarantined.add(code);this.clear();},
     clear() {
       keys.clear();

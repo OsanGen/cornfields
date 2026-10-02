@@ -1,8 +1,8 @@
 # Cinematic playtest voices
 
 These are temporary synthetic performances of the CORNFIELDS prologue, generated
-offline with Piper. Story by Jacob Nangle; approved roadside adaptation and two
-marked factual bridge lines are recorded in `src/prologue-script.js`.
+offline with Piper. Story by Jacob Nangle; approved fast interactive adaptation with retained, adapted, new, and user-wording
+provenance is recorded in `src/prologue-script.js`.
 
 Voice model: **en_US-libritts_r-medium**, distributed by the Rhasspy/Piper project.
 [Model and model card](https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/libritts_r/medium).
@@ -14,8 +14,8 @@ Nobuyuki Morioka, Michiel Bacchiani, Yu Zhang, Wei Han and Ankur Bapna.
 [Dataset and attribution](https://www.openslr.org/141/).
 Original corpus recordings derive from LibriSpeech/LibriVox contributors.
 
-Changes: newly generated scripted speech, normalization, occasional gentle tempo
-adjustment, and mono MP3 compression. These fictional performances are synthetic;
+Changes: newly generated scripted speech, normalization and mono MP3 compression. The fast interactive cues retain their
+natural delivery rate; no tempo acceleration is applied. These fictional performances are synthetic;
 the model/dataset contributors do not portray or endorse these characters.
 `sources.json` records corpus voice IDs, model checksum and each output checksum.
 Model weights, generation software and raw corpus recordings are not distributed

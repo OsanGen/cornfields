@@ -52,7 +52,7 @@ npm ci
 npm start
 ```
 
-Open <http://127.0.0.1:4173>. Choose sound/reduced effects, then click **BEGIN STORY**. Mouse capture and sound activation happen on that click; the approximately six-minute opening leads directly into gameplay. The preview binds only to loopback and closes after one hour; run `npm start` again if needed. Use `PORT=4174 npm start` if the default port is occupied.
+Open <http://127.0.0.1:4173>. Choose sound/reduced effects, then click **BEGIN STORY**. Mouse capture and sound activation happen on that click. Look freely, press E to exit when prompted, use F for the flashlight, and follow the two men. The interactive opening has about three minutes of authored content including credits and the final gameplay line; deliberate wandering, idle and pause add time. The preview binds only to loopback and closes after one hour; run `npm start` again if needed. Use `PORT=4174 npm start` if the default port is occupied.
 
 The opening plays once per page session. Escape pauses; J skips the story and K skips the opening. Switching away pauses until **Continue**; retry bypasses it. **Replay Opening** preserves the paused run. `?intro=off` restores direct entry; `?prologue=off` restores the previous title-only opening; `?introfx=off` uses the direct-render title fallback. See [PROLOGUE_UPDATE.md](PROLOGUE_UPDATE.md) for story, assets and verification. [INTRO_UPDATE.md](INTRO_UPDATE.md) documents the retained title controller.
 
@@ -72,7 +72,7 @@ Walking is 3.8 m/s; sprinting is 4.8 m/s and makes louder footsteps. The corrido
 
 ## Phone controls
 
-After watching or skipping the intro, turn to landscape and tap ENTER THE FIELD to play. The left joystick moves; push it to the outer edge to sprint. Drag the right side to look. FIRE spends one round per tap. LIGHT toggles the flashlight. The contextual button opens the main entrance. Walk directly through a glowing HIDE HERE opening to enter corn and through the red return frame to leave. The top-right pause button opens settings and restart. Fullscreen is optional and appears only when supported.
+Use landscape and tap BEGIN STORY. Drag the right side to look, tap EXIT when prompted, then use the left joystick to follow and LIGHT for the flashlight. The story gun is visible but cannot fire. Gameplay starts immediately after credits or SKIP OPENING. In gameplay, push the stick to the outer edge to sprint; FIRE spends one round per tap. The contextual button opens the main entrance. Walk directly through a glowing HIDE HERE opening to enter corn and through the red return frame to leave. Pause opens settings and restart. Fullscreen is optional and appears only when supported.
 
 When grabbed, repeatedly tap the contextual **STAB** button. Eight fresh taps free you;
 holding it does not count. Existing health drains during the struggle. After a successful

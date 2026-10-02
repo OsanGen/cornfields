@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createPrologueAudio} from '../src/prologue-audio.js';
-import {prologueFrame} from '../src/prologue.js';
+import {PROLOGUE_LINES,PROLOGUE_FOLLOW_LINES,PROLOGUE_END_LINE} from '../src/prologue-script.js';
 
 function fixture(fetcher=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(10)})){
   const sources=[],requests=[],param=()=>({value:0,setValueAtTime(v){this.value=v;},setTargetAtTime(v){this.value=v;},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}});
@@ -11,39 +11,62 @@ function fixture(fetcher=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer
   const opening=createPrologueAudio(audio,{fetcher:(url,options)=>{requests.push(url.pathname);return fetcher(url,options);}});
   return {audio,opening,requests,sources,flush:()=>new Promise(resolve=>setImmediate(resolve))};
 }
+function frame(time=1,line=PROLOGUE_LINES[0],extra={}){
+  return {time:line.start+time,line,chapter:line.chapter,chapterProgress:.1,...extra};
+}
+function motion(time,index,moving=true){
+  return {time,listener:{position:[0,1.65,0],yaw:0},actors:Object.fromEntries(['mike','clarence','stanley'].map((id,i)=>[id,{position:[i,0,-i],contactIndex:index,segment:'approach',grounded:true,moving,surface:'soft',mode:'walk'}]))};
+}
 
 test('dialogue seeks to clock offset, resumes without restarting and uses bounded lookahead',async()=>{
-  const h=fixture(),frame=prologueFrame(5);h.opening.sync(frame);await h.flush();h.opening.sync(frame);
+  const h=fixture(),f=frame();h.opening.sync(f);await h.flush();h.opening.sync(f);
   assert.equal(h.opening.diagnostics().playing,true);assert.equal(h.requests.length,3);
-  const speech=h.sources.at(-1);assert.equal(speech.started[1],3);
-  h.audio.ctx.currentTime=.05;h.opening.sync(prologueFrame(5.05));assert.equal(h.sources.at(-1),speech);
+  const speech=h.sources.at(-1);assert.equal(speech.started[1],1);
+  h.audio.ctx.currentTime=.05;h.opening.sync(frame(1.05));assert.equal(h.sources.at(-1),speech);
   h.opening.pause();assert.equal(speech.stopped,true);assert.equal(h.opening.diagnostics().playing,false);
-  h.opening.sync(prologueFrame(6));assert.equal(h.sources.at(-1).started[1],4);
+  h.opening.sync(frame(2));assert.equal(h.sources.at(-1).started[1],2);
   assert.equal(h.audio.gameGain.gain.value,0);h.opening.dispose();assert.equal(h.opening.diagnostics().buffers,0);
 });
 
 test('failed voices do not stall presentation and are not fetched every frame',async()=>{
-  const h=fixture(async()=>({ok:false}));h.opening.sync(prologueFrame(5));await h.flush();h.opening.sync(prologueFrame(6));await h.flush();
+  const h=fixture(async()=>({ok:false}));h.opening.sync(frame());await h.flush();h.opening.sync(frame(2));await h.flush();
   assert.equal(h.requests.length,3);assert.equal(h.opening.diagnostics().playing,false);assert.equal(h.opening.diagnostics().failed.length,3);h.opening.dispose();
 });
 
 test('late fetch after release cannot restore decoded voices or start sound',async()=>{
-  let resolve;const h=fixture(()=>new Promise(r=>resolve=r));h.opening.sync(prologueFrame(5));h.opening.release();
+  let resolve;const h=fixture(()=>new Promise(r=>resolve=r));h.opening.sync(frame());h.opening.release();
   resolve({ok:true,arrayBuffer:async()=>new ArrayBuffer(10)});await h.flush();assert.equal(h.opening.diagnostics().buffers,0);assert.equal(h.opening.diagnostics().playing,false);h.opening.dispose();
 });
 
 test('mute and pause cancel owned voices and crash effects without gameplay sources',async()=>{
-  const h=fixture();h.opening.sync(prologueFrame(5));await h.flush();h.opening.sync(prologueFrame(5));h.opening.cue('crash');
-  h.audio.muted=true;h.opening.pause();assert.ok(h.sources.every(source=>source.stopped));h.opening.sync(prologueFrame(6));assert.equal(h.opening.diagnostics().playing,false);h.opening.dispose();
+  const h=fixture();h.opening.sync(frame());await h.flush();h.opening.sync(frame());h.opening.cue('crash');
+  h.audio.muted=true;h.opening.sync(frame(2));assert.ok(h.sources.every(source=>source.stopped));assert.equal(h.opening.diagnostics().playing,false);h.opening.dispose();
 });
 
-test('cast contacts continue under dialogue, use the opening bus, and rebase on pause and seek',async()=>{
+test('actual motion drives contacts, with no footsteps for idle actors or after a seek',async()=>{
   const h=fixture(),steps=[];h.audio.footstep=contact=>{steps.push(contact);return true;};
-  for(let time=150;time<165;time+=1/60){h.audio.ctx.currentTime=time;h.opening.sync(prologueFrame(time));if(time===150)await h.flush();}
+  for(let index=0;index<4;index++)h.opening.sync(frame(index*.2,PROLOGUE_LINES[0],{motion:motion(index*.2,index)}));
   for(const actor of ['mike','clarence','stanley'])assert.ok(steps.some(step=>step.actor===actor),actor);
   assert.ok(steps.every(step=>step.owner==='prologue'&&step.bus!==h.audio.gameGain));
   assert.ok(steps.some(step=>step.pan!==0));assert.ok(steps.every(step=>step.gain<.35));
-  const count=steps.length;h.opening.pause();h.opening.sync(prologueFrame(170));assert.equal(steps.length,count);
-  h.opening.sync(prologueFrame(300));h.opening.sync(prologueFrame(310));assert.equal(steps.length,count);
-  h.audio.muted=true;h.opening.sync(prologueFrame(155));assert.equal(steps.length,count);h.opening.dispose();
+  const count=steps.length;h.opening.sync(frame(1,PROLOGUE_LINES[0],{motion:motion(.8,3,false)}));assert.equal(steps.length,count);
+  h.opening.pause();h.opening.sync(frame(2,PROLOGUE_LINES[0],{motion:motion(2,12)}));assert.equal(steps.length,count);
+  h.opening.dispose();
+});
+
+test('follow callouts load independently and final line preserves the live game audio bus',async()=>{
+  const h=fixture(),follow=PROLOGUE_FOLLOW_LINES[1];h.opening.sync(frame(.1,follow));await h.flush();h.opening.sync(frame(.1,follow));
+  assert.equal(h.opening.diagnostics().voice,'FOL-02');assert.equal(h.requests.length,1);
+  h.opening.pause();h.audio.gameGain.gain.value=.8;
+  h.opening.sync(frame(.1,PROLOGUE_END_LINE,{gameplay:true}));await h.flush();h.opening.sync(frame(.1,PROLOGUE_END_LINE,{gameplay:true}));
+  assert.equal(h.opening.diagnostics().voice,'END-01');assert.equal(h.audio.gameGain.gain.value,.8);
+  assert.equal(h.requests.length,2);h.opening.dispose();
+});
+
+
+test('quiet final-line preparation fetches without speech, ambience or game-bus mutation',async()=>{
+  const h=fixture();h.audio.gameGain.gain.value=.7;
+  h.opening.prepareLine(PROLOGUE_END_LINE);await h.flush();
+  assert.equal(h.requests.length,1);assert.equal(h.sources.length,0);assert.equal(h.audio.gameGain.gain.value,.7);
+  assert.equal(h.opening.diagnostics().buffers,1);assert.equal(h.opening.diagnostics().playing,false);h.opening.dispose();
 });

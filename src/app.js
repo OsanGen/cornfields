@@ -12,6 +12,7 @@ import {createIntro, INTRO_ENABLED} from './intro.js';
 import {setReturnOpen} from './corn-layout.js';
 import {enterOpenField} from './corridor-run.js';
 import {createOpening} from './opening.js';
+import {PROLOGUE_END_LINE} from './prologue-script.js';
 
 /**
  * Owns one game session and its browser lifecycle.
@@ -50,7 +51,7 @@ export function createGameApp({
   let coreReady = !ready, coreError = null, introAudioAttempt = 0, introEntering = false, pendingCapture = null;
   let creditsOpen = false;
   prologueEnabled=prologueEnabled&&introEnabled;
-  let openingStage=null;
+  let openingStage=null,endingAt=null;
   const intro = prologueEnabled?createOpening({onCue:id=>prologueAudio?.cue(id),onIntroCue:id=>audio.introCue?.(id)}):createIntro({enabled:introEnabled, onCue:id=>audio.introCue?.(id)});
   if(prologueEnabled){ui.node('player-alias').value='MIKE';document.body.classList.toggle('story-player',true);}
   if (ready) Promise.resolve(ready).then(()=>{if(!disposed){coreReady=true;present();}},error=>{
@@ -60,12 +61,12 @@ export function createGameApp({
   const input = (touch ? createTouchInput : createInput)({
     document,
     canvas,
-    isPlaying: () => !intro.active && game.mode === 'playing',
+    isPlaying: () => intro.active?prologueEnabled&&intro.stage==='prologue'&&intro.phase==='playing':game.mode === 'playing',
     isQte:()=>game.interaction?.phase==='qte',
     inputTime:stamp=>manual?game.elapsed:game.elapsed+clock.pendingSeconds+Math.max(0,Math.min(.25,((Number.isFinite(stamp)&&stamp<1e12?stamp:now())-last)/1000)),
     onPause: pause,
     onEscape() { if(prologueEnabled&&intro.active)pause();else if (['playing','paused'].includes(intro.phase)) skipIntro(); else pause(); },
-    isPresentation: () => intro.active,
+    isPresentation: () => intro.active&&!(prologueEnabled&&intro.stage==='prologue'&&intro.phase==='playing'),
     onMute() {
       game.caption = audio.toggleMute() ? 'Sound muted.' : 'Sound on.';
       game.captionTime = 2;
@@ -112,12 +113,17 @@ export function createGameApp({
     ui.render(game);
     ui.renderIntro(intro, {enabled:introEnabled, portrait:touch&&window.innerHeight>window.innerWidth, coreReady, coreError, entering:introEntering, pointerError, creditsOpen, muted:audio.muted, volume:audio.volume});
     if(prologueEnabled)ui.renderOpening(intro,{touch,portrait:touch&&window.innerHeight>window.innerWidth,coreReady,coreError,entering:introEntering,pointerError});
+    const endingTime=endingAt===null?Infinity:game.elapsed-endingAt;
+    const ending=endingTime<PROLOGUE_END_LINE.end&&game.mode==='playing'&&!intro.active;
+    ui.renderEnding?.(ending?PROLOGUE_END_LINE.text:'');
+    if(ending)prologueAudio?.sync({gameplay:true,time:endingTime,line:PROLOGUE_END_LINE,chapter:'gameplay'});
+    else if(endingAt!==null&&endingTime>=PROLOGUE_END_LINE.end){endingAt=null;prologueAudio?.release();}
     if (intro.active) {
       try {
         if(prologueEnabled&&intro.phase!=='preflight'){
           if(openingStage!==intro.stage){
             openingStage=intro.stage;
-            if(openingStage==='credits'){prologueAudio?.pause();introView?.start();if(intro.phase==='playing')audio.startIntro?.();}
+            if(openingStage==='credits'){prologueAudio?.pause();prologueAudio?.prepareLine(PROLOGUE_END_LINE);introView?.start();if(intro.phase==='playing')audio.startIntro?.();}
             else{audio.stopIntro?.();introView?.release();if(openingStage==='prologue')prologueView?.start();}
           }
           const shot=intro.frame(reducedMotion);
@@ -167,7 +173,7 @@ export function createGameApp({
   }
 
   function readyIntro() {
-    introAudioAttempt++;audio.stopIntro?.();input.clear();clock.reset();
+    introAudioAttempt++;audio.stopIntro?.();input.clearEdges();clock.reset();
     if(intro.replaying){finishReplay();return;}
     if(prologueEnabled){finishOpening();return;}
     if(!document.hidden)audio.startIntro?.({quiet:true});
@@ -178,14 +184,23 @@ export function createGameApp({
     if(prologueEnabled){
       if(intro.phase==='preflight'){void beginOpening({skip:true});return;}
       if(!intro.active||disposed)return;
-      prologueAudio?.pause();audio.stopIntro?.();intro.skip();input.clear();present();return;
+      if(intro.phase==='paused'&&!touch){void beginOpening({skip:true});return;}
+      prologueAudio?.pause();audio.stopIntro?.();intro.skip();input.clear();readyIntro();return;
     }
     if(!intro.active||intro.phase==='ready'||disposed)return;
     intro.skip();readyIntro();
   }
 
-  function tickIntro(dt) {
-    const phase=intro.phase;intro.tick(dt);
+  function tickIntro(dt,controls) {
+    const phase=intro.phase;
+    if(prologueEnabled){
+      let remaining=dt,first=true;
+      while(remaining>1e-8&&intro.phase==='playing'){
+        const step=Math.min(.05,remaining),value=controls?{...controls}:input.read(intro.player);
+        if(!first&&controls)Object.assign(value,{interact:false,flashlight:false,fire:false});
+        intro.tick(step,value);remaining-=step;first=false;
+      }
+    }else intro.tick(dt);
     if(phase==='playing'&&intro.phase==='ready')readyIntro();
   }
 
@@ -193,9 +208,13 @@ export function createGameApp({
     if(disposed||!coreReady||coreError||document.hidden||(touch&&window.innerHeight>window.innerWidth)||(!touch&&document.pointerLockElement!==canvas)){
       pointerError='Opening paused. Continue when you are ready.';prologueAudio?.pause();audio.pause();present();return;
     }
-    prologueAudio?.release();prologueView?.release();introView?.release();audio.stopIntro?.();intro.finish();openingStage=null;
-    input.quarantine?.();input.clear();clock.reset();last=now();
-    alias='MIKE';ui.setAlias(alias);startGame(game);audio.startGameplay?.();present();
+    const skipped=intro.snapshot().skipped,light=intro.player.flashlightOn;
+    if(skipped)prologueAudio?.release();else prologueAudio?.pause();
+    prologueView?.release();introView?.release();audio.stopIntro?.();intro.finish();openingStage=null;
+    if(skipped){input.quarantine?.();input.clear();}else{input.quarantineActions?.();input.clearEdges();}
+    clock.reset();last=now();
+    alias='MIKE';ui.setAlias(alias);startGame(game);previousMode=game.mode;game.player.flashlightOn=light;
+    endingAt=skipped?null:game.elapsed;audio.startGameplay?.();present();
   }
 
   async function beginOpening({replay=false,skip=false}={}){
@@ -228,6 +247,7 @@ export function createGameApp({
       if(intro.phase==='paused')intro.resume();else{intro.begin({replay});openingStage=null;}
       if(skip)intro.skip();
       ui.chooseIntroFont();input.clear();clock.reset();last=now();manual=false;
+      if(intro.phase==='ready')readyIntro();
     }catch(error){if(!disposed&&attempt===entryAttempt){pointerError=error.message;prologueAudio?.pause();audio.pause();}}
     finally{clearTimeout(timer);if(attempt===entryAttempt){pendingCapture=null;introEntering=false;}if(!disposed)present();}
   }
@@ -276,6 +296,7 @@ export function createGameApp({
       if(prologueEnabled&&document.pointerLockElement===canvas)document.exitPointerLock();present();return;
     }
     input.clear();
+    prologueAudio?.pause();
     pauseGame(game);
     clock.reset();
     present();
@@ -296,6 +317,7 @@ export function createGameApp({
       ui.node('player-alias').value=alias;ui.setAlias(alias);
     }
     if (reset) {
+      endingAt=null;prologueAudio?.release();
       game = createGame(maze);
       audio.reset();
       weather?.reset();
@@ -386,6 +408,7 @@ export function createGameApp({
   listen(ui.node('restart-btn'), 'click', () => void enter(true));
   listen(ui.node('player-alias'),'keydown',event=>{if(event.key==='Enter'){event.preventDefault();void enter();}});
   listen(ui.node('title-btn'),'click',()=>{
+    endingAt=null;prologueAudio?.release();
     pause();game=createGame(maze);weather?.reset();audio.reset();view.reset?.();ui.reset();input.clear();clock.reset();
     ui.node('player-alias').value=alias;present();ui.node('player-alias').focus();
   });
@@ -550,7 +573,7 @@ export function createGameApp({
     },
     step(seconds, controls = {}, renderFrame = true) {
       manual = true;
-      if(intro.active){tickIntro(seconds);present();return gameSnapshot(game);}
+      if(intro.active){tickIntro(seconds,controls);if(renderFrame)present();return gameSnapshot(game);}
       let first = true;
       clock.advance(seconds, () => {
         const value = {...controls};

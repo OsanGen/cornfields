@@ -27,7 +27,7 @@
         <button id="start-btn" class="primary">ENTER THE FIELD <span>↗</span></button>
         <button id="preflight-skip" class="text-button" hidden>SKIP INTRO</button>
         <p id="intro-content-note" class="small-note" hidden>Distorted visuals and sudden sounds. Reduced effects available.</p>
-        <p id="opening-note" class="small-note" hidden>A cinematic story playtest with temporary synthetic voices.<br>Sound is optional. All dialogue is subtitled.<br>Reduced effects are available.</p>
+        <p id="opening-note" class="small-note" hidden>An interactive story playtest with temporary synthetic voices.<br>Look around, exit the cruiser and follow the others.<br>Sound is optional. All dialogue is subtitled.</p>
         <p id="opening-status" class="small-note" role="status" hidden></p>
         <button id="credits-btn" class="text-button">CREDITS</button>
         <p id="loading" class="small-note">Loading the field...</p>
@@ -51,12 +51,15 @@
         <p id="story-speaker"></p>
         <p id="story-subtitle"></p>
       </div>
+      <p id="story-tutorial" role="status" hidden></p>
+      <p id="liquid-phrase" aria-live="off" hidden>WE ARE ONE</p>
       <div class="intro-actions">
         <p id="intro-status" role="status"></p>
         <button id="intro-continue" class="primary" hidden>CONTINUE INTRO</button>
         <button id="intro-enter" class="primary" hidden>ENTER THE FIELD <span>↗</span></button>
       </div>
     </section>
+    <p id="ending-caption" role="status" hidden></p>
     <div id="intro-settings" aria-label="Intro settings" hidden>
       <button id="intro-mute" class="text-button" aria-pressed="false">SOUND ON</button>
       <label>VOLUME <input id="intro-volume" aria-label="Intro and game volume" type="range" min="0" max="100" value="55"></label>

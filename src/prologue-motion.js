@@ -98,6 +98,26 @@ export function samplePrologueMotion(frame={}, {worldAvailable=true}={}){
   return {time:Number(frame.time)||0,chapter,returning,blocking:b,...transition,listener:{position:[...b.camera],yaw:Math.atan2(b.camera[0]-b.look[0],b.camera[2]-b.look[2])},actors};
 }
 
+/** Actual travel drives the interactive camera, gait and audio contact clock. */
+export function sampleInteractivePrologueMotion(frame,escorts){
+  const player=frame.player,chapter=frame.chapter,room=chapter==='redroom',exit=frame.exitProgress;
+  const camera=[player.x,player.y,player.z],inCar=exit<.999;
+  const actors={};
+  for(const id of IDS){
+    const a=id==='mike'?player:escorts[id],visibleGround=id==='mike'?!inCar:chapter==='emergence'||!inCar;
+    const phase=(a.distance/STEP[id]+OFFSET[id])*Math.PI;
+    const seated=id==='clarence'&&a.z>-.2;
+    actors[id]={id,position:[a.x,id==='mike'?player.y:seated?-.38:0,a.z],
+      yaw:id==='mike'?player.yaw:Math.PI,mode:seated?'drive':a.moving?'walk':'standing',
+      moving:a.moving,grounded:visibleGround&&!room,surface:room||Math.abs(a.x)<2.5?'hard':'soft',distance:a.distance,phase,
+      contactIndex:Math.floor(phase/Math.PI+1e-9),segment:room?'redroom':'outdoors',stepOut:id==='mike'&&exit>=1};
+  }
+  if(room)actors.mike.grounded=true;
+  return {time:frame.elapsed,chapter,returning:false,world:false,cover:0,
+    blocking:{camera,look:[player.x-Math.sin(player.yaw)*8,player.y,player.z-Math.cos(player.yaw)*8],exit,inCar,travel:clamp(-player.z/48),menVisible:!room,chapter,progress:frame.chapterProgress},
+    listener:{position:camera,yaw:player.yaw},actors};
+}
+
 /** Contact cursors own no clock, audio, or renderer. Pauses should call reset(). */
 export function createPrologueContactTracker({maxGap=.5}={}){
   let previous=null;

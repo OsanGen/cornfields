@@ -6,6 +6,51 @@ export {prologueBlocking,prologueWorldTransition} from './prologue-motion.js';
 const clamp = value => Math.max(0, Math.min(1, Number(value) || 0));
 const smooth = value => { const t = clamp(value); return t * t * (3 - 2 * t); };
 
+/** Readable event envelopes, with no repeated flashes or gameplay side effects. */
+export function prologueVisionState(frame={}){
+  const chapter=frame.chapter,duration={undead:2,redroom:10,liquid:5,rupture:12}[chapter]||1;
+  const t=Math.max(0,Number.isFinite(frame.chapterTime)?frame.chapterTime:clamp(frame.chapterProgress)*duration);
+  const reduced=!!frame.reduced,rupture=chapter==='rupture',liquid=chapter==='liquid';
+  const envelope=liquid?smooth(t)*smooth(5-t):0;
+  const reveal=(at,width=.75)=>t<at?0:Math.max(0,1-(t-at)/width);
+  return {
+    room:chapter==='redroom',corpse:chapter==='undead',liquid:envelope*(reduced?.30:1),
+    red:rupture?smooth((t-1)/2):0,
+    mist:rupture?(t<9?.16*smooth((t-1)/2):.16+.84*smooth((t-9)/2.2)):0,
+    lightning:reduced?0:chapter==='undead'?reveal(0,1.2)*.7:rupture?Math.max(reveal(3.1),reveal(6.1))*.75:0,
+    // Keep the nearest escort's head and breakup inside a normal level gaze.
+    limp:rupture&&t>=1,rise:rupture?(t<6?.8*smooth((t-3)/3):.8+.6*smooth((t-6)/3)):0,
+    dissolve:rupture?smooth((t-6)/3):0,binary:rupture&&t>=6&&t<9,
+    escortsVisible:!frame.returning&&(!rupture||t<9),time:t,
+  };
+}
+
+/** Free look never returns to an authored target after the player stops moving. */
+export function applyPrologueCamera(camera,motion,player={}){
+  camera.position.fromArray(motion.blocking.camera);
+  camera.rotation.set(Number(player.pitch)||0,Number(player.yaw)||0,0,'YXZ');
+}
+
+/** Shared treatment for owned scenery, escorts and the borrowed equipment clone. */
+export function attachPrologueLiquid(material){
+  if(material.userData.prologueLiquid)return material.userData.prologueLiquid;
+  const uniforms={amount:{value:0},time:{value:0}},before=material.onBeforeCompile,key=material.customProgramCacheKey?.bind(material);
+  material.onBeforeCompile=shader=>{
+    before?.(shader);
+    shader.uniforms.prologueLiquid=uniforms.amount;shader.uniforms.prologueLiquidTime=uniforms.time;
+    shader.vertexShader='uniform float prologueLiquid,prologueLiquidTime;\n'+shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+      float liquidPhase=position.y*3.2+position.z*1.7+prologueLiquidTime*1.6;
+      transformed.x+=sin(liquidPhase)*.17*prologueLiquid;
+      transformed.z+=sin(position.x*2.1+prologueLiquidTime*1.3)*.13*prologueLiquid;
+      transformed.y+=sin(position.x*2.8+position.z*1.4+prologueLiquidTime)*.12*prologueLiquid;`);
+    shader.fragmentShader='uniform float prologueLiquid,prologueLiquidTime;\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+      diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.23,.36,.35)+diffuseColor.rgb*.35,prologueLiquid*.62);`)
+      .replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,.16,prologueLiquid);');
+  };
+  const baseKey=key?key():'';material.customProgramCacheKey=()=>baseKey+'|prologue-liquid-v1';
+  material.userData.prologueLiquid=uniforms;material.needsUpdate=true;return uniforms;
+}
+
 /** Temporary presentation borrowing is transactional, including renderer errors. */
 export function withPrologueWorld(world, {camera, stage, actors=[], fog, background, red=0}, draw) {
   const scene=world.scene, previousFog=scene.fog, previousBackground=scene.background;
@@ -30,6 +75,7 @@ export function withPrologueWorld(world, {camera, stage, actors=[], fog, backgro
 }
 
 function canvasTexture(kind) {
+  if(typeof document==='undefined'){const texture=new THREE.DataTexture(new Uint8Array([92,94,77,255]),1,1);texture.needsUpdate=true;return texture;}
   const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = kind === 'wood' ? '#494737' : kind === 'road' ? '#353a3c' : '#444238'; ctx.fillRect(0, 0, 128, 128);
@@ -54,11 +100,12 @@ function fallbackCorn() {
 }
 
 /** Owns its staged set and cast; corn meshes and the WebGLRenderer remain borrowed. */
-export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld = () => null, spawn = {x: 0, z: 0, yaw: 0}, touch = false} = {}) {
-  let scene, location, camera, car, road, field, door, wheel, clarence, stanley, sky, haze, headlight, worldStage, worldFog, worldBackground;
+export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld = () => null, renderEquipment=()=>{}, spawn = {x: 0, z: 0, yaw: 0}, touch = false} = {}) {
+  let scene, location, camera, car, road, field, door, wheel, clarence, stanley, sky, haze, headlight, worldStage, worldFog, worldBackground,room,face,projectorLight,binary,flashlight,hemi,moon;
   let live = false, dead = false, size = '', borrowed = new Set(), ownedTextures = new Set();
+  let liquidUniforms=[];
   const stats = {live:false, frames:0, draws:0, chapter:null, cast:PROLOGUE_CAST_PROVENANCE, corn:'uninitialized', passenger:'Mike', driver:'Clarence', error:null};
-  const viewport = new THREE.Vector4(), scissor = new THREE.Vector4(), savedClear = new THREE.Color(), lookAt = new THREE.Vector3(), cameraWorld = new THREE.Vector3();
+  const viewport = new THREE.Vector4(), scissor = new THREE.Vector4(), savedClear = new THREE.Color(), cameraWorld = new THREE.Vector3();
   const skyNormal = new THREE.Color(0x24313d), skyRed = new THREE.Color(0x501512), fogNormal = new THREE.Color(0x202b2b), fogRed = new THREE.Color(0x631f18);
   function standard(color, extra={}) { return new THREE.MeshStandardMaterial({color,roughness:.85,...extra}); }
   function mesh(parent, geometry, material, x=0,y=0,z=0, ry=0) { const item=new THREE.Mesh(geometry,material); item.position.set(x,y,z);item.rotation.y=ry;parent.add(item);return item; }
@@ -68,7 +115,7 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     const geometries=new Set(), materials=new Set();
     scene?.traverse(item=>{ if(item.isInstancedMesh)item.dispose(); if(item.geometry&&!borrowed.has(item.geometry))geometries.add(item.geometry); for(const mat of Array.isArray(item.material)?item.material:item.material?[item.material]:[])if(!borrowed.has(mat))materials.add(mat); });
     for(const geometry of geometries)geometry.dispose();for(const material of materials)material.dispose();for(const texture of ownedTextures)texture.dispose();
-    scene=location=camera=car=road=field=door=wheel=clarence=stanley=sky=haze=headlight=worldStage=worldFog=worldBackground=null;borrowed=new Set();ownedTextures=new Set();live=false;stats.live=false;size='';
+    scene=location=camera=car=road=field=door=wheel=clarence=stanley=sky=haze=headlight=worldStage=worldFog=worldBackground=room=face=projectorLight=binary=flashlight=hemi=moon=null;borrowed=new Set();ownedTextures=new Set();liquidUniforms=[];live=false;stats.live=false;size='';
   }
   function buildCar() {
     car=group(location);car.name='Cruiser interior, passenger on right';
@@ -108,9 +155,9 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
   function buildLandscape() {
     const groundMap=canvasTexture('earth'), roadMap=canvasTexture('road'),woodMap=canvasTexture('wood');ownedTextures.add(groundMap);ownedTextures.add(roadMap);ownedTextures.add(woodMap);
     const earth=standard(0x77715e,{map:groundMap}),asphalt=standard(0x646a6e,{map:roadMap}),wood=standard(0x8f8b74,{map:woodMap}),post=standard(0x4f5145);
-    const ground=mesh(location,new THREE.PlaneGeometry(130,230),earth,0,-.027,-43);ground.rotation.x=-Math.PI/2;
+    const ground=mesh(location,new THREE.PlaneGeometry(130,230,24,40),earth,0,-.027,-43);ground.rotation.x=-Math.PI/2;
     road=group(location);road.name='Looping roadside';
-    const roadPlane=mesh(road,new THREE.PlaneGeometry(6.7,220),asphalt,0,-.01,-32);roadPlane.rotation.x=-Math.PI/2;
+    const roadPlane=mesh(road,new THREE.PlaneGeometry(6.7,220,6,48),asphalt,0,-.01,-32);roadPlane.rotation.x=-Math.PI/2;
     const lane=standard(0x8e8762),edge=standard(0x8b9290),reflector=new THREE.MeshBasicMaterial({color:0xa5ae96});
     const markers=new THREE.InstancedMesh(new THREE.BoxGeometry(.07,.006,3.2),lane,64),dummy=new THREE.Object3D();
     for(let i=0;i<32;i++)for(let j=0;j<2;j++){dummy.position.set(j?.10:-.10,0,-126+i*7.5);dummy.updateMatrix();markers.setMatrixAt(i*2+j,dummy.matrix);}markers.computeBoundingSphere();road.add(markers);
@@ -126,12 +173,12 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     else {parts=[{geometry:fallbackCorn(),material:standard(0x56623b,{side:THREE.DoubleSide})}];stats.corn='original procedural fallback';}
     const total=touch?420:680,count=Math.ceil(total/parts.length);
     for(let part=0;part<parts.length;part++){
-      const source=parts[part],plants=new THREE.InstancedMesh(source.geometry,source.material,count);plants.name='Borrowed corn, own instance buffer';
+      const source=parts[part],material=sources?.length?(Array.isArray(source.material)?source.material.map(m=>m.clone()):source.material.clone()):source.material,plants=new THREE.InstancedMesh(source.geometry,material,count);plants.name='Borrowed corn, own instance buffer';
       for(let i=0;i<count;i++){
         const n=i*parts.length+part,side=n%2?1:-1,row=Math.floor(n/2),z=-5-(row%54)*1.08,x=side*(1.55+Math.floor(row/54)*.95+(Math.sin(n*42.4)*.5+.5)*.35);
         dummy.position.set(x,-.05,z);dummy.rotation.set(0,Math.sin(n*31.7)*Math.PI,Math.sin(n*7.3)*.018);dummy.scale.setScalar(.90+Math.sin(n*8.1)*.11);dummy.updateMatrix();plants.setMatrixAt(i,dummy.matrix);
       }plants.computeBoundingSphere();field.add(plants);
-      const roadsideCount=Math.ceil((touch?180:300)/parts.length),roadside=new THREE.InstancedMesh(source.geometry,source.material,roadsideCount);
+      const roadsideCount=Math.ceil((touch?180:300)/parts.length),roadside=new THREE.InstancedMesh(source.geometry,material,roadsideCount);
       for(let i=0;i<roadsideCount;i++){
         const n=i*parts.length+part,side=n%2?1:-1,row=Math.floor(n/2);
         dummy.position.set(side*(5.4+Math.floor(row/75)*1.1),-.05,-105+(row%75)*1.5);dummy.rotation.set(0,Math.sin(n*7.31)*Math.PI,0);dummy.scale.setScalar(.9+Math.sin(n*4.17)*.1);dummy.updateMatrix();roadside.setMatrixAt(i,dummy.matrix);
@@ -149,6 +196,66 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     const trees=new THREE.InstancedMesh(new THREE.ConeGeometry(1,1,7),standard(0x172323),36);
     for(let i=0;i<36;i++){const angle=i/36*Math.PI*2;dummy.position.set(Math.sin(angle)*54,3.3,-25+Math.cos(angle)*70);dummy.rotation.set(0,i,0);dummy.scale.set(4+Math.sin(i*3.1),6+Math.sin(i*2.7)*2,4);dummy.updateMatrix();trees.setMatrixAt(i,dummy.matrix);}trees.computeBoundingSphere();location.add(trees);
   }
+  function buildVisions(){
+    room=new THREE.Group();room.name='Ten second red room';room.position.copy(location.position);room.quaternion.copy(location.quaternion);scene.add(room);room.visible=false;
+    box(room,standard(0x810c10,{side:THREE.BackSide,emissive:0x300103,emissiveIntensity:.42}),6.4,3.3,9.6,0,1.65,0);
+    const roomLight=new THREE.PointLight(0xff2130,4.2,14,1.5);roomLight.position.set(0,2.9,0);room.add(roomLight);
+    const projector=group(room,0,.48,1.7);projector.name='Single film projector';
+    const housing=standard(0x242527,{roughness:.57,metalness:.30});
+    box(projector,housing,.47,.22,.37);box(projector,housing,.34,.07,.29,0,-.14,0);
+    mesh(projector,new THREE.CylinderGeometry(.06,.065,.11,12),housing,0,0,-.22,0).rotation.x=Math.PI/2;
+    mesh(projector,new THREE.CircleGeometry(.049,12),new THREE.MeshBasicMaterial({color:0xffdac7}),0,0,-.28,Math.PI);
+    projectorLight=new THREE.SpotLight(0xffb9a8,6,10,.27,.26,1);projectorLight.position.set(0,.5,1.4);projectorLight.target.position.set(0,1.7,-4.8);room.add(projectorLight,projectorLight.target);
+    face=mesh(room,new THREE.PlaneGeometry(2.45,2.70),new THREE.ShaderMaterial({transparent:true,depthWrite:false,toneMapped:false,
+      uniforms:{clock:{value:0},motion:{value:1}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+      fragmentShader:`varying vec2 vUv;uniform float clock,motion;
+        float ellipse(vec2 p,vec2 r){return length(p/r);}
+        void main(){
+          vec2 p=(vUv-.5)*2.;p.x+=sin(p.y*7.+clock*1.7)*.016*motion;
+          float head=1.-smoothstep(.91,1.,ellipse(p-vec2(0.,.03),vec2(.72,.96)));
+          float left=1.-smoothstep(.7,1.,ellipse(p-vec2(-.27,.25),vec2(.18,.10)));
+          float right=1.-smoothstep(.7,1.,ellipse(p-vec2(.27,.28),vec2(.18,.10)));
+          float mouth=1.-smoothstep(.84,1.,ellipse(p-vec2(.01,-.36),vec2(.23,.30+.045*sin(clock*3.)*motion)));
+          float brow=exp(-pow((abs(p.x)-.26)/.19,4.))*exp(-pow((p.y-.43-abs(p.x)*.16)/.027,2.));
+          float tear=exp(-pow((abs(p.x)-.26)/.023,2.))*smoothstep(-.25,.05,p.y)*(1.-smoothstep(.13,.23,p.y));
+          float edge=pow(max(0.,1.-ellipse(p,vec2(.75,1.))),.3);
+          float shade=clamp(.38+edge*.53-max(left,right)*.81-mouth*.95-brow*.48-tear*.44,0.,1.);
+          float lines=.91+.09*sin(vUv.y*420.);vec3 color=mix(vec3(.20,.013,.028),vec3(1.,.66,.57),shade)*lines;
+          gl_FragColor=vec4(color,head*.95);
+        }`}),0,1.76,-4.765);
+    face.name='Original anonymous distressed face projection';
+    // A tiny original 0/1 atlas, shared by two capped instance draws.
+    const width=32,height=24,data=new Uint8Array(width*height*4);
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+      const digit=x<16?0:1,px=x%16,py=y,i=(y*width+x)*4;
+      const zero=px>=3&&px<=12&&py>=3&&py<=20&&(px<=5||px>=10||py<=5||py>=18);
+      const one=py>=3&&py<=20&&(px>=7&&px<=9||py>=18&&px>=4&&px<=12||py>=4&&py<=6&&px>=5&&px<=8);
+      data[i]=255;data[i+1]=157;data[i+2]=143;data[i+3]=(digit?one:zero)?255:0;
+    }
+    const atlas=new THREE.DataTexture(data,width,height);atlas.magFilter=THREE.NearestFilter;atlas.needsUpdate=true;ownedTextures.add(atlas);
+    binary=new THREE.Group();binary.name='Two escorts dissolving into zeros and ones';location.add(binary);binary.visible=false;
+    const count=touch?24:48;
+    for(let digit=0;digit<2;digit++){
+      const geometry=new THREE.PlaneGeometry(.15,.23),uv=geometry.attributes.uv;
+      for(let i=0;i<uv.count;i++)uv.setX(i,(uv.getX(i)+digit)/2);
+      const mesh=new THREE.InstancedMesh(geometry,new THREE.MeshBasicMaterial({map:atlas,transparent:true,alphaTest:.15,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}),count);
+      mesh.name=digit?'Binary ones':'Binary zeros';mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.count=0;binary.add(mesh);
+    }
+  }
+  function updateBinary(vision,time,reduced){
+    binary.visible=vision.binary;stats.binaryFragments=0;if(!vision.binary)return;
+    const dummy=new THREE.Object3D(),progress=vision.dissolve;
+    for(const [digit,batch]of binary.children.entries()){
+      const count=batch.instanceMatrix.count;batch.count=count;
+      for(let i=0;i<count;i++){
+        const actor=i%2?stanley:clarence,n=Math.floor(i/2),seed=n*12.713+digit*8.137;
+        const drift=(reduced?.10:.28)*progress;
+        dummy.position.set(actor.root.position.x+Math.sin(seed)*(.23+drift),actor.root.position.y+.12+(n%12)/12*1.6+progress*.12,actor.root.position.z+Math.cos(seed)*(.13+drift));
+        dummy.rotation.set(0,camera.rotation.y+(reduced?0:Math.sin(seed+time)*.13),0);dummy.scale.setScalar(.8+(Math.sin(seed)*.5+.5)*.45);dummy.updateMatrix();batch.setMatrixAt(i,dummy.matrix);
+      }
+      batch.material.opacity=1-smooth((vision.time-8.5)/.5);batch.instanceMatrix.needsUpdate=true;batch.computeBoundingSphere();stats.binaryFragments+=count;
+    }
+  }
   function start() {
     if(dead)return;disposeSet();scene=new THREE.Scene();scene.background=skyNormal.clone();scene.fog=new THREE.FogExp2(fogNormal.clone(),.019);
     location=new THREE.Group();const yaw=Number(spawn.yaw)||0;location.rotation.y=yaw;location.position.set((Number(spawn.x)||0)+48*Math.sin(yaw),0,(Number(spawn.z)||0)+48*Math.cos(yaw));scene.add(location);
@@ -156,50 +263,59 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     worldStage=new THREE.Group();worldStage.name='Temporary prologue cast and lighting';worldStage.position.copy(location.position);worldStage.quaternion.copy(location.quaternion);worldStage.visible=false;scene.add(worldStage);
     const castFill=new THREE.HemisphereLight(0xb8c4cd,0x302922,.45);worldStage.add(castFill);
     worldFog=new THREE.FogExp2(fogNormal.clone(),.075);worldBackground=new THREE.Color();
-    const hemi=new THREE.HemisphereLight(0xa9b8c4,0x303021,1.65);scene.add(hemi);
-    const moon=new THREE.DirectionalLight(0xb3c9db,1.6);moon.position.set(-5,9,3);scene.add(moon);
-    sky=new THREE.Mesh(new THREE.SphereGeometry(155,24,12),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{red:{value:0}},vertexShader:'varying vec3 vWorld; void main(){vWorld=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 vWorld; uniform float red; void main(){float h=smoothstep(-.1,.6,normalize(vWorld).y);vec3 dusk=mix(vec3(.16,.20,.21),vec3(.021,.035,.064),h);vec3 blood=mix(vec3(.29,.048,.024),vec3(.080,.008,.009),h);gl_FragColor=vec4(mix(dusk,blood,red),1.);}' }));location.add(sky);
+    hemi=new THREE.HemisphereLight(0xa9b8c4,0x303021,1.65);scene.add(hemi);
+    moon=new THREE.DirectionalLight(0xb3c9db,1.6);moon.position.set(-5,9,3);scene.add(moon);
+    sky=new THREE.Mesh(new THREE.SphereGeometry(155,24,12),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{red:{value:0},liquid:{value:0},clock:{value:0}},vertexShader:'varying vec3 vWorld; void main(){vWorld=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 vWorld; uniform float red,liquid,clock; void main(){vec3 n=normalize(vWorld);float h=smoothstep(-.1,.6,n.y+liquid*sin(n.x*18.+n.z*11.+clock*.7)*.10);vec3 dusk=mix(vec3(.16,.20,.21),vec3(.021,.035,.064),h);vec3 blood=mix(vec3(.29,.048,.024),vec3(.080,.008,.009),h);vec3 color=mix(dusk,blood,red);color=mix(color,vec3(.17,.29,.28)+color*.3,liquid*.5);gl_FragColor=vec4(color,1.);}' }));location.add(sky);
     buildLandscape();buildCar();clarence=createPrologueActor({name:'Clarence',police:true});stanley=createPrologueActor({name:'Stanley Yates',police:false});location.add(clarence.root,stanley.root);
+    const treated=new Set();location.traverse(item=>{for(const mat of Array.isArray(item.material)?item.material:item.material?[item.material]:[])if(mat.isMeshStandardMaterial&&!treated.has(mat)){treated.add(mat);liquidUniforms.push(attachPrologueLiquid(mat));}});
+    buildVisions();
+    flashlight=new THREE.SpotLight(0xffe9cc,0,25,.48,.60,1.2);flashlight.position.set(.12,-.13,-.15);flashlight.target.position.set(.08,-.08,-8);camera.add(flashlight,flashlight.target);
     // A low-frequency camera-space veil guarantees the vanishing is concealed.
     haze=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,uniforms:{amount:{value:0},red:{value:0},clock:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,.0,1.);}',fragmentShader:'varying vec2 vUv;uniform float amount,red,clock;void main(){float cloud=.88+.12*sin(vUv.x*9.+sin(vUv.y*8.+clock*.09))*sin(vUv.y*7.-clock*.06);vec3 c=mix(vec3(.19,.24,.23),vec3(.32,.075,.050),red);gl_FragColor=vec4(c,clamp(amount*cloud,0.,1.));}'}));haze.frustumCulled=false;haze.renderOrder=1000;scene.add(haze);
     live=true;stats.live=true;stats.error=null;
   }
   function render(frame = {}) {
     if(dead)return;if(!live)start();
-    const world=getWorld(),locomotion=samplePrologueMotion(frame,{worldAvailable:!!world?.scene?.isScene}),b=locomotion.blocking,transition=locomotion;
+    const world=getWorld(),locomotion=frame.motion||samplePrologueMotion(frame,{worldAvailable:!!world?.scene?.isScene}),b=locomotion.blocking,transition=locomotion,vision=prologueVisionState(frame);
     const time=locomotion.time,p=b.progress,reduced=!!frame.reduced,chapter=b.chapter;
     const width=Math.max(1,renderer.domElement.clientWidth||renderer.domElement.width),height=Math.max(1,renderer.domElement.clientHeight||renderer.domElement.height),key=`${width}:${height}`,fov=transition.world?(world.camera?.fov??70):65;
     if(size!==key||camera.fov!==fov){camera.aspect=width/height;camera.fov=fov;camera.updateProjectionMatrix();size=key;}
-    camera.position.fromArray(b.camera);
-    const motion=reduced?0:1,mike=locomotion.actors.mike;
-    if(mike.moving){const fade=Math.sin(b.travel*Math.PI);camera.position.y+=Math.sin(mike.phase*2)*.010*motion*fade;camera.position.x+=Math.sin(mike.phase)*.014*motion*fade;}
-    lookAt.fromArray(b.look);location.localToWorld(lookAt);camera.lookAt(lookAt);
+    const cameraParent=vision.room?room:location;if(camera.parent!==cameraParent)cameraParent.add(camera);
+    applyPrologueCamera(camera,locomotion,frame.player);
+    const motion=reduced?0:1;
+    location.visible=!vision.room;room.visible=vision.room;
+    face.material.uniforms.clock.value=vision.time;face.material.uniforms.motion.value=reduced?.22:1;
+    hemi.intensity=vision.room?0:1.65+vision.lightning*1.8;moon.intensity=vision.room?0:1.6+vision.lightning*4;
+    flashlight.intensity=frame.player?.flashlightOn?18:0;
+    for(const uniforms of liquidUniforms){uniforms.amount.value=vision.liquid;uniforms.time.value=time;}
     const pull=chapter==='car'?0:chapter==='dispatch'?smooth((p-.50)*2):1;
     const moving=chapter==='car'||chapter==='dispatch';
-    const driveDistance=chapter==='car'?time*3:chapter==='dispatch'?180+Math.min(11.5,Number(frame.chapterTime)||0)*3+11.5*3*(clamp((p-.5)*2)-Math.pow(clamp((p-.5)*2),3)+.5*Math.pow(clamp((p-.5)*2),4)):231.75;
-    road.position.x=-pull*4.3;road.position.z=driveDistance%15;road.visible=b.travel<.2&&!frame.returning;
-    field.visible=chapter!=='car'&&(chapter!=='dispatch'||p>.8);car.visible=b.travel<.22&&!frame.returning;
-    door.rotation.y=-b.exit*1.05;wheel.rotation.z=Math.sin(time*.65)*.018*motion;headlight.intensity=moving?6:3;
+    const driveDistance=chapter==='car'?time*3:chapter==='dispatch'?102+Math.min(6,Number(frame.chapterTime)||0)*3+18*(clamp((p-.5)*2)-Math.pow(clamp((p-.5)*2),3)+.5*Math.pow(clamp((p-.5)*2),4)):129;
+    road.position.x=-pull*4.3;road.position.z=driveDistance%15;road.visible=!frame.returning;
+    field.visible=chapter!=='car'&&(chapter!=='dispatch'||p>.8);car.visible=!frame.returning;
+    door.rotation.y=-(frame.exitProgress??b.exit)*1.05;wheel.rotation.z=Math.sin(time*.65)*.018*motion;headlight.intensity=moving?6:3;
     const speech=String(frame.speaker||'').toLowerCase(),isClarence=speech.includes('clarence'),isStanley=speech.includes('stanley');
-    clarence.root.visible=b.menVisible;stanley.root.visible=b.menVisible&&chapter!=='car'&&chapter!=='dispatch';
+    const menVisible=vision.escortsVisible&&!vision.room&&(chapter==='rupture'||b.menVisible);
+    clarence.root.visible=menVisible;stanley.root.visible=menVisible&&chapter!=='car'&&chapter!=='dispatch';
     const driver=locomotion.actors.clarence,father=locomotion.actors.stanley,roadside=b.inCar||chapter==='emergence';
-    clarence.root.position.fromArray(driver.position);clarence.root.rotation.y=driver.yaw;
-    stanley.root.position.fromArray(father.position);stanley.root.rotation.y=father.yaw;
-    clarence.pose({time,phase:driver.phase,mode:driver.mode,speaking:isClarence,look:isClarence?(roadside?-.38:-.65):.1,reduced});
-    stanley.pose({time,phase:father.phase,mode:father.mode,speaking:isStanley,distress:roadside?1:chapter==='disappearance'?.7:.32,look:roadside?-.35:isStanley?.60:0,gesture:isStanley?(roadside?.22:.25+.10*Math.sin(time*.8)):0,reduced});
-    const red=clamp(frame.red),mist=clamp(frame.mist),cover=Math.max(mist,transition.cover);scene.background.copy(skyNormal).lerp(skyRed,red);scene.fog.color.copy(fogNormal).lerp(fogRed,red);scene.fog.density=.019+cover*.31;
-    sky.material.uniforms.red.value=red;haze.material.uniforms.red.value=red;haze.material.uniforms.amount.value=Math.max(mist,transition.cover*1.34);haze.material.uniforms.clock.value=reduced?0:time;haze.visible=cover>.001;
-    // The full veil is opaque by the time either person is removed.
-    if(!b.menVisible&&mist>.86)haze.material.uniforms.amount.value=1.34;
+    clarence.root.position.fromArray(driver.position);clarence.root.position.y+=vision.rise;clarence.root.rotation.y=driver.yaw;
+    stanley.root.position.fromArray(father.position);stanley.root.position.y+=vision.rise;stanley.root.rotation.y=father.yaw;
+    const effect={corpse:vision.corpse,dissolve:vision.dissolve};
+    clarence.pose({time,phase:driver.phase,mode:vision.limp?'limp':driver.mode,speaking:isClarence,look:isClarence?(roadside?-.38:-.65):.1,reduced,...effect});
+    stanley.pose({time,phase:father.phase,mode:vision.limp?'limp':father.mode,speaking:isStanley,distress:roadside?1:chapter==='disappearance'?.7:.32,look:roadside?-.35:isStanley?.60:0,gesture:isStanley?(roadside?.22:.25+.10*Math.sin(time*.8)):0,reduced,...effect});
+    updateBinary(vision,time,reduced);
+    const red=chapter==='rupture'?vision.red:clamp(frame.red),mist=chapter==='rupture'?vision.mist:clamp(frame.mist),cover=Math.max(mist,transition.cover||0);scene.background.copy(skyNormal).lerp(skyRed,red);scene.fog.color.copy(fogNormal).lerp(fogRed,red);scene.fog.density=vision.room?.018:.019+cover*.14;
+    sky.material.uniforms.red.value=red;sky.material.uniforms.liquid.value=vision.liquid;sky.material.uniforms.clock.value=time;haze.material.uniforms.red.value=red;haze.material.uniforms.amount.value=Math.max(mist*1.34,(transition.cover||0)*1.34);haze.material.uniforms.clock.value=reduced?0:time;haze.visible=!vision.room&&cover>.001;
     const target=renderer.getRenderTarget(),auto=renderer.autoClear,infoAuto=renderer.info.autoReset,test=renderer.getScissorTest();renderer.getViewport(viewport);renderer.getScissor(scissor);renderer.getClearColor(savedClear);const alpha=renderer.getClearAlpha();
     try {
       renderer.autoClear=true;renderer.info.autoReset=false;renderer.info.reset();renderer.setRenderTarget(null);renderer.setScissorTest(false);
-      if(transition.world){
-        worldFog.color.copy(world.scene.fog?.color||fogNormal).lerp(fogRed,red);worldFog.density=(world.scene.fog?.density??.075)+cover*.31;
+      if(transition.world&&world?.scene&&!vision.room){
+        worldFog.color.copy(world.scene.fog?.color||fogNormal).lerp(fogRed,red);worldFog.density=(world.scene.fog?.density??.075)+cover*.14;
         const background=world.scene.background?.isColor?worldBackground.copy(world.scene.background).lerp(skyRed,red):world.scene.background;
-        withPrologueWorld(world,{camera,stage:worldStage,actors:[clarence.root,stanley.root,haze],fog:worldFog,background,red},(actualScene,cinematicCamera)=>renderer.render(actualScene,cinematicCamera));
+        withPrologueWorld(world,{camera,stage:worldStage,actors:[clarence.root,stanley.root,binary,haze],fog:worldFog,background,red},(actualScene,cinematicCamera)=>renderer.render(actualScene,cinematicCamera));
       }else renderer.render(scene,camera);
-      stats.frames++;stats.draws=renderer.info.render.calls;stats.chapter=chapter;stats.environment=transition.world?'live maze':'staged approach';stats.transitionCover=transition.cover;camera.getWorldPosition(cameraWorld);stats.camera={x:cameraWorld.x,y:cameraWorld.y,z:cameraWorld.z,yaw:Math.atan2(-lookAt.x+cameraWorld.x,-lookAt.z+cameraWorld.z)};stats.menVisible=b.menVisible;
+      renderEquipment(camera,frame);
+      stats.frames++;stats.draws=renderer.info.render.calls;stats.chapter=chapter;stats.environment=vision.room?'red room':transition.world?'live maze':'staged approach';stats.transitionCover=transition.cover||0;camera.getWorldPosition(cameraWorld);stats.camera={x:cameraWorld.x,y:cameraWorld.y,z:cameraWorld.z,yaw:camera.rotation.y,pitch:camera.rotation.x};stats.menVisible=menVisible;stats.vision={...vision};stats.roomContents=vision.room?['projector','original abstract face projection']:[];stats.liquidMaterials=vision.liquid?liquidUniforms.length:0;stats.flashlight=flashlight.intensity>0;
     } catch(error){stats.error=error.message;throw error;}
     finally {renderer.setRenderTarget(target);renderer.setViewport(viewport);renderer.setScissor(scissor);renderer.setScissorTest(test);renderer.setClearColor(savedClear,alpha);renderer.autoClear=auto;renderer.info.autoReset=infoAuto;}
   }

@@ -114,14 +114,34 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
       text('story-skip',openingTouch?'SKIP STORY':'SKIP STORY / J');
       node('opening-pause').hidden=!playing;
       text('opening-pause',openingTouch?'PAUSE':'PAUSE / ESC');
-      const showCaption=playing&&story&&!!frame.spoken;
+      const liquidPhrase=playing&&story&&frame.chapter==='liquid'&&frame.chapterTime>=1&&frame.chapterTime<4;
+      node('liquid-phrase').hidden=!liquidPhrase;
+      const showCaption=playing&&story&&frame.chapter!=='liquid'&&!!frame.spoken;
       node('story-caption').hidden=!showCaption;
       text('story-speaker',showCaption?frame.speaker:'');text('story-subtitle',showCaption?frame.spoken:'');
+      let tutorial='';
+      if(playing&&story){
+        if(frame.waitingForExit)tutorial=openingTouch?'TAP EXIT TO LEAVE THE CRUISER':'PRESS E TO EXIT';
+        else if(frame.chapter==='car'&&!frame.player.looked)tutorial=openingTouch?'DRAG THE RIGHT SIDE TO LOOK AROUND':'MOVE MOUSE TO LOOK AROUND';
+        else if(frame.chapter==='exit')tutorial=openingTouch?'INTERACT: USE / OPEN DOORS':'E: INTERACT / OPEN DOORS';
+        else if(frame.chapter==='flashlight'&&!frame.player.flashlightOn)tutorial=openingTouch?'TAP LIGHT TO TURN ON YOUR FLASHLIGHT':'TURN ON YOUR FLASHLIGHT / F';
+        else if(frame.followHeld||frame.chapter==='walk'&&frame.chapterTime<5)tutorial='FOLLOW STANLEY AND CLARENCE';
+      }
+      text('story-tutorial',tutorial);node('story-tutorial').hidden=!tutorial;
+      node('touch-controls').hidden=active?!(playing&&story&&openingTouch):node('touch-controls').hidden;
+      if(active){
+        node('look-zone').hidden=false;
+        node('move-stick').hidden=!frame.canMove;node('touch-fire').hidden=true;node('touch-stab').hidden=true;node('touch-pause').hidden=true;
+        node('touch-interact').hidden=!frame.waitingForExit;node('touch-light').hidden=!frame.player?.flashlightOn&&!frame.canMove;
+        node('touch-light').setAttribute?.('aria-pressed',String(!!frame.player?.flashlightOn));
+        text('touch-interact','EXIT');
+      }else{node('move-stick').hidden=false;node('touch-pause').hidden=false;}
       const chapterFringe={car:.03,dispatch:.04,emergence:.16,walk:.22,history:.35,disappearance:.45,arrival:.5,rupture:.7};
       const distortion=Number.isFinite(frame.distortion)?frame.distortion:chapterFringe[frame.chapter]||0;
       node('story-caption').style.setProperty('--story-fringe',`${reducedMotion?0:Math.max(0,Math.min(1,distortion))*.8}px`);
       text('credits-replay','REPLAY OPENING');text('replay-intro','REPLAY OPENING');text('title-btn','TITLE');
     },
+    renderEnding(line){node('ending-caption').hidden=!line;text('ending-caption',line);},
     setAlias(value){alias=value;},
     setReducedMotion(value) {
       reducedMotion = value;

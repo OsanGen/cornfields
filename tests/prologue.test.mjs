@@ -1,17 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {PROLOGUE,PROLOGUE_CHAPTERS,PROLOGUE_LINES,createPrologueTimeline,prologueFrame,createPrologue} from '../src/prologue.js';
+import fs from 'node:fs';
+import {PROLOGUE,PROLOGUE_CHAPTERS,PROLOGUE_LINES,PROLOGUE_AUDIO_LINES,PROLOGUE_FOLLOW_LINES,PROLOGUE_END_LINE,createPrologueTimeline} from '../src/prologue-script.js';
+import {PROLOGUE_VOICE_TIMING} from '../src/prologue-voice-timing.js';
 
-test('story has contiguous chapters and readable, complete subtitles for every utterance',()=>{
-  assert.deepEqual(PROLOGUE_CHAPTERS.map(c=>c.id),['car','dispatch','emergence','walk','history','disappearance','arrival','rupture']);
-  assert(PROLOGUE.duration>=240&&PROLOGUE.duration<=360);
-  let end=0;for(const chapter of PROLOGUE_CHAPTERS){assert.equal(chapter.start,end);assert(chapter.end>chapter.start);end=chapter.end;}
-  assert.equal(end,PROLOGUE.duration);
-  const ids=new Set();end=0;
-  for(const line of PROLOGUE_LINES){
-    assert(!ids.has(line.id));ids.add(line.id);assert(line.start>=end);assert(line.end>line.start);end=line.end;
-    const chapter=PROLOGUE_CHAPTERS.find(c=>c.id===line.chapter);assert(line.start>=chapter.start&&line.end<=chapter.end);
-    assert(['mike','clarence','stanley','dispatch'].includes(line.voice));assert.equal(line.speaker,line.voice.toUpperCase());
+const ids=['car','dispatch','emergence','exit','flashlight','walk','undead','history','redroom','return_walk','disappearance','liquid','arrival','rupture'];
+function verifyTimeline(timeline){
+  assert.deepEqual(timeline.chapters.map(c=>c.id),ids);
+  let end=0;for(const chapter of timeline.chapters){assert.equal(chapter.start,end);assert(chapter.end>chapter.start);end=chapter.end;}
+  assert.equal(end,timeline.duration);
+  end=0;
+  for(const line of timeline.lines){
+    assert(line.start>=end);assert(line.end>line.start);end=line.end;
+    const chapter=timeline.chapters.find(c=>c.id===line.chapter);assert(line.start>=chapter.start&&line.end<=chapter.end);
     assert.equal(line.subtitles[0].start,line.start);assert.equal(line.subtitles.at(-1).end,line.end);
     let subtitleEnd=line.start;for(const chunk of line.subtitles){
       assert.equal(chunk.start,subtitleEnd);assert(chunk.end>chunk.start);subtitleEnd=chunk.end;
@@ -19,72 +20,63 @@ test('story has contiguous chapters and readable, complete subtitles for every u
     }
     assert.equal(line.subtitles.map(c=>c.text).join(' ').replace(/\s+/g,' '),line.text);
   }
+}
+
+test('fast opening keeps one contiguous, complete script and independent follow/end cues',()=>{
+  verifyTimeline({chapters:PROLOGUE_CHAPTERS,lines:PROLOGUE_LINES,duration:PROLOGUE.duration});
+  assert.equal(new Set(PROLOGUE_AUDIO_LINES.map(line=>line.id)).size,39);
+  assert(PROLOGUE.duration+20+4<223,'baseline has room for tutorial reactions');
+  assert.deepEqual(PROLOGUE_FOLLOW_LINES.map(line=>line.id),['FOL-01','FOL-02','FOL-03']);
+  assert.equal(PROLOGUE_END_LINE.text,'Where did they go? Am I going crazy?');
+  assert.equal(PROLOGUE_END_LINE.basis,'U');
+  assert(PROLOGUE_LINES.every(line=>!line.id.startsWith('FOL-')&&line.id!=='END-01'));
 });
 
-test('source story facts and exactly one final fragment survive the adaptation',()=>{
-  const text=PROLOGUE_LINES.map(line=>line.text).join(' ');
-  for(const fact of [/mask and the guns and the blitzkrieg/,/2002/,/Sadie Yates/,/gray jacket with holes in it/,/seven hundred acres/,/compass.*lost/,/mind sees north/,/Sadie knew that rule/,/dog was barking wild/,/Were there footsteps\?/,/Not at all/])assert.match(text,fact);
-  assert(PROLOGUE_LINES.find(line=>line.id==='car_mike_2002').adaptation);
-  assert(PROLOGUE_LINES.find(line=>line.id==='walk_stanley_protective').adaptation);
-  assert(PROLOGUE_LINES.find(line=>line.id==='history_stanley_direction').adaptation);
-  assert.doesNotMatch(text,/Cold Case|that thing on TV/);
-  assert.deepEqual(PROLOGUE_LINES.filter(line=>line.chapter==='rupture').map(line=>[line.speaker,line.text]),[['CLARENCE','Mike?']]);
+test('source wording, provenance and unanswered identity survive the fast adaptation',()=>{
+  const line=id=>PROLOGUE_AUDIO_LINES.find(item=>item.id===id),text=PROLOGUE_LINES.map(item=>item.text).join(' ');
+  assert.equal(line('CAR-01').basis,'A');assert.equal(line('CAR-02').basis,'R');assert.equal(line('RAD-01').basis,'N');
+  assert.equal(line('WAL-14').text,'Then I spun around, and she was nowhere to be seen.');
+  assert.equal(line('ARR-01').text,'Officer, my name is Stanley Yates and my daughter Sadie has gone missing.');
+  assert.equal(line('LIQ-01').text,'WE ARE ONE');assert.equal(line('LIQ-01').speaker,'');
+  assert.equal(line('RED-01').speaker,'PROJECTED FACE');
+  for(const fact of [/2002/,/Sadie Yates/,/gray jacket with holes in it/,/seven hundred acres/,/compass.*lost/,/mind sees north/,/Sadie knew that rule/,/dog was barking wild/,/Were there footsteps\?/,/She just vanished/])assert.match(text,fact);
+  assert.doesNotMatch(text,/Cold Case|that thing on TV|blitzkrieg|Glenda/);
+  assert(PROLOGUE_AUDIO_LINES.every(item=>['R','A','N','U'].includes(item.basis)));
+  assert.equal(PROLOGUE_LINES.filter(item=>item.chapter==='rupture').length,0);
 });
 
-test('real voice durations extend later dialogue, chapter boundaries and effects without overlap',()=>{
-  const source=JSON.stringify(PROLOGUE_LINES),first=PROLOGUE_LINES[0],longDuration=first.end-first.start+15;
-  const timeline=createPrologueTimeline({durations:{[first.id]:longDuration,rupture_clarence_mike:{duration:4}}});
-  const extra=15+PROLOGUE.voiceTail;
-  assert(Math.abs(timeline.lines[0].end-first.end-extra)<1e-9);
-  assert(Math.abs(timeline.chapters[0].end-PROLOGUE_CHAPTERS[0].end-extra)<1e-9);
-  assert(Math.abs(timeline.cues[0][1]-PROLOGUE.cues[0][1]-extra)<1e-9);
-  assert(timeline.duration>PROLOGUE.duration+extra);
-  for(let i=1;i<timeline.lines.length;i++)assert(timeline.lines[i].start>=timeline.lines[i-1].end);
-  for(const line of timeline.lines){
-    const chapter=timeline.chapters.find(c=>c.id===line.chapter);assert(line.start>=chapter.start&&line.end<=chapter.end);
-    assert.equal(line.subtitles.at(-1).end,line.end);
+test('hallucinations hold at the three required completed-sentence boundaries',()=>{
+  const timeline=createPrologueTimeline(),chapter=id=>timeline.chapters.find(c=>c.id===id),line=id=>timeline.lines.find(l=>l.id===id);
+  for(const [id,seconds,preceding,next] of [['undead',2,'WAL-05','WAL-06'],['redroom',10,'WAL-09','RET-01'],['liquid',5,'WAL-16',null]]){
+    const c=chapter(id);assert(Math.abs(c.end-c.start-seconds)<1e-9);assert(c.start>=line(preceding).end);
+    if(next)assert(line(next).start>=c.end);
+    assert(timeline.lines.filter(l=>l.start>=c.start&&l.start<c.end).every(l=>l.chapter===id));
   }
-  assert.equal(JSON.stringify(PROLOGUE_LINES),source);
-  assert(Object.isFrozen(timeline.lines[0].subtitles));
-  assert.equal(createPrologue({durations:{[first.id]:longDuration}}).snapshot().duration,PROLOGUE.duration+extra);
+  assert.equal(chapter('rupture').end-chapter('rupture').start,12);
+  assert(Math.abs(line('RED-01').start-chapter('redroom').start-1)<1e-9);
+  assert(Math.abs(line('RED-02').start-chapter('redroom').start-3)<1e-9);
+  assert(Math.abs(line('RED-03').start-chapter('redroom').start-6)<1e-9);
 });
 
-test('missing, short and invalid recording durations keep the readable baseline',()=>{
-  const first=PROLOGUE_LINES[0];
-  for(const value of [undefined,0,-1,NaN,Infinity,.1])assert.equal(createPrologueTimeline({durations:{[first.id]:value}}).duration,PROLOGUE.duration);
+test('natural recordings drive speech chapters without inherited slot padding or voice acceleration',()=>{
+  const first=PROLOGUE_LINES[0],long=first.end-first.start+15;
+  const expanded=createPrologueTimeline({durations:{[first.id]:long}}),compact=createPrologueTimeline({durations:{[first.id]:2}});
+  verifyTimeline(expanded);verifyTimeline(compact);
+  assert(Math.abs(expanded.lines[0].end-expanded.lines[0].start-long-PROLOGUE.voiceTail)<1e-9);
+  assert(expanded.duration>PROLOGUE.duration);assert(compact.duration<PROLOGUE.duration);
+  assert.equal(expanded.chapters.find(c=>c.id==='redroom').end-expanded.chapters.find(c=>c.id==='redroom').start,10);
+  for(const value of [undefined,0,-1,NaN,Infinity])assert.equal(createPrologueTimeline({durations:{[first.id]:value}}).duration,PROLOGUE.duration);
+  assert.doesNotMatch(fs.readFileSync(new URL('../scripts/build-prologue-voices.py',import.meta.url),'utf8'),/atempo=/);
 });
 
-test('pause freezes time, hides captions and resumes the same utterance without restarting',()=>{
-  const story=createPrologue();story.tick(10);assert.equal(story.snapshot().time,0);assert.equal(story.phase,'preflight');
-  assert(story.begin());assert(!story.begin());story.tick(5);const before=story.frame();assert(before.spoken);
-  assert(story.pause());story.tick(60);assert.equal(story.snapshot().time,5);assert.equal(story.frame().spoken,'');
-  assert(story.resume());assert.equal(story.frame().spoken,before.spoken);assert.equal(story.frame().line.id,before.line.id);
-  for(const dt of [NaN,Infinity,0,-1])story.tick(dt);assert.equal(story.snapshot().time,5);
-});
-
-test('effects fire once near their boundary and late effects never suppress current dialogue',()=>{
-  const effects=[],story=createPrologue({onCue:id=>effects.push(id)});story.begin();story.tick(PROLOGUE.cues[0][1]);
-  assert.deepEqual(effects,['radio']);story.tick(.01);assert.deepEqual(effects,['radio']);
-  story.tick(155-story.snapshot().time);
-  assert.equal(story.frame().line.id,'walk_stanley_man');assert.match(story.frame().spoken,/I saw something/);
-  assert.deepEqual(story.snapshot().dropped,['corn_burst','door_open']);assert.deepEqual(effects,['radio']);
-});
-
-test('completion, skip and replay retain one deterministic timeline and do not fire skipped effects',()=>{
-  const effects=[],story=createPrologue({onCue:id=>effects.push(id)});story.begin();story.tick(PROLOGUE.duration+1);
-  assert.equal(story.phase,'finished');assert.equal(story.snapshot().time,PROLOGUE.duration);assert.equal(story.frame().line,null);
-  assert.deepEqual(effects,[]);assert(story.begin());assert.equal(story.snapshot().time,0);assert.deepEqual(story.snapshot().fired,[]);
-  story.tick(3);story.pause();assert(story.skip());assert.equal(story.snapshot().skipped,true);assert.equal(story.phase,'finished');
-  assert(story.begin());assert.equal(story.snapshot().skipped,false);story.finish();assert.equal(story.snapshot().time,PROLOGUE.duration);
-  story.dispose();assert(!story.begin());assert(!story.resume());
-});
-
-test('pure frames retain dialogue and rupture continuity in reduced effects mode',()=>{
-  for(const line of PROLOGUE_LINES){
-    const at=(line.start+line.end)/2,normal=prologueFrame(at),reduced=prologueFrame(at,{reduced:true});
-    assert.equal(normal.spoken,reduced.spoken);assert.equal(normal.line.id,line.id);assert.equal(reduced.line.id,line.id);
-    assert.equal(normal.returning,false);assert.equal(normal.returnTime,0);
+test('all shipped fast cues have natural recordings, complete captions and fit their fixed vision windows',()=>{
+  const timeline=createPrologueTimeline({durations:PROLOGUE_VOICE_TIMING});verifyTimeline(timeline);
+  for(const line of PROLOGUE_AUDIO_LINES){
+    assert(PROLOGUE_VOICE_TIMING[line.id]?.duration>0,line.id);
+    assert(fs.statSync(new URL(`../assets/audio/prologue/${line.id}.mp3`,import.meta.url)).size>100,line.id);
   }
-  assert.equal(prologueFrame(-10).time,0);assert.equal(prologueFrame(NaN).time,0);
-  const end=prologueFrame(PROLOGUE.duration+30);assert.equal(end.chapter,'rupture');assert.equal(end.chapterProgress,1);assert.equal(end.red,1);assert.equal(end.mist,1);assert.equal(end.line,null);
+  for(const id of ['RED-01','RED-02','RED-03','LIQ-01']){
+    const line=timeline.lines.find(l=>l.id===id);assert(PROLOGUE_VOICE_TIMING[id].duration<=line.end-line.start,id);
+  }
+  assert(timeline.duration+20+PROLOGUE_END_LINE.end<240,'normal authored runtime allows four minute target');
 });

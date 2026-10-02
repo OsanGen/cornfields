@@ -125,11 +125,27 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
     legs.push({thigh,knee,sign});
   }
   compact(root);
-  let lastPose='standing';
+  const materials=[skin,shade,cloth,clothEdge,pants,boots,hair,eyeWhite,iris,mouthMat,brass,shirt];
+  const colors=materials.map(m=>m.color.clone()),decay={value:0};
+  for(const mat of materials){
+    mat.onBeforeCompile=shader=>{
+      shader.uniforms.prologueDecay=decay;
+      shader.vertexShader='varying vec3 vPrologueBody;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvPrologueBody=position;');
+      shader.fragmentShader='uniform float prologueDecay; varying vec3 vPrologueBody;\n'+shader.fragmentShader.replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
+        vec3 cell=floor(vPrologueBody*24.);
+        float grain=fract(sin(dot(cell,vec3(17.13,71.7,43.9)))*43758.5453);
+        if(prologueDecay>0.&&grain<prologueDecay)discard;`);
+    };
+    mat.customProgramCacheKey=()=> 'prologue-body-decay-v1';
+  }
+  let lastPose='standing',lastCorpse=false,lastDissolve=0;
   return {
     root,
-    pose({time=0,phase=0,mode='standing',speaking=false,distress=0,look=0,gesture=0,reduced=false}={}) {
+    pose({time=0,phase=0,mode='standing',speaking=false,distress=0,look=0,gesture=0,reduced=false,corpse=false,dissolve=0}={}) {
       lastPose=mode;
+      lastCorpse=!!corpse;lastDissolve=Math.max(0,Math.min(1,dissolve));decay.value=lastDissolve;
+      materials.forEach((mat,i)=>mat.color.copy(colors[i]));
+      if(corpse){skin.color.setHex(0x849079);shade.color.setHex(0x303d35);eyeWhite.color.setHex(0xb2b8a1);iris.color.setHex(0x191e19);mouthMat.color.setHex(0x201519);}
       const motion=reduced?.35:1,walking=mode==='walk'||mode==='run',running=mode==='run';
       const cycle=Number.isFinite(phase)?phase:0,stride=walking?(running?.50:.24):0;
       hip.position.y=.91+(walking?Math.abs(Math.sin(cycle))*(running?.033:.009):Math.sin(time*(2+distress*2))*.006*(1+distress));
@@ -161,7 +177,13 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
         body.rotation.x=-.09-distress*.055;head.rotation.x=-.10;
         for(const arm of arms){arm.shoulder.rotation.x=-.25;arm.elbow.rotation.x=-.46;}
       }
+      if(corpse){head.rotation.x=.20;head.rotation.z=police?.09:-.12;jaw.scale.y=3.8;body.rotation.x=.05;}
+      if(mode==='limp'){
+        hip.position.y=.91;body.rotation.set(.12,0,police?.06:-.05);head.rotation.set(.72,0,police?.16:-.18);jaw.scale.y=1.5;
+        for(const {shoulder,elbow,hand,sign}of arms){shoulder.rotation.set(.03,0,sign*.09);elbow.rotation.set(-.04,0,0);hand.rotation.set(.50,0,sign*.15);}
+        for(const {thigh,knee,sign}of legs){thigh.rotation.set(sign*.055,0,sign*.015);knee.rotation.set(.13,0,0);}
+      }
     },
-    diagnostics:()=>({name,kind:police?'uniformed police officer':'civilian father',pose:lastPose,provenance:PROLOGUE_CAST_PROVENANCE}),
+    diagnostics:()=>({name,kind:police?'uniformed police officer':'civilian father',pose:lastPose,corpse:lastCorpse,dissolve:lastDissolve,provenance:PROLOGUE_CAST_PROVENANCE}),
   };
 }

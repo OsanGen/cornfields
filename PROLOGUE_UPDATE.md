@@ -1,70 +1,73 @@
-# Cinematic prologue playtest
+# Fast interactive prologue playtest
 
-Local implementation of `CORNFIELDS_CINEMATIC_PROLOGUE_PLAYTEST.md`. This document
-does not establish a public release. The implementation remains on the existing
-Three.js/browser and phone architecture.
+Local implementation of `CORNFIELDS_FAST_INTERACTIVE_PROLOGUE_REFINEMENT.md`.
+This document is not a public release receipt. The existing Three.js browser and
+phone architecture, hunt, corridor progression and HIDE HERE transitions remain.
 
-## Experience
+## Experience and controls
 
-Mike Hartmouth is the first-person passenger and Clarence drives. A rural cruiser
-ride leads to a dispatch call, Stanley at the roadside, a guided walk, the real
-maze threshold, the unlocatable crash and red mist. The men disappear under cover.
-The existing OPENGAMES/Jacob Nangle/Oscar Sanchez/CORNFIELDS titles follow, then a
-four-second empty return at the same spawn and automatic gameplay. Total: 350
-seconds. Retry bypasses the opening; replay preserves the paused hunt.
+Mike is the passenger; Clarence drives. Mouse/touch look stays free throughout.
+The dispatch report has a visible handheld radio. Clarence exits first; Mike
+leaves only after E or the touch EXIT button. F/LIGHT works, then normal movement
+follows Stanley and Clarence along a compact outdoor route. The gun stays visible
+without firing, ammo loss, enemies, QTE or live-game time during the story.
 
-Jacob Nangle's supplied dialogue is retained closely. Dispatch replaces the
-telephone call; two marked bridge lines make 2002 and the parents' increased
-protectiveness explicit. Mike is responding to Sadie's disappearance, so visible
-objectives and hints name Sadie rather than calling her the player's daughter.
+Distance from the group triggers sentence-boundary dialogue holds and spaced
+follow calls. Returning resumes the next sentence without replaying the account.
+There is no automatic following, forced exit or teleport to meet a time budget.
 
-## Controls and lifecycle
+- After WAL-05: a two-second corpse vision of the escorts, with live controls.
+- After WAL-09: ten seconds in a walkable red room with a projector and an original
+  ambiguous face. Outdoor actors freeze and Mike's exact outdoor pose is restored.
+- After WAL-16: five seconds of liquid scenery, escorts, hands and gun. One large
+  anonymous WE ARE ONE phrase occupies seconds one through four.
+- Two-second final approach, then twelve seconds of crash, red sky, limp bodies,
+  ascent, spatial dissolution and visible binary fragments before mist takes over.
+- The unchanged twenty-second credits, followed immediately by gameplay. Mike's
+  exact final question plays while the controls and hunt are already live.
 
-- Begin Story activates mouse capture/audio in the initial desktop gesture.
-- Escape or Pause stops the opening. Background, orientation and audio
-  interruptions freeze its clock and require Continue.
-- J / Skip Story keeps the titles. K / Skip Opening keeps only the short return.
-- Reduced effects retain every line while removing subtitle fringe and camera sway.
-- Gameplay, enemy AI, weather and the corridor-only three-minute clock remain
-  frozen until the handoff. Held movement/fire/QTE inputs are quarantined.
-- `?prologue=off` restores the previous title-only opening; `?intro=off` bypasses all.
+Escape/Pause, focus loss, portrait rotation and audio interruptions freeze the
+opening until Continue. J/SKIP STORY retains credits; K/SKIP OPENING enters the game
+immediately. Retry bypasses it; replay preserves the existing paused hunt. The
+look tutorial acknowledges actual input. Touch actions match the desktop gates.
 
-## Assets and authoring
+## Lean assets and timing
 
-The cruiser, staged countryside and articulated cast are original procedural
-playtest meshes. They are temporary artwork, not photorealistic human assets or
-motion capture. Corn and the threshold world reuse existing licensed game assets.
+No dependencies, downloads or runtime services were added. Existing licensed
+hands/gun are cloned for isolated story rendering. The cruiser, escorts, room,
+radio, projected face and binary effects are original procedural playtest art.
+These are temporary character presentations, not final photorealistic acting.
 
-All 36 utterances are temporary synthetic Piper performances, prepared offline
-using a CC BY 4.0 LibriTTS-R model and compressed to 925,608 bytes total. No model,
-speech service, external request or microphone is needed to play. Credits link
-to `assets/audio/prologue/LICENSES.md`; `sources.json` records attribution, model
-hash, speaker selection, transformations and per-file checksums.
+Thirty-nine exact handoff cues use local natural-speed synthetic Piper audio.
+Every line retains its R/A/N/U provenance in `src/prologue-script.js`. Attribution,
+model hash, transformations and file hashes are in `assets/audio/prologue/`.
+The older recordings remain in source for rollback but are excluded from the
+runtime asset list. `PROLOGUE_AUDIO_LINES` includes main, follow and final lines.
 
-To change dialogue, edit `src/prologue-script.js`. Export PROLOGUE_LINES to JSON,
-then use `scripts/build-prologue-voices.py` with explicit model/config/script and
-external scratch paths. The script uses the already-installed Piper/ONNX/ffmpeg
-tooling, bounds CPU threads and does not install or download anything. Generated
-durations retime subtitles and extend reserved slots only when necessary.
-Runtime assets are enumerated from the stable line IDs in `scripts/build.mjs`.
+Measured audio-driven authored runtime is 151.89 seconds of story plus twenty
+seconds of credits and four seconds of final caption, about 2:56 total. A test
+driver supplying ordinary movement completed in 175.95 seconds including END-01,
+with no follow interruptions. This is simulation timing, not a measured first-time
+human playthrough. Intentional idle, detours and pauses extend elapsed time.
 
-## Verification and acceptance
+## Verification
 
-`npm run test:prologue` covers story facts, subtitle completeness, timing, the
-combined lifecycle, input/capture, scene restoration and audio ownership/failure.
-`npm run test:prologue:browser` records desktop and touch-emulated scene captures,
-actual Web Audio playback, pause/orientation, both skips, missing voices, replay,
-resource release, immediate handoff and the existing QTE after entry.
+`npm run test:prologue` covers dialogue, timing, actual movement, tutorial input,
+follow spacing, room restoration, pause, skip, replay, final-line lifecycle,
+render ownership, liquid shaders and optional audio failure. The full suite also
+protects gameplay and the recently fixed HIDE HERE entrance collision.
 
-Proof is under `output/prologue-2026-10-01/`. Browser automation establishes the
-rendered flow, not human comprehension or physical iPhone/Android performance.
-The remaining human playtest is whether a first-time viewer understands Mike,
-Clarence, Sadie and Stanley, the field's rules, and the final isolation without
-needing the brief. Natural acting and final character art remain polish work.
+`npm run test:prologue:browser` exercises the packaged desktop and touch-emulated
+flow, real mouse capture/audio decode, screenshots, mobile controls, reduced
+effects, orientation pause, credits, QTE, replay and missing voices.
+
+Current proof belongs in `output/interactive-prologue-2026-10-02/`. Human fear,
+voice acting, first-time comprehension and physical phone performance remain
+playtest judgments and are not established by automated assertions.
 
 ## Rollback
 
-No runtime dependency or save schema changes. Use `?prologue=off` for the old title
-path while diagnosing, or restore the recorded baseline source revision for a
-full rollback. Keep unrelated `.npmrc` and `verification.json` untouched. Publishing
-this local build is a separate action.
+No dependency, saved-data or public API migration. `?intro=off` bypasses all opening
+content; `?prologue=off` retains the old title-only path. The source baseline is
+`4eee5c56b99df2b6aef9ec7f8c578cf027bb525c`. Preserve unrelated `.npmrc` and
+`verification.json`. Publishing requires a separate explicit request.

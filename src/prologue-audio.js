@@ -1,4 +1,4 @@
-import {PROLOGUE_LINES} from './prologue-script.js';
+import {PROLOGUE_AUDIO_LINES,PROLOGUE_LINES} from './prologue-script.js';
 import {samplePrologueMotion,createPrologueContactTracker} from './prologue-motion.js';
 
 /** Small, isolated opening bus. Dialogue follows the presentation clock. */
@@ -9,10 +9,10 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args)}={}
   let played=0,missed=0,request=null;
   function stop(item){if(!item)return;try{item.source.stop();}catch{}for(const node of item.nodes)node.disconnect();}
   function stopVoice(){stop(voice);voice=null;current=null;}
-  function ensureBus(){
+  function ensureBus(gameplay=false){
     if(disposed||!audio.ctx||audio.ctx.state!=='running'||audio.muted)return false;
     if(!bus){bus=audio.ctx.createGain();bus.gain.value=1.65;bus.connect(audio.master);}
-    audio.gameGain?.gain.setValueAtTime(0,audio.ctx.currentTime);
+    if(!gameplay)audio.gameGain?.gain.setValueAtTime(0,audio.ctx.currentTime);
     return true;
   }
   async function pump(){
@@ -37,10 +37,11 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args)}={}
   function preload(frame){
     // At most the current utterance and two successors, never the entire soundtrack.
     const next=frame.line||frame.nextLine;
-    const index=next?PROLOGUE_LINES.findIndex(line=>line.id===next.id):-1;
-    if(index<0)return;
+    if(!next||!PROLOGUE_AUDIO_LINES.some(line=>line.id===next.id))return;
+    const index=PROLOGUE_LINES.findIndex(line=>line.id===next.id);
+    const upcoming=index<0?[next]:PROLOGUE_LINES.slice(index,index+3);
     pending.clear();
-    for(const line of PROLOGUE_LINES.slice(index,index+3))if(!buffers.has(line.id)&&!failed.has(line.id))pending.add(line.id);
+    for(const line of upcoming)if(!buffers.has(line.id)&&!failed.has(line.id))pending.add(line.id);
     void pump();
   }
   function atmosphere(frame){
@@ -55,11 +56,12 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args)}={}
   }
   function sync(frame){
     lastFrame=frame;
-    if(!ensureBus()){stopVoice();contacts.reset();return;}
-    preload(frame);atmosphere(frame);
+    if(!ensureBus(!!frame.gameplay)){pause();return;}
+    preload(frame);
+    if(frame.gameplay){stop(ambience);ambience=null;}else atmosphere(frame);
     // Process contact before the dialogue fast path: speaking must not silence walking.
-    const motion=samplePrologueMotion(frame),listener=motion.listener;
-    for(const contact of contacts.update(motion)){
+    const motion=frame.motion||samplePrologueMotion(frame),listener=motion.listener;
+    for(const contact of frame.gameplay?[]:contacts.update(motion)){
       const dx=contact.position[0]-listener.position[0],dz=contact.position[2]-listener.position[2],distance=Math.hypot(dx,dz);
       const self=contact.actor==='mike',pan=self?0:(dx*Math.cos(listener.yaw)-dz*Math.sin(listener.yaw))/Math.max(3,distance);
       const gain=(self?.34:.29)/(1+distance*.18)*(frame.line?.id?.65:1);
@@ -73,14 +75,14 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args)}={}
     stopVoice();
     if(!line||!buffer||offset>=buffer.duration-.03)return;
     const ctx=audio.ctx,source=ctx.createBufferSource(),level=ctx.createGain(),filter=ctx.createBiquadFilter();
-    source.buffer=buffer;filter.type=line.voice==='dispatch'?'bandpass':'lowpass';filter.frequency.value=line.voice==='dispatch'?1700:9500;filter.Q.value=line.voice==='dispatch'?.65:.7;
-    level.gain.value=line.voice==='dispatch'?1.25:1;
+    source.buffer=buffer;filter.type=line.voice==='dispatch'||line.voice==='face'?'bandpass':'lowpass';filter.frequency.value=line.voice==='dispatch'?1700:line.voice==='face'?2100:line.voice==='unknown'?1100:9500;filter.Q.value=line.voice==='dispatch'?.65:line.voice==='face'?.8:.7;
+    level.gain.value=line.voice==='dispatch'?1.25:line.id==='FLA-03'?.82:line.id.startsWith('FOL-')?1.12:1;
     source.connect(filter).connect(level).connect(bus);
     const item={source,nodes:[source,filter,level],offset,started:ctx.currentTime};voice=item;current=line.id;played++;
     source.onended=()=>{if(voice===item)voice=null;for(const node of item.nodes)node.disconnect();};source.start(0,offset);
   }
   function cue(id){
-    if(!ensureBus()||effects.size>=4)return;
+    if(!ensureBus(!!lastFrame?.gameplay)||effects.size>=4)return;
     const ctx=audio.ctx,t=ctx.currentTime,source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),level=ctx.createGain();
     const crash=id==='crash',duration=crash?3.4:id==='corn_burst'?.85:.28;
     source.buffer=audio.noise;source.loop=crash;filter.type='lowpass';filter.frequency.value=crash?450:id==='radio'?2100:1400;
@@ -95,5 +97,5 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args)}={}
   }
   function pause(){contacts.reset();audio.footsteps?.stop('prologue');stopVoice();stop(ambience);ambience=null;for(const item of effects)stop(item);effects.clear();bus?.disconnect();bus=null;}
   function release(){pause();pending.clear();request?.abort();buffers.clear();lastFrame=null;}
-  return {sync,cue,pause,release,dispose(){disposed=true;release();failed.clear();},diagnostics(){return {voice:current,playing:!!voice,buffers:buffers.size,loading,failed:[...failed],played,missed,footfalls,chapter:lastFrame?.chapter||null,synthetic:true};}};
+  return {sync,cue,pause,release,prepareLine(line){if(!disposed)preload({line});},dispose(){disposed=true;release();failed.clear();},diagnostics(){return {voice:current,playing:!!voice,buffers:buffers.size,loading,failed:[...failed],played,missed,footfalls,chapter:lastFrame?.chapter||null,synthetic:true};}};
 }

@@ -30,7 +30,7 @@ try {
   const introEnabled=INTRO_ENABLED&&parameters.get('intro')!=='off';
   const introView=introEnabled?createIntroVisuals(view.renderer,{getCorn:view.introCorn,touch,enhanced:parameters.get('introfx')!=='off'}):null;
   const prologueEnabled=introEnabled&&parameters.get('prologue')!=='off';
-  const prologueView=prologueEnabled?createPrologueVisuals(view.renderer,{getCorn:view.introCorn,getWorld:()=>({scene:view.scene,camera:view.camera}),spawn:{...maze.spawn,yaw:Math.PI},touch}):null;
+  const prologueView=prologueEnabled?createPrologueVisuals(view.renderer,{getCorn:view.introCorn,getWorld:()=>({scene:view.scene,camera:view.camera}),renderEquipment:view.renderPrologueEquipment,spawn:{...maze.spawn,yaw:Math.PI},touch}):null;
   const prologueAudio=prologueEnabled?createPrologueAudio(audio):null;
 
   const app = createGameApp({
