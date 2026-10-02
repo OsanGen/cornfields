@@ -65,7 +65,7 @@ test('real controls walk through a side opening and return without a timer reset
   assert.equal(g.cornDoors[d.index].amount,1);
   updateGame(g,.8,{forward:1});assert.equal(g.player.zone,'field');const time=g.corridorRun.elapsed;
   updateGame(g,.25,{});assert.equal(g.corridorRun.elapsed,time);
-  updateGame(g,1,{forward:1,yaw:0});assert.equal(g.player.zone,'corridor');assert.ok(g.corridorRun.elapsed>=time);
+  g.player.yaw=0;updateGame(g,1,{forward:1});assert.equal(g.player.zone,'corridor');assert.ok(g.corridorRun.elapsed>=time);
 });
 test('independent runs and pause do not mutate another corridor layout or advance clocks',()=>{
   const a=setup(),b=setup();a.maze.cornWorld.walk[100]=1;assert.equal(b.maze.cornWorld.walk[100],0);

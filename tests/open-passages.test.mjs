@@ -26,7 +26,7 @@ test('walk-through entrances keep the matching return and pause corridor progres
   Object.assign(g.player,{x:d.x,z:d.z+1.3,yaw:0});updateGame(g,.8,{forward:1});
   assert.equal(g.player.zone,'field');assert.equal(g.fieldTrip.doorId,d.id);const time=g.corridorRun.elapsed;
   assert.equal(interactionPrompt(g),'');updateGame(g,.5,{});assert.equal(g.corridorRun.elapsed,time);
-  updateGame(g,1,{forward:1,yaw:0});assert.equal(g.player.zone,'corridor');assert(Math.abs(g.player.x-d.x)<.01);
+  g.player.yaw=0;updateGame(g,1,{forward:1});assert.equal(g.player.zone,'corridor');assert(Math.abs(g.player.x-d.x)<.01);
   const serial=g.fieldTrip.serial;updateGame(g,.5,{});assert.equal(g.fieldTrip.serial,serial);assert.equal(g.player.zone,'corridor');
  }
 });

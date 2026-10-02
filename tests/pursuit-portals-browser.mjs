@@ -5,7 +5,7 @@ import {chromium} from '../scripts/browser-runtime.mjs';
 import {startPreview} from '../scripts/preview-dist.mjs';
 import {captureGame} from './helpers/capture.mjs';
 
-const output='output/pursuit-portals-2026-10-01/browser';await mkdir(output,{recursive:true});
+const output=process.env.CORNFIELD_TEST_OUTPUT||'output/pursuit-portals-2026-10-01/browser';await mkdir(output,{recursive:true});
 const preview=await startPreview({port:0,basePath:'/cornfields/',seconds:180});
 const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const report={status:'running',errors:[],devices:[],performance:[],method:'Actual start, movement, sprint and pause inputs; fixture positioning for entrance/chase. Desktop and touch emulation. GPU submission timing is not physical-phone FPS.'};
@@ -35,6 +35,18 @@ try{
   await step(.5);assert.equal((await state()).corridorRun.elapsed,time);assert.equal((await state()).player.sprinting,false);
   assert.equal((await state()).interactionPrompt,'');await step(.017,{yaw:0});await captureGame(page,{path:`${output}/${name}-field-return.png`});
   await move(.8);assert.equal((await state()).zone,'corridor');assert.equal((await state()).fieldTrip.doorId,trip.doorId);await step(.4);assert.equal((await state()).zone,'corridor');
+  for(const offset of [-.515,.515]){
+   await page.evaluate(()=>window.__test.fixture('gate'));
+   await step(Math.abs(offset)/3.8,{strafe:Math.sign(offset)});
+   await move(.55,{sprint:false});assert.equal((await state()).zone,'field');
+   assert.equal((await diagnostics()).visuals.corridors.activeZone,'field');
+   const edgeTrip=(await state()).fieldTrip,edgeTime=(await state()).corridorRun.elapsed;
+   await step(.35,{yaw:0});assert.equal((await state()).corridorRun.elapsed,edgeTime);
+   await captureGame(page,{path:`${output}/${name}-edge-${offset<0?'left':'right'}.png`});
+   await move(.8,{sprint:false});assert.equal((await state()).zone,'corridor');
+   assert.equal((await state()).fieldTrip.doorId,edgeTrip.doorId);
+   assert.equal((await state()).fieldTrip.serial,edgeTrip.serial);await step(.35);
+  }
   await page.evaluate(()=>window.__test.fixture('gate'));await step(.55,{forward:-1});
   if(touch)await page.locator('#touch-pause').tap();else await page.keyboard.press('Escape');
   await page.selectOption('#graphics-quality','low');await page.locator('#motion').check();await page.locator('#resume-btn')[touch?'tap':'click']();await step(.02);const reduced=(await diagnostics()).visuals.corridors.portals;
@@ -43,7 +55,7 @@ try{
   await page.evaluate(()=>window.__test.fixture('corridor'));await step(.017,{yaw:0});const first=await state(),e=first.enemies[0],gap=Math.hypot(e.x-first.player.x,e.z-first.player.z);
   await step(1.2);const later=await state(),enemy=later.enemies[0];assert.equal(enemy.state,'chase');assert(Math.hypot(enemy.x-later.player.x,enemy.z-later.player.z)<gap-3);
   await captureGame(page,{path:`${output}/${name}-pursuer.png`});
-  report.devices.push({name,walkThrough:true,sprint:true,matchingReturn:trip.doorId,timerPaused:true,reducedEffects:true,chaseCloses:true,portalDrawCap:d.visuals.corridors.portals.maxVisible*4});await page.close();
+  report.devices.push({name,walkThrough:true,sprint:true,edgeEntries:[-.515,.515],edgeReturns:true,matchingReturn:trip.doorId,timerPaused:true,reducedEffects:true,chaseCloses:true,portalDrawCap:d.visuals.corridors.portals.maxVisible*4});await page.close();
  }
  const baselinePath=process.env.CORNFIELD_BASELINE_DIST;
  if(baselinePath){const baseline=await startPreview({root:path.resolve(baselinePath),port:0,basePath:'/cornfields/',seconds:120});

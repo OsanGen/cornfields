@@ -2,6 +2,7 @@ import {GAME_CONFIG as C,distance,emitEvent,addEvidence} from './game-config.js'
 import {createEnemy,updateZombie} from './zombie-ai.js';
 import {cornPath,openDoor,cornOccupy} from './corn-world.js';
 import {recycleCorridor,prepareCorridorExit} from './corridor-layout.js';
+import {fieldPortalCrossing} from './field-portal.js';
 
 export const activeEnemies=g=>g.enemies?g.enemies.filter(e=>e.active&&e.zone===g.player.zone):[g.enemy];
 export function withEnemy(g,e,fn){const previous=g.enemy;g.enemy=e;try{return fn();}finally{g.enemy=previous;}}
@@ -22,10 +23,10 @@ function fieldMaze(g,door){
   return {...base,zone:'field',cornDoors:doors,hideAnchors:[doors[door.index]],landingZones:[],
     cornWorld:{...w,openField:true,activeDoor:door.index,doors},checkpoints:[],landmarks:[]};
 }
-export function enterOpenField(g,door){
+export function enterOpenField(g,door,entry=g.player){
   if(!g.corridorRun||g.fieldTrip.active||g.interaction||!door.fieldEntrance||(!door.permanentOpen&&g.cornDoors[door.index].amount<.96))return false;
   const p=g.player,trip=g.fieldTrip;
-  const destination={x:-(p.x-door.x),z:Math.max(.85,-(p.z-door.z))};
+  const destination={x:-(entry.x-door.x),z:Math.max(.85,-(entry.z-door.z))};
   if(g.enemies.some(e=>e.active&&e.zone==='field'&&distance(e,destination)<e.radius+p.radius+.1))return false;
   Object.assign(trip,{active:true,doorId:door.id,returnDoor:door,serial:trip.serial+1,crossingUntil:g.elapsed+.3});
   const primary=g.enemies[0];
@@ -39,10 +40,11 @@ export function enterOpenField(g,door){
   emitEvent(g,'hide','Stay still to hide. Sadie Yates is back in the corridors.',p);
   return true;
 }
-export function leaveOpenField(g){
+export function leaveOpenField(g,entry=g.player){
   if(!g.fieldTrip.active||g.interaction)return false;
   const p=g.player,door=g.fieldTrip.returnDoor;
-  const destination={x:door.x-p.x,z:door.z+.9};
+  const destination={x:door.x-entry.x,z:door.z+.9};
+  if(!cornOccupy(g.corridorMaze.cornWorld,destination.x,destination.z,p.radius,g.blocks))return false;
   if(g.enemies.some(e=>e.active&&e.zone==='corridor'&&distance(e,destination)<e.radius+p.radius+.1))return false;
   g.maze=g.corridorMaze;g.fieldTrip.active=false;g.fieldTrip.crossingUntil=g.elapsed+.3;
   Object.assign(p,destination,{yaw:p.yaw-Math.PI,zone:'corridor',hidden:false,cornZoneId:null,stillSince:g.elapsed});
@@ -59,13 +61,15 @@ export function corridorMovement(g,before,moved){
   if(!g.corridorRun)return moved;
   const p=g.player;
   if(p.zone==='corridor'){
-    for(const d of g.maze.cornDoors.filter(d=>d.fieldEntrance))if(before.z>=d.z-.65&&p.z<d.z-.65&&Math.abs(p.x-d.x)<d.width/2-p.radius){
-      if(g.elapsed<g.fieldTrip.crossingUntil||!enterOpenField(g,d)){Object.assign(p,before);return 0;}
+    for(const d of g.maze.cornDoors.filter(d=>d.fieldEntrance)){
+      const crossing=fieldPortalCrossing(d,before,p,p.radius);if(!crossing)continue;
+      if(g.elapsed<g.fieldTrip.crossingUntil||!enterOpenField(g,d,crossing)){Object.assign(p,before);return 0;}
       break;
     }
     if(g.corridorRun.started)g.corridorRun.distance+=moved;
-  }else if(before.z>=-.65&&p.z<-.65&&Math.abs(p.x)<g.fieldTrip.returnDoor.width/2-p.radius){
-    if(g.elapsed<g.fieldTrip.crossingUntil||!leaveOpenField(g)){Object.assign(p,before);return 0;}
+  }else{
+    const crossing=fieldPortalCrossing({...g.fieldTrip.returnDoor,x:0,z:0},before,p,p.radius);
+    if(crossing&&(g.elapsed<g.fieldTrip.crossingUntil||!leaveOpenField(g,crossing))){Object.assign(p,before);return 0;}
   }
   return moved;
 }

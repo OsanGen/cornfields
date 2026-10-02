@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {FIELD_PORTAL} from './field-portal.js';
 
 function mistFallback(){
   const data=new Uint8Array(32*32*4);
@@ -48,13 +49,13 @@ export function createHidePortals(corridorGroup,fieldGroup,maze,{touch=false,loa
   const labelMaterial=new THREE.MeshBasicMaterial({map:neonLabel(),transparent:true,depthWrite:false,toneMapped:false,side:THREE.DoubleSide,fog:true});
   const fallback=mistFallback(),mistMaterials=[0xff36c8,0x20eaf5].map(color=>new THREE.SpriteMaterial({map:fallback,color,transparent:true,opacity:.14,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));
   const portals=doors.map(d=>{
-    const group=new THREE.Group();group.name='Hide entrance '+d.id;group.position.set(d.x,0,d.z+.065);corridorGroup.add(group);
+    const group=new THREE.Group();group.name='Hide entrance '+d.id;group.position.set(d.x,0,d.z+FIELD_PORTAL.planeOffset);corridorGroup.add(group);
     const border=new THREE.Mesh(geometry,material);border.position.y=1.25;group.add(border);
     const label=new THREE.Mesh(labelGeometry,labelMaterial);label.name='HIDE HERE';label.position.set(0,2.83,.025);group.add(label);
     const mist=mistMaterials.map((m,i)=>{const s=new THREE.Sprite(m);s.position.set((i?1:-1)*(width/2+.06),.65+i*.6,.10);s.scale.set(1.1,2,1);group.add(s);return s;});
     return {group,mist,door:d};
   });
-  const back=new THREE.Mesh(geometry,material);back.name='Liquid return border';back.position.set(0,1.25,.065);fieldGroup.add(back);
+  const back=new THREE.Mesh(geometry,material);back.name='Liquid return border';back.position.set(0,1.25,FIELD_PORTAL.planeOffset);fieldGroup.add(back);
   let disposed=false,settled=false,limit=touch?1:2;
   const stats={visible:0,maxVisible:limit,draws:0,texture:loader?'loading':'fallback',reduced:false,time:0};
   const timer=loader?setTimeout(()=>{settled=true;stats.texture='fallback';},8000):null;

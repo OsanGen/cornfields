@@ -1,6 +1,7 @@
 // Fixed sockets, wide authored interiors, and permanent doors. Runtime changes
 // replace only occluded, unoccupied sections; logical entry points never move.
 import {cornSight} from './corn-world.js';
+import {FIELD_PORTAL} from './field-portal.js';
 const SIZE=24, X=12, Z=9, dirs=[[0,-1],[1,0],[0,1],[-1,0]];
 const pair=(a,b)=>a<b?`${a}:${b}`:`${b}:${a}`;
 const pt=(w,x,z)=>({x:x*w.size,z:z*w.size});
@@ -20,7 +21,7 @@ export function paintCorridor(w,s,variant){
   }
   // A permanent recess branches from the north/south spine in every section.
   stroke(w,s,hub,[12,6]);stroke(w,s,[12,6],[16,6]);
-  rect(w,s.x+15,s.z+2,2,3);
+  rect(w,s.x+16-FIELD_PORTAL.widthCells/2,s.z+4-FIELD_PORTAL.depthCells,FIELD_PORTAL.widthCells,FIELD_PORTAL.depthCells+1);
   s.variant=variant;s.anchor=pt(w,s.x+12,s.z+12);
 }
 function gate(w,id,x,z,width,extra={}){
@@ -48,7 +49,7 @@ export function installCorridorLayout(maze){
   }
   rect(w,46,1,4,9);rect(w,46,80,4,18);rect(w,43,94,10,7);
   const entrance=gate(w,'main-entrance',48,5,w.size*4-.06);
-  for(const s of sections)gate(w,`field-door-${s.slot}`,s.x+16,s.z+4,w.size*2-.06,{fieldEntrance:true,permanentOpen:true,slot:s.slot,crossDirection:-1});
+  for(const s of sections)gate(w,`field-door-${s.slot}`,s.x+16,s.z+4,w.size*FIELD_PORTAL.widthCells-.06,{fieldEntrance:true,permanentOpen:true,slot:s.slot,crossDirection:-1,clearWidth:w.size*FIELD_PORTAL.widthCells,captureDepth:w.size*FIELD_PORTAL.depthCells});
   const exit=gate(w,'daughter-approach',48,84,w.size*4-.06,{finalExit:true});
   maze.cornWorld=w;maze.cornDoors=w.doors;maze.cornRegions=new Map();maze.hideAnchors=w.doors.filter(d=>d.fieldEntrance);maze.landingZones=[];
   maze.spawn=pt(w,48,2);maze.door={x:16,z:1};maze.daughter=pt(w,48,97);maze.center={...maze.daughter};maze.gate={x:16,z:28};

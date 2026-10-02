@@ -118,7 +118,10 @@ active gun stagger or the escape recovery timer. A shot outside recovery buys th
 original 3 / 2.5 / 2 seconds, depending on checkpoint progress.
 
 Fixed open passages return the player from the open cornfield to the same corridor
-entrance. Going deeper triggers warnings and up to three additional field zombies.
+entrance. Their transition covers the full walkable opening at the glowing frame,
+including diagonal approaches and recovery from inside the doorway recess. A blocked
+destination keeps the player on the current side until a safe crossing is possible.
+Going deeper triggers warnings and up to three additional field zombies.
 Standing still can conceal the player without locking movement or deleting enemy
 memory. Rustling can trigger a nearby rush, while distant input does not reveal
 the player's position. The older dense-gate maze remains only in legacy fixtures.
