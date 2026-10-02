@@ -199,3 +199,4 @@
   .touch.story-player.intro-preflight #menu .intro{display:block}
   .story-player.intro-preflight #menu h1{font-size:38px;margin:8px 0}
 }
+#trial-timer { position:fixed; top:16%; left:50%; transform:translateX(-50%); z-index:8; margin:0; padding:.4rem .8rem; color:#fff2d5; background:#100807bf; border:1px solid #bc443966; font:600 clamp(18px,3vw,28px)/1.2 'Barlow Condensed',sans-serif; letter-spacing:.12em; font-variant-numeric:tabular-nums; pointer-events:none; }

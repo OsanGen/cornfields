@@ -396,6 +396,9 @@ export function createScene(canvas,maze,{touch=false,weather=null}={}){
       // Borrow their assets/materials without drawing that redundant vegetation.
       cornView.setVisible(!field);fieldVisuals?.setVisible(false);corridorView.update(g,reduced);groundDetails.update(g);
     }
+    if(g.survivalEnding?.phase==='transform'){
+      scene.fog.color.set(0x310206);scene.fog.density=.075+Math.min(1,g.survivalEnding.time/3)*.85;
+    }
     renderFirstPersonLayers(renderer,scene,camera,gun.visible||knife.visible);
   }
   return {renderer,scene,camera,render,resize,ready,visuals,quality,renderPrologueEquipment:(storyCamera,frame)=>prologueEquipment.render(storyCamera,frame),

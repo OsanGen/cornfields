@@ -2,7 +2,7 @@ import {PROLOGUE_AUDIO_LINES,PROLOGUE_LINES} from './prologue-script.js';
 import {samplePrologueMotion,createPrologueContactTracker} from './prologue-motion.js';
 
 /** Small, isolated opening bus. Dialogue follows the presentation clock. */
-export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args)}={}){
+export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args),lines=PROLOGUE_LINES,audioLines=PROLOGUE_AUDIO_LINES,directory='prologue'}={}){
   const buffers=new Map(),failed=new Set(),pending=new Set(),effects=new Set();
   const contacts=createPrologueContactTracker();let footfalls=0;
   let bus=null,ambience=null,voice=null,current=null,disposed=false,loading=false,lastFrame=null;
@@ -24,7 +24,7 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args)}={}
         if(buffers.has(id)||failed.has(id))continue;
         const controller=new AbortController();request=controller;const timer=setTimeout(()=>controller.abort(),8000);
         try{
-          const response=await fetcher(new URL(`../assets/audio/prologue/${id}.mp3`,import.meta.url),{signal:controller.signal});
+          const response=await fetcher(new URL(`../assets/audio/${directory}/${id}.mp3`,import.meta.url),{signal:controller.signal});
           if(!response.ok)throw new Error('Voice unavailable');
           const bytes=await response.arrayBuffer();if(bytes.byteLength>1500000)throw new Error('Voice exceeds budget');
           const buffer=await audio.ctx.decodeAudioData(bytes);
@@ -37,9 +37,9 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args)}={}
   function preload(frame){
     // At most the current utterance and two successors, never the entire soundtrack.
     const next=frame.line||frame.nextLine;
-    if(!next||!PROLOGUE_AUDIO_LINES.some(line=>line.id===next.id))return;
-    const index=PROLOGUE_LINES.findIndex(line=>line.id===next.id);
-    const upcoming=index<0?[next]:PROLOGUE_LINES.slice(index,index+3);
+    if(!next||!audioLines.some(line=>line.id===next.id))return;
+    const index=lines.findIndex(line=>line.id===next.id);
+    const upcoming=index<0?[next]:lines.slice(index,index+3);
     pending.clear();
     for(const line of upcoming)if(!buffers.has(line.id)&&!failed.has(line.id))pending.add(line.id);
     void pump();

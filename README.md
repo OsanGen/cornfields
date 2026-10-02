@@ -336,4 +336,33 @@ provider deployment and physical-phone acceptance remain separate verification s
 
 ## Reversibility
 
+The current playtest adds a blood-room briefing, a 180-second deadline and a pit
+ending to the existing game. It is not a separate gameplay mode. The active game
+tick, movement, zombie AI, spawning, weapons, flashlight, hiding, QTE, corridor
+changes and checkpoint rewards remain unchanged. The timer includes active corn
+hiding and QTE time, and freezes under the existing pause/focus policy. The old
+daughter victory trigger is replaced by the pit ending for this playtest.
+Retry skips the briefing and restores the ordinary starting state and 03:00.
+
+Use `?ending=off` to recover the previous completion flow. Debug/test links keep
+that baseline unless `ending=on` is explicit. The earlier story/title can still
+be skipped; the first entry then continues through the short briefing.
+
+Blood-room geometry and its anonymous procedural face are shared with the earlier
+vision. The temporary face continues moving independently of the voice. There is
+no stock human/video asset in this build. Eleven new local synthetic projector
+utterances and their provenance are in `assets/audio/survival/`. The room visit
+is about 22.1 active seconds including entry and exit, using measured audio durations.
+Missing audio preserves the complete subtitles and sequence. Reduced effects cap
+rain at 24 streaks and reduce ember motion. The pit uses borrowed corn assets,
+bounded particles and simple geometry; walking cannot trigger the fall. E or the
+contextual mobile JUMP button at the rim starts the voluntary fall.
+
+Run `node --test tests/survival-ending.test.mjs` for gameplay equivalence, timing,
+pause, grapple expiry, field expiry and voluntary-ending checks. Run
+`node tests/survival-ending-browser.mjs` against the packaged local preview for
+desktop/touch rendering and controls. Fear, voice delivery and physical phone
+performance require human playtesting. Publication is verified separately in the
+local release receipts.
+
 Stop the exact preview process with Ctrl+C. Generated `dist/` and local `output/` are disposable build and verification artifacts. Source snapshots were captured outside the served root before the refactor and mobile update. After the first GitHub release, redeploy a known-good commit to roll back the hosted game.

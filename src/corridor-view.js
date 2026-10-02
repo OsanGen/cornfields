@@ -59,6 +59,10 @@ export function createCorridorFieldView(scene,maze,floor,{touch=false,createSign
       const inField=game.player.zone==='field';stats.activeZone=inField?'field':'corridor';wallsGroup.visible=!inField;fieldGroup.visible=inField;
       beacon.update(game,reduced);
       portals.update(game,reduced);
+      const dissolve=game.survivalEnding?.phase==='transform'?Math.min(1,game.survivalEnding.time/3):0;
+      wallsGroup.position.y=-3.5*dissolve;
+      fieldGroup.position.y=-3.5*dissolve;
+      if(dissolve>=1){wallsGroup.visible=false;fieldGroup.visible=false;}
       if(runId!==game.runId||revision!==game.corridorMaze.cornWorld.revision){refreshWalls(game);runId=game.runId;revision=game.corridorMaze.cornWorld.revision;}
       if(!inField)return;
       refreshCorn(game.player);fieldFloor.position.set(game.player.x,-.003,game.player.z);

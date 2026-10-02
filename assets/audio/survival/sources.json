@@ -1,0 +1,77 @@
+{
+  "type": "temporary synthetic playtest dialogue",
+  "story": "Exact user-approved blood-room gatekeeper and pit script, October 2026",
+  "generator": "Installed Piper, offline ONNX CPU, two intra-op threads",
+  "model": "en_US-libritts_r-medium",
+  "model_url": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/libritts_r/medium",
+  "model_card": "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/libritts_r/medium/MODEL_CARD",
+  "model_sha256": "10bb85e071d616fcf4071f369f1799d0491492ab3c5d552ec19fb548fac13195",
+  "license": "CC BY 4.0 per model card; attribution and modified-output notice in LICENSES.md",
+  "cast_corpus_ids": {
+    "mike": "5918",
+    "clarence": "3370",
+    "stanley": "5914",
+    "dispatch": "783",
+    "face": "783",
+    "unknown": "5914"
+  },
+  "voice_selection_reference": "https://github.com/line/LibriTTS-P",
+  "modifications": "New scripted speech; gain normalization and mono MP3 encoding at natural delivery speed. Radio, face and unidentified-voice filtering applied at runtime.",
+  "files": {
+    "GATE-01.mp3": {
+      "bytes": 11660,
+      "sha256": "55e48c289c3a4c27037a1d2a3306d0374ad0ce672ef4c1d5a2f621439713e361",
+      "duration": 1.579
+    },
+    "GATE-02.mp3": {
+      "bytes": 15860,
+      "sha256": "b7f168997efedca08869a281ca8233ded184f9930a574430eb3ca22a07955cf6",
+      "duration": 2.1827
+    },
+    "GATE-03.mp3": {
+      "bytes": 17036,
+      "sha256": "88b805f6310c2a947f080de33db35ed7be8c83f6fe14b67f94fd02fec7ca0b0a",
+      "duration": 2.3336
+    },
+    "GATE-04.mp3": {
+      "bytes": 13172,
+      "sha256": "3c09d828e4ee83a19b1f24d6af3cfbf3418bc760313d6002c851dea4b607dd98",
+      "duration": 1.778
+    },
+    "GATE-05.mp3": {
+      "bytes": 16700,
+      "sha256": "4de3c3017a7631e35873dbeb9e0ae1061d7d23205f7a8dbd0f581e9177df7d8e",
+      "duration": 2.2988
+    },
+    "GATE-06.mp3": {
+      "bytes": 19388,
+      "sha256": "14804a8dd0376bedb077d9cdc7707ad12c83221072fe4dc6af003dc1497597db",
+      "duration": 2.6703
+    },
+    "GATE-07.mp3": {
+      "bytes": 15692,
+      "sha256": "5be46d7ba0f9347704bd0e5e39dad1ba02f4375f058ec1cabbee8dc7f668d874",
+      "duration": 2.1595
+    },
+    "GATE-08.mp3": {
+      "bytes": 4100,
+      "sha256": "926869478673917a83273a5c81d4b4eb895d35231b4966626c9ed3eb85188424",
+      "duration": 0.4876
+    },
+    "PIT-01.mp3": {
+      "bytes": 15188,
+      "sha256": "4b0ff7b6779941d3e7391ece8ded3e585130c1650babfcf188d7b1eec0bb46ee",
+      "duration": 2.0782
+    },
+    "PIT-02.mp3": {
+      "bytes": 3428,
+      "sha256": "64efada89a73ce82e5e86234d6c3e7f45d3e5fa42053b57f7d3956cce5ad223f",
+      "duration": 0.4064
+    },
+    "PIT-03.mp3": {
+      "bytes": 9644,
+      "sha256": "36ae577f786b2090d7cf322fb0ed1e13e7ed4617181c01a797c22ef7aa57a22c",
+      "duration": 1.2887
+    }
+  }
+}

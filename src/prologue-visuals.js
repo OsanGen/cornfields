@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {createPrologueActor, PROLOGUE_CAST_PROVENANCE} from './prologue-actors.js';
 import {samplePrologueMotion} from './prologue-motion.js';
+import {createBloodRoom} from './blood-room.js';
 export {prologueBlocking,prologueWorldTransition} from './prologue-motion.js';
 
 const clamp = value => Math.max(0, Math.min(1, Number(value) || 0));
@@ -197,33 +198,8 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     for(let i=0;i<36;i++){const angle=i/36*Math.PI*2;dummy.position.set(Math.sin(angle)*54,3.3,-25+Math.cos(angle)*70);dummy.rotation.set(0,i,0);dummy.scale.set(4+Math.sin(i*3.1),6+Math.sin(i*2.7)*2,4);dummy.updateMatrix();trees.setMatrixAt(i,dummy.matrix);}trees.computeBoundingSphere();location.add(trees);
   }
   function buildVisions(){
-    room=new THREE.Group();room.name='Ten second red room';room.position.copy(location.position);room.quaternion.copy(location.quaternion);scene.add(room);room.visible=false;
-    box(room,standard(0x810c10,{side:THREE.BackSide,emissive:0x300103,emissiveIntensity:.42}),6.4,3.3,9.6,0,1.65,0);
-    const roomLight=new THREE.PointLight(0xff2130,4.2,14,1.5);roomLight.position.set(0,2.9,0);room.add(roomLight);
-    const projector=group(room,0,.48,1.7);projector.name='Single film projector';
-    const housing=standard(0x242527,{roughness:.57,metalness:.30});
-    box(projector,housing,.47,.22,.37);box(projector,housing,.34,.07,.29,0,-.14,0);
-    mesh(projector,new THREE.CylinderGeometry(.06,.065,.11,12),housing,0,0,-.22,0).rotation.x=Math.PI/2;
-    mesh(projector,new THREE.CircleGeometry(.049,12),new THREE.MeshBasicMaterial({color:0xffdac7}),0,0,-.28,Math.PI);
-    projectorLight=new THREE.SpotLight(0xffb9a8,6,10,.27,.26,1);projectorLight.position.set(0,.5,1.4);projectorLight.target.position.set(0,1.7,-4.8);room.add(projectorLight,projectorLight.target);
-    face=mesh(room,new THREE.PlaneGeometry(2.45,2.70),new THREE.ShaderMaterial({transparent:true,depthWrite:false,toneMapped:false,
-      uniforms:{clock:{value:0},motion:{value:1}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-      fragmentShader:`varying vec2 vUv;uniform float clock,motion;
-        float ellipse(vec2 p,vec2 r){return length(p/r);}
-        void main(){
-          vec2 p=(vUv-.5)*2.;p.x+=sin(p.y*7.+clock*1.7)*.016*motion;
-          float head=1.-smoothstep(.91,1.,ellipse(p-vec2(0.,.03),vec2(.72,.96)));
-          float left=1.-smoothstep(.7,1.,ellipse(p-vec2(-.27,.25),vec2(.18,.10)));
-          float right=1.-smoothstep(.7,1.,ellipse(p-vec2(.27,.28),vec2(.18,.10)));
-          float mouth=1.-smoothstep(.84,1.,ellipse(p-vec2(.01,-.36),vec2(.23,.30+.045*sin(clock*3.)*motion)));
-          float brow=exp(-pow((abs(p.x)-.26)/.19,4.))*exp(-pow((p.y-.43-abs(p.x)*.16)/.027,2.));
-          float tear=exp(-pow((abs(p.x)-.26)/.023,2.))*smoothstep(-.25,.05,p.y)*(1.-smoothstep(.13,.23,p.y));
-          float edge=pow(max(0.,1.-ellipse(p,vec2(.75,1.))),.3);
-          float shade=clamp(.38+edge*.53-max(left,right)*.81-mouth*.95-brow*.48-tear*.44,0.,1.);
-          float lines=.91+.09*sin(vUv.y*420.);vec3 color=mix(vec3(.20,.013,.028),vec3(1.,.66,.57),shade)*lines;
-          gl_FragColor=vec4(color,head*.95);
-        }`}),0,1.76,-4.765);
-    face.name='Original anonymous distressed face projection';
+    const sharedRoom=createBloodRoom();({group:room,face,projectorLight}=sharedRoom);
+    room.name='Ten second red room';room.position.copy(location.position);room.quaternion.copy(location.quaternion);scene.add(room);room.visible=false;
     // A tiny original 0/1 atlas, shared by two capped instance draws.
     const width=32,height=24,data=new Uint8Array(width*height*4);
     for(let y=0;y<height;y++)for(let x=0;x<width;x++){

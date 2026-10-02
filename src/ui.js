@@ -3,6 +3,7 @@ import {GAME_CONFIG} from './game-config.js';
 import {interactionLocked} from './grapple.js';
 import {corruptionFrame} from './horror-presentation.js';
 import {INTRO} from './intro.js';
+import {survivalTime} from './survival-ending.js';
 
 /** Presentation only: it never advances gameplay, captures the mouse or plays audio. */
 export function createUI(document, {debug = false, reducedMotion = false, touch = false, horror = true} = {}) {
@@ -156,7 +157,7 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
     },
     focusMode(mode) {
       if (mode === 'paused') node('resume-btn').focus();
-      if (mode === 'dead' || mode === 'won') node('retry-btn').focus();
+      if (mode === 'dead' || mode === 'won' || mode === 'playtest-ended') node('retry-btn').focus();
     },
     showError(message) {
       node('error').hidden = false;
@@ -165,7 +166,7 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
     render(game) {
       const {mode, player} = game;
       const playing = mode === 'playing';
-      const ended = mode === 'dead' || mode === 'won';
+      const ended = mode === 'dead' || mode === 'won' || mode === 'playtest-ended';
       const locked=interactionLocked(game),qte=game.interaction?.phase==='qte';
       const recovering=game.interaction?.phase==='recovery';
       document.body.classList.toggle('grappling',locked);
@@ -190,6 +191,9 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
       text('ammo', player.ammo);
       text('flashlight-state', player.flashlightOn ? 'ON' : 'OFF');
       node('health-meter').style.setProperty('--health', player.health + '%');
+      const ending=game.survivalEnding,active=ending?.phase==='active';
+      node('trial-timer').hidden=!playing||!ending||['arrival','entry','room','exit','fall'].includes(ending.phase);
+      text('trial-timer',ending?`${active?'SURVIVE':'COMPLETE'} ${survivalTime(ending)}`:'');
 
       const prompt = interactionPrompt(game);
       node('prompt').hidden = !prompt || !playing;
@@ -201,6 +205,7 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
         text('touch-interact', prompt.replace(/^E - /, ''));
         node('touch-light').setAttribute?.('aria-pressed', String(player.flashlightOn));
         node('touch-fire').disabled = player.ammo <= 0;
+        if(ending&&!['arrival','active'].includes(ending.phase))node('touch-fire').hidden=true;
       }
       text('hide-status', 'DO NOT MOVE. IT CAN HEAR YOU.');
       const corruption=horror?corruptionFrame(game,{reduced:reducedMotion,touch}):{fragments:[],taunt:null};
@@ -230,6 +235,11 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
       node('danger').style.opacity = playing
         ? String(Math.min(0.7, (100 - player.health) / 170 + game.threat.intensity * 0.13))
         : '0';
+      if(ending&&ending.phase!=='active'){
+        for(const id of ['threat-card','hide-status','corn-taunt','caption',...Array.from({length:4},(_,i)=>`die-${i}`)])node(id).hidden=true;
+        node('danger').style.opacity='0';
+        if(['entry','room','exit'].includes(ending.phase)){text('chapter','THE PROJECTOR');text('objective','TRIAL ACCESS');text('landmark','');}
+      }
 
       if (ended && previousResult !== mode) {
         const won = mode === 'won';
@@ -243,6 +253,10 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
         text('result-time', Math.floor(game.elapsed / 60) + ':' +
           String(Math.floor(game.elapsed % 60)).padStart(2, '0') +
           ' IN THE FIELD · ' + game.metrics.shotsFired + ' SHOTS');
+        if(mode==='playtest-ended'){
+          text('result-label','CORNFIELD / DEEPER ACCESS');text('result-title','END OF CURRENT PLAYTEST');
+          text('result-copy','The passage continues below.');node('retry-btn').innerHTML='PLAY AGAIN <span>↗</span>';
+        }
         previousResult = mode;
       }
       if (debug) {

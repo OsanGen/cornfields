@@ -7,6 +7,8 @@ import {createStepper} from './runtime-loop.js';
 import {createInput} from './input.js';
 import {createTouchInput} from './touch-input.js';
 import {normalizeAlias} from './horror-presentation.js';
+import {attachSurvivalEnding,survivalLine} from './survival-ending.js';
+import {SURVIVAL_LINES} from './survival-script.js';
 import {createUI} from './ui.js';
 import {createIntro, INTRO_ENABLED} from './intro.js';
 import {setReturnOpen} from './corn-layout.js';
@@ -30,6 +32,9 @@ export function createGameApp({
   prologueEnabled = false,
   prologueView = null,
   prologueAudio = null,
+  survivalEndingEnabled = false,
+  survivalView = null,
+  survivalAudio = null,
   ready = null,
   now = () => performance.now(),
   requestFrame = callback => window.requestAnimationFrame(callback),
@@ -39,6 +44,7 @@ export function createGameApp({
   const ui = createUI(document, {debug, reducedMotion, touch, horror});
   const listeners = [];
   let game = createGame(maze);
+  if(survivalEndingEnabled)attachSurvivalEnding(game);
   let previousMode = game.mode;
   let last = now();
   let frameId = null;
@@ -74,17 +80,25 @@ export function createGameApp({
   });
   const clock = createStepper((dt, controls) => {
     const previousPhase=game.interaction?.phase;
+    const previousEnding=game.survivalEnding?.phase;
+    const beforeSteps=game.steps;
     updateGame(game, dt, controls);
+    if(previousEnding!==game.survivalEnding?.phase){
+      input.clearEdges();game.pendingStabs.length=0;
+      if(game.survivalEnding?.phase==='transform'){audio.stopCues?.();survivalAudio?.cue('crash');}
+    }
     if(previousPhase!==game.interaction?.phase){input.clearEdges();game.pendingStabs.length=0;}
     const events = game.events.splice(0);
-    const weatherEvents = weather?.update(game, dt, {events, reduced: reducedMotion, muted: audio.muted}) || [];
+    const presentation=game.survivalEnding&&!['active','arrival'].includes(game.survivalEnding.phase);
+    const weatherEvents = !presentation?weather?.update(game, dt, {events, reduced: reducedMotion, muted: audio.muted}) || []:[];
     for (const event of events) {
       audio.event(event, game);
       view.event?.(event);
     }
-    audio.weatherState?.(game, weather?.state);
+    if(!presentation)audio.weatherState?.(game, weather?.state);
     for (const event of weatherEvents) audio.weatherEvent?.(event, game);
-    audio.update(game, dt, {footsteps: !weather});
+    if(!presentation)audio.update(game, dt, {footsteps: !weather});
+    else if(game.player.moving&&Math.floor(game.steps/1.55)>Math.floor(beforeSteps/1.55))audio.footstep?.({surface:game.survivalEnding.phase==='room'?'hard':'soft',gain:.25,bus:audio.master});
     audioTicks++;
     // Present the newly enabled action before consuming any more catch-up time.
     return previousPhase!=='qte'&&game.interaction?.phase==='qte';
@@ -114,10 +128,11 @@ export function createGameApp({
     ui.renderIntro(intro, {enabled:introEnabled, portrait:touch&&window.innerHeight>window.innerWidth, coreReady, coreError, entering:introEntering, pointerError, creditsOpen, muted:audio.muted, volume:audio.volume});
     if(prologueEnabled)ui.renderOpening(intro,{touch,portrait:touch&&window.innerHeight>window.innerWidth,coreReady,coreError,entering:introEntering,pointerError});
     const endingTime=endingAt===null?Infinity:game.elapsed-endingAt;
-    const ending=endingTime<PROLOGUE_END_LINE.end&&game.mode==='playing'&&!intro.active;
-    ui.renderEnding?.(ending?PROLOGUE_END_LINE.text:'');
+    const ending=endingTime<PROLOGUE_END_LINE.end&&game.mode==='playing'&&!intro.active&&(!game.survivalEnding||game.survivalEnding.phase==='arrival');
+    const trialLine=survivalLine(game.survivalEnding);
+    ui.renderEnding?.(ending?PROLOGUE_END_LINE.text:game.mode==='playing'?trialLine?.text||'':'');
     if(ending)prologueAudio?.sync({gameplay:true,time:endingTime,line:PROLOGUE_END_LINE,chapter:'gameplay'});
-    else if(endingAt!==null&&endingTime>=PROLOGUE_END_LINE.end){endingAt=null;prologueAudio?.release();}
+    else if(endingAt!==null&&(endingTime>=PROLOGUE_END_LINE.end||game.survivalEnding?.phase!=='arrival'&&game.survivalEnding)){endingAt=null;prologueAudio?.release();}
     if (intro.active) {
       try {
         if(prologueEnabled&&intro.phase!=='preflight'){
@@ -134,7 +149,15 @@ export function createGameApp({
         else introView?.render(intro.frame(reducedMotion));
       }
       catch { introView?.release(); introView=null; }
-    } else view.render(game, time, reducedMotion);
+    } else {
+      const phase=game.survivalEnding?.phase;
+      if(['entry','room','exit','transform','pit','fall'].includes(phase)&&survivalView)survivalView.render(game,reducedMotion);
+      else {survivalView?.release();view.render(game,time,reducedMotion);}
+      if(game.mode==='playing'&&['entry','room','exit','transform','pit','fall'].includes(phase)){
+        const state=game.survivalEnding;
+        survivalAudio?.sync({gameplay:true,chapter:phase,time:state.time,line:trialLine,nextLine:['entry','room'].includes(phase)?SURVIVAL_LINES[0]:phase==='transform'?SURVIVAL_LINES.find(line=>line.chapter==='pit'):null});
+      }else survivalAudio?.pause();
+    }
   }
 
   function cancelIntroEntry() {
@@ -214,7 +237,7 @@ export function createGameApp({
     if(skipped){input.quarantine?.();input.clear();}else{input.quarantineActions?.();input.clearEdges();}
     clock.reset();last=now();
     alias='MIKE';ui.setAlias(alias);startGame(game);previousMode=game.mode;game.player.flashlightOn=light;
-    endingAt=skipped?null:game.elapsed;audio.startGameplay?.();present();
+    endingAt=skipped&&!survivalEndingEnabled?null:game.elapsed;audio.startGameplay?.();present();
   }
 
   async function beginOpening({replay=false,skip=false}={}){
@@ -297,6 +320,7 @@ export function createGameApp({
     }
     input.clear();
     prologueAudio?.pause();
+    survivalAudio?.pause();
     pauseGame(game);
     clock.reset();
     present();
@@ -319,13 +343,15 @@ export function createGameApp({
     if (reset) {
       endingAt=null;prologueAudio?.release();
       game = createGame(maze);
+      if(survivalEndingEnabled)attachSurvivalEnding(game,{briefing:false});
+      survivalAudio?.release();survivalView?.release();
       audio.reset();
       weather?.reset();
       view.reset?.();
       ui.reset();
       manual = false;
     }
-    if (game.mode === 'menu') startGame(game);
+    if (game.mode === 'menu') {startGame(game);if(survivalEndingEnabled&&game.survivalEnding?.phase==='arrival')endingAt=game.elapsed;}
     else resumeGame(game);
     input.clear();
     clock.reset();
@@ -409,7 +435,7 @@ export function createGameApp({
   listen(ui.node('player-alias'),'keydown',event=>{if(event.key==='Enter'){event.preventDefault();void enter();}});
   listen(ui.node('title-btn'),'click',()=>{
     endingAt=null;prologueAudio?.release();
-    pause();game=createGame(maze);weather?.reset();audio.reset();view.reset?.();ui.reset();input.clear();clock.reset();
+    pause();game=createGame(maze);if(survivalEndingEnabled)attachSurvivalEnding(game);survivalAudio?.release();survivalView?.release();weather?.reset();audio.reset();view.reset?.();ui.reset();input.clear();clock.reset();
     ui.node('player-alias').value=alias;present();ui.node('player-alias').focus();
   });
   listen(ui.node('volume'), 'input', event => audio.setVolume(Number(event.target.value) / 100));
@@ -494,6 +520,16 @@ export function createGameApp({
     preview(time){manual=true;view.render(game,time,reducedMotion);},
     animationTrial(name){view.animationTrial?.(name);},
     fixture(name){
+      if(name.startsWith('survival-')){
+        endingAt=null;game=createGame(maze);game.mode='playing';game.entered=true;game.corridorRun.started=true;game.grace=400;
+        attachSurvivalEnding(game,{briefing:false});Object.assign(game.player,game.maze.corridorLayout.sections[4].anchor);
+        if(name==='survival-expire')game.survivalEnding.remaining=.01;
+        else if(name==='survival-death'){
+          game.grace=0;game.player.health=.1;Object.assign(game.enemy,{x:game.player.x,z:game.player.z-.7,state:'chase',visible:true});
+        }
+        else if(name!=='survival-active')throw new Error('Unknown survival fixture');
+        input.clear();clock.reset();manual=true;present();return;
+      }
       const viewmodel=name==='viewmodel';if(viewmodel)name='corridor';
       if(['field','animation'].includes(name)&&maze.corridorLayout){
         game=createGame(maze);game.mode='playing';game.entered=true;game.corridorRun.started=true;game.grace=100;
@@ -554,6 +590,7 @@ export function createGameApp({
       muted: audio.muted,
       reducedMotion,
       intro:{...intro.snapshot(),coreReady,visuals:introView?.diagnostics?.()},
+      survivalPresentation:survivalView?.diagnostics?.(),survivalAudio:survivalAudio?.diagnostics?.(),
       controlMode: touch ? 'touch' : 'mouse',
       pointerLocked: document.pointerLockElement === canvas,
       pointerError,
@@ -591,6 +628,7 @@ export function createGameApp({
       disposed = true;
       introAudioAttempt++;cancelIntroEntry();intro.dispose();introView?.dispose();audio.stopIntro?.();
       prologueView?.dispose();prologueAudio?.dispose();
+      survivalView?.dispose();survivalAudio?.dispose();
       entryAttempt++;
       if (frameId !== null) cancelFrame(frameId);
       input.dispose();

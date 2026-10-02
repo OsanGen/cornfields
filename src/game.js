@@ -10,6 +10,7 @@ import {cloneSurvivalMaze} from './corn-layout.js';
 import {cloneCorridorMaze} from './corridor-layout.js';
 import {initializeCorridorRun,advanceCorridorRun,corridorMovement,updateCorridorEnemies,activeEnemies,withEnemy} from './corridor-run.js';
 import {createCornSurvival,initializeCornSurvival,advanceCornSurvival,survivalLocomotion,finishCornSurvival,survivalSnapshot} from './corn-survival.js';
+import {advanceSurvivalPresentation,pitPrompt} from './survival-ending.js';
 let nextRunId=0;
 
 export { actorPosition };
@@ -162,6 +163,7 @@ export function nearDoor(game) {
 }
 
 export function interactionPrompt(game) {
+  if(game.survivalEnding&&game.survivalEnding.phase!=='active'&&game.survivalEnding.phase!=='arrival')return pitPrompt(game);
   if(interactionLocked(game))return '';
   if (nearDoor(game)) return 'E - OPEN DOOR';
   blocksFor(game);const door=gateAt(game);
@@ -302,6 +304,7 @@ function updateProgress(game, blocks) {
 
 /** One authoritative substep: input, shot, rewards, perception/AI, attack, feedback. */
 function tick(game, dt, input) {
+  if(advanceSurvivalPresentation(game,dt,input,resolvePlayerInput))return;
   const player = game.player;
   game.elapsed += dt;
   game.captionTime = Math.max(0, game.captionTime - dt);
@@ -335,7 +338,7 @@ function tick(game, dt, input) {
   updateProgress(game, blocks);
 
   // Daughter contact wins over an enemy attack scheduled for this same substep.
-  if ((!game.corridorRun||(game.corridorRun.ready&&player.zone==='corridor'))&&(!game.cornSurvival||game.cornSurvival.complete)&&game.entered && !player.hidden && distance(player, game.maze.daughter) < C.progress.daughterRadius) {
+  if (!game.survivalEnding&&(!game.corridorRun||(game.corridorRun.ready&&player.zone==='corridor'))&&(!game.cornSurvival||game.cornSurvival.complete)&&game.entered && !player.hidden && distance(player, game.maze.daughter) < C.progress.daughterRadius) {
     if(game.corridorRun)game.corridorRun.complete=true;
     win(game);
     return;
@@ -393,6 +396,7 @@ export function gameSnapshot(game,{diagnostic=false}={}) {
   return JSON.parse(JSON.stringify({
     coordinates: 'meters; +x east, +z south; yaw 0 looks north (-z)',
     mode: game.mode,
+    survivalEnding:game.survivalEnding||null,
     ...(diagnostic?{cornSurvival:survivalSnapshot(game)}:{}),
     ...(game.corridorRun?{zone:player.zone,enemies:activeEnemies(game).map(e=>({id:e.id,x:e.x,z:e.z,state:e.state,visible:e.visible})),
       ...(diagnostic?{corridorRun:game.corridorRun,fieldTrip:game.fieldTrip}:{} )}:{}),

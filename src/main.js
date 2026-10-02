@@ -9,6 +9,8 @@ import {createIntroVisuals} from './intro-visuals.js';
 import {INTRO_ENABLED} from './intro.js';
 import {createPrologueVisuals} from './prologue-visuals.js';
 import {createPrologueAudio} from './prologue-audio.js';
+import {createSurvivalVisuals} from './survival-visuals.js';
+import {createSurvivalAudio} from './survival-audio.js';
 
 const node = id => document.getElementById(id);
 node('start-btn').disabled = true;
@@ -30,11 +32,15 @@ try {
   const introEnabled=INTRO_ENABLED&&parameters.get('intro')!=='off';
   const introView=introEnabled?createIntroVisuals(view.renderer,{getCorn:view.introCorn,touch,enhanced:parameters.get('introfx')!=='off'}):null;
   const prologueEnabled=introEnabled&&parameters.get('prologue')!=='off';
+  const survivalEndingEnabled=parameters.get('ending')!=='off'&&(!parameters.has('test')||parameters.get('ending')==='on');
   const prologueView=prologueEnabled?createPrologueVisuals(view.renderer,{getCorn:view.introCorn,getWorld:()=>({scene:view.scene,camera:view.camera}),renderEquipment:view.renderPrologueEquipment,spawn:{...maze.spawn,yaw:Math.PI},touch}):null;
-  const prologueAudio=prologueEnabled?createPrologueAudio(audio):null;
+  const prologueAudio=prologueEnabled||survivalEndingEnabled?createPrologueAudio(audio):null;
+  const survivalView=survivalEndingEnabled?createSurvivalVisuals(view,{touch}):null;
+  const survivalAudio=survivalEndingEnabled?createSurvivalAudio(audio):null;
 
   const app = createGameApp({
     maze, view, audio, weather, document, window, touch, introEnabled, introView, prologueEnabled,prologueView,prologueAudio,ready:view.ready,
+    survivalEndingEnabled,survivalView,survivalAudio,
     debug: parameters.has('debug'), horror:parameters.get('horror')!=='off',
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
   });

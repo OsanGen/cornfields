@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {PROLOGUE_AUDIO_LINES as PROLOGUE_LINES} from '../src/prologue-script.js';
 import {FOOTSTEP_FILES} from '../src/footsteps.js';
+import {SURVIVAL_LINES} from '../src/survival-script.js';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 
@@ -25,7 +26,7 @@ export const runtimeAssets = [
   'creature-growl.mp3','creature-roar.mp3','creature-roar-alt.mp3','creature-sources.json',
 ].map(name=>`assets/audio/${name}`)).concat([...new Set(Object.values(FOOTSTEP_FILES))].filter(name=>name.startsWith('footsteps/')).map(name=>`assets/audio/${name}`),['assets/audio/footsteps/sources.json']).concat([
   'barlow-condensed.ttf','rubik-glitch.ttf','barlowcondensed-OFL.txt','rubikglitch-OFL.txt','LICENSES.md','sources.json',
-].map(name=>`assets/fonts/${name}`)).concat([...PROLOGUE_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/prologue/${name}`));
+].map(name=>`assets/fonts/${name}`)).concat([...PROLOGUE_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/prologue/${name}`)).concat([...SURVIVAL_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/survival/${name}`));
 
 // The game's static ES-module imports, including multiline import/export lists.
 export function moduleImports(source) {
