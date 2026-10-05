@@ -4,6 +4,18 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
+function assertLinearColorWithinOneUlp(actual, expected) {
+  assert(Array.isArray(actual) && Array.isArray(expected), 'linear colors must be arrays');
+  assert.equal(actual.length, 3, 'linear colors must have three components');
+  assert.equal(expected.length, 3, 'linear colors must have three components');
+  const bits = value => { const b=Buffer.alloc(8);b.writeDoubleBE(value);return b.readBigUInt64BE(); };
+  for (let i=0;i<3;i++) {
+    assert(Number.isFinite(actual[i]) && actual[i]>=0 && actual[i]<=1, 'linear colors must be finite and normalized');
+    assert(Number.isFinite(expected[i]) && expected[i]>=0 && expected[i]<=1, 'linear colors must be finite and normalized');
+    const a=bits(actual[i]),b=bits(expected[i]),distance=a>b?a-b:b-a;
+    assert(distance<=1n, 'sRGB conversion may differ by at most one binary64 step across Node versions');
+  }
+}
 function read(relative) {
   const raw = readFileSync(new URL(`../${relative}`, import.meta.url));
   assert.equal(raw.readUInt32LE(0), 0x46546c67);
@@ -112,6 +124,15 @@ test('independent rebuilt faces retain distinct jaw planes, exact crown and prot
 });
 
 test('cast maps are independent, embedded, bounded, and change only the approved Clarence wardrobe maps', () => {
+  // The shipped color and Node 22/24's pow results differ by exactly one ULP.
+  // Prove that this narrow portability allowance cannot hide a larger error.
+  const expected=[.406448301146754,.2,.3];
+  assertLinearColorWithinOneUlp(expected,expected);
+  assertLinearColorWithinOneUlp([.40644830114675407,.2,.3],expected);
+  assertLinearColorWithinOneUlp(expected,[.40644830114675407,.2,.3]);
+  assert.throws(()=>assertLinearColorWithinOneUlp([.4064483011467541,.2,.3],expected),/one binary64 step/);
+  for(const invalid of [NaN,Infinity,-Infinity,-.1,1.1])assert.throws(()=>assertLinearColorWithinOneUlp([invalid,.2,.3],expected),/finite and normalized/);
+  assert.throws(()=>assertLinearColorWithinOneUlp([.2,.3],expected),/three components/);
   for(const {role,asset} of cast) {
     assert.equal(asset.json.asset.extras.cinematicCharacter,role);
     for(const i of [1,2,5])assert.notEqual(hash(imageBytes(asset,i)),hash(imageBytes(base,i)));
@@ -138,7 +159,7 @@ test('cast maps are independent, embedded, bounded, and change only the approved
       assert.deepEqual(jpegSize(imageBytes(asset,asset.json.textures[t.index].source)),[1024,1024]);
     }
     const intended=role==='clarence'?[.35,.205,.135]:[.67,.51,.435],linear=intended.map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);
-    assert.deepEqual(asset.json.asset.extras.lidSkinColorLinear,linear,'runtime lids use the same sRGB-to-linear skin conversion as GLTFLoader');
+    assertLinearColorWithinOneUlp(asset.json.asset.extras.lidSkinColorLinear,linear);
     assert.equal(asset.json.asset.extras.normalBake,'Blender BVH CPU selected-to-active high-detail sculpt');
   }
   assert.notEqual(hash(imageBytes(cast[0].asset,1)),hash(imageBytes(cast[1].asset,1)));
