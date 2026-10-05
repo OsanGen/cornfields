@@ -1,13 +1,24 @@
 import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {applyEnvironmentSurface,varyWoodUV} from './environment-materials.js';
 
 export function createWoodPanelGeometry(){
-  const geometry=new THREE.BoxGeometry(1,2.65,.08),position=geometry.attributes.position;
-  for(let i=0;i<position.count;i++)if(position.getY(i)>0)position.setY(i,position.getY(i)-.025*(position.getX(i)+.5));
-  geometry.computeVertexNormals();return geometry;
+  const pieces=[];
+  for(let board=0;board<4;board++){
+    const height=2.644-[0,.014,.025,.009][board],width=.25-.004;
+    const shape=new THREE.Shape();shape.moveTo(-width/2+.003,0);shape.lineTo(width/2-.003,0);shape.lineTo(width/2,.003);shape.lineTo(width/2,height-.006);shape.lineTo(width/2-.006,height);shape.lineTo(-width/2+.004,height-.003);shape.lineTo(-width/2,height-.008);shape.lineTo(-width/2,.004);shape.closePath();
+    const piece=new THREE.ExtrudeGeometry(shape,{depth:.072,steps:1,bevelEnabled:true,bevelSegments:1,bevelSize:.002,bevelThickness:.003,curveSegments:1});
+    piece.translate((board-1.5)*.25,-1.322,-.036);
+    const uv=piece.attributes.uv,pos=piece.attributes.position;
+    for(let i=0;i<uv.count;i++)uv.setXY(i,pos.getX(i)*.54+board*.167,pos.getY(i)*.5+.37);
+    pieces.push(piece);
+  }
+  const geometry=mergeGeometries(pieces);for(const piece of pieces)piece.dispose();geometry.name='Four weathered bevelled timber boards';return geometry;
 }
 
 /** Only visible spatial batches draw; physics still uses the unchanged grid. */
 export function createWoodPanels(parent,material,{spatial=false}={}){
+  applyEnvironmentSurface(material,{kind:'wood'});varyWoodUV(material);
   const geometry=createWoodPanelGeometry(),railGeometry=new THREE.BoxGeometry(1,.10,.13),postGeometry=new THREE.BoxGeometry(.13,2.73,.16),batches=new Map();
   const dummy=new THREE.Object3D(),tint=new THREE.Color();
   return {

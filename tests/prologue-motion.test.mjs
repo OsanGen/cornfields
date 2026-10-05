@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {samplePrologueMotion,createPrologueContactTracker} from '../src/prologue-motion.js';
+import {samplePrologueMotion,createPrologueContactTracker,samplePrologueSoleGait} from '../src/prologue-motion.js';
 import {createPrologueActor} from '../src/prologue-actors.js';
 
 const durations={car:60,dispatch:23,emergence:6,bang:2,cabin:12,exit:8,walk:68,history:60,disappearance:50,arrival:16,rupture:24};
@@ -30,8 +30,8 @@ test('Stanley keeps running until his translation ends and then stops contacts',
 
 test('Clarence steps out onto a planted foot and remains planted before the walk',()=>{
   const a=samplePrologueMotion(frame('exit',.91)).actors.clarence;
-  assert.equal(a.stepOut,true);assert.equal(a.grounded,true);assert.equal(a.phase,Math.PI);
-  assert.equal(samplePrologueMotion(frame('exit',1)).actors.clarence.phase,Math.PI);
+  assert.equal(a.stepOut,true);assert.equal(a.grounded,true);assert(Math.abs(a.phase-(1.75/.45+.37)*Math.PI)<1e-8);
+  assert(Math.abs(samplePrologueMotion(frame('exit',1)).actors.clarence.phase-(1.75/.45+.37)*Math.PI)<1e-8);
 });
 
 function collect(fps){
@@ -86,4 +86,22 @@ test('contact phase corresponds to the articulated cast flat-foot plant',()=>{
   }
   const geometries=new Set(),materials=new Set();actor.root.traverse(object=>{if(object.geometry)geometries.add(object.geometry);if(object.material)materials.add(object.material);});
   for(const geometry of geometries)geometry.dispose();for(const material of materials)material.dispose();
+});
+
+
+test('heel, sole and toe support share the unchanged alternating contact phase',()=>{
+  for(const running of [false,true])for(const index of [0,1]){
+    const phase=-index*Math.PI,contact=samplePrologueSoleGait(phase,index,{running});
+    assert.equal(contact.contact,'heel');assert.equal(contact.u,0);assert(contact.pitch<-.1);
+    const flat=samplePrologueSoleGait(phase+contact.stance*.4*Math.PI*2,index,{running});
+    assert.equal(flat.contact,'sole');assert.equal(flat.pitch,0);assert(flat.planted);
+    const toe=samplePrologueSoleGait(phase+contact.stance*.98*Math.PI*2,index,{running});
+    assert.equal(toe.contact,'toe');assert(toe.pitch>.25);
+    for(const u of [0,contact.stance*.22,contact.stance*.71,contact.stance,1]){
+      const a=samplePrologueSoleGait(phase+(u-1e-7)*Math.PI*2,index,{running});
+      const b=samplePrologueSoleGait(phase+(u+1e-7)*Math.PI*2,index,{running});
+      assert(Math.abs(a.pitch-b.pitch)<.00001,'continuous heel/toe angle');
+      assert(Math.abs(a.lift-b.lift)<.00001,'continuous sole clearance');
+    }
+  }
 });

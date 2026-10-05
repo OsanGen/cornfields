@@ -1,3 +1,4 @@
+import {followApproachTarget} from '../src/prologue-layout.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createPrologue,prologueFrame} from '../src/prologue.js';
@@ -14,11 +15,8 @@ const fixture=()=>{const cues=[],story=createPrologue({durations:PROLOGUE_VOICE_
 function followControls(frame,snapshot){
   if(frame.waitingForExit)return {interact:true};
   if(!frame.canMove||frame.chapter==='redroom')return {};
-  // Walk around the solid cruiser before joining the roadside group.
-  if(frame.player.z>-3.2)return {forward:1,yaw:0};
   const escorts=snapshot.escorts||snapshot.story?.escorts;
-  const x=(escorts.clarence.x+escorts.stanley.x)/2,z=(escorts.clarence.z+escorts.stanley.z)/2+2.3;
-  const dx=x-frame.player.x,dz=z-frame.player.z;
+  const target=followApproachTarget(frame.player,escorts),dx=target.x-frame.player.x,dz=target.z-frame.player.z;
   return Math.hypot(dx,dz)>.28?{forward:1,yaw:Math.atan2(-dx,-dz)}:{};
 }
 function drive(story,until,{max=260,controls}={}){
@@ -40,7 +38,7 @@ test('free look is immediate and persists; Mike exits only after a valid stopped
   assert.equal(wait.waitingForExit,true);assert.equal(wait.time,chapter('cabin').end);
   assert.equal(wait.escorts.clarence.x,-.45,'Clarence stays seated for the private exchange');
   story.tick(20,{forward:1});assert.equal(story.snapshot().time,wait.time);assert.equal(story.frame().player.x,.5);
-  story.tick(.05,{interact:true});story.tick(.86);assert.equal(story.frame().waitingForExit,false);assert.equal(story.frame().canMove,true);
+  story.tick(.05,{interact:true});story.tick(1.61);assert.equal(story.frame().waitingForExit,false);assert.equal(story.frame().canMove,true);
   const before=story.frame().player.z;story.tick(.2,{forward:1,yaw:0});assert(story.frame().player.z<before);
   story.dispose();
 });
@@ -95,14 +93,18 @@ test('separation finishes the sentence, holds upcoming story, spaces callouts an
   assert.equal(cues.filter(id=>id==='undead').length,1);story.dispose();
 });
 
-test('redroom begins in-room, permits walking, freezes escorts and restores the exact outdoor pose at its boundary',()=>{
+test('redroom transfers only under liquid cover, permits held-room walking and restores the exact outdoor pose',()=>{
   const {story}=fixture();
   drive(story,f=>f.storyTime>=chapter('redroom').start-.1);
   const before=story.frame().player;
   // Arrive exactly on the scene boundary, with no movement on that last step.
   story.tick(chapter('redroom').start-story.frame().storyTime);
   assert.equal(story.frame().chapter,'redroom');
+  // 2026-10-04 approved liquid v1: preserve the outdoor pose until full cover.
+  assert.equal(story.frame().player.x,before.x);assert.equal(story.frame().player.z,before.z);
+  story.tick(.7);assert.equal(story.frame().transfer.cover,1);
   assert.equal(story.frame().player.x,0);assert.equal(story.frame().player.z,2);
+  story.tick(.6);
   const escorts=story.snapshot().escorts;
   story.tick(1,{strafe:1,yaw:0,pitch:.4});
   assert(story.frame().player.x>0);assert.equal(story.frame().player.pitch,.4);
@@ -126,7 +128,7 @@ test('all visions fire once, retain fixed durations under reduced effects and co
   }
   assert.equal(story.phase,'finished');assert.equal(story.snapshot().followCalls,0);
   for(const id of ['undead','redroom','liquid','crash'])assert.equal(cues.filter(c=>c===id).length,1,id);
-  for(const [id,duration] of [['undead',2],['redroom',10],['liquid',5],['rupture',12]])assert.equal(chapter(id).end-chapter(id).start,duration);
+  for(const [id,duration] of [['undead',5.2],['redroom',12.4],['liquid',5],['rupture',12]])assert(Math.abs(chapter(id).end-chapter(id).start-duration)<1e-8);
   assert(seen.has('redroom')&&seen.has('liquid'));
   assert(wall+20+PROLOGUE_END_LINE.end<240);
   assert.deepEqual(story.snapshot().dropped,[]);story.dispose();

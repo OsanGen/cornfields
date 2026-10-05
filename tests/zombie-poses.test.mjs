@@ -126,3 +126,17 @@ test('additional source clips blend on the real rig without taking over QTE or s
   const restarted=h.adapter.diagnostics();h.game.runId=3;h.adapter.update(h.game,0);
   assert.deepEqual(h.adapter.diagnostics(),restarted);
 });
+
+
+test('cinematic head uses authored eye seats and all posture skin remains finite',async()=>{
+ const h=await fixture({bank:true}),meta=h.gltf.asset.extras;
+ assert.equal(h.adapter.diagnostics().identity,'zombie');assert.equal(h.adapter.diagnostics().runtimeHeight,2.32);
+ for(const [i,name]of ['Creature left eye','Creature right eye'].entries()){
+  const eye=h.group.getObjectByName(name);assert.deepEqual(eye.position.toArray(),meta.headLocalEyes[i]);assert.deepEqual(eye.scale.toArray(),meta.headLocalEyeScale);
+ }
+ for(const [state,time]of [['stalk',.4],['chase',1.2],['rage_chase',1.8],['staggered',2.2]]){
+  Object.assign(h.game.enemy,{state,stateStartedAt:0,timer:3-time});h.adapter.update(h.game,time);h.group.updateMatrixWorld(true);
+  h.adapter.model.traverse(mesh=>{if(!mesh.isSkinnedMesh)return;mesh.skeleton.update();for(let i=0;i<mesh.geometry.attributes.position.count;i++)assert(mesh.getVertexPosition(i,new THREE.Vector3()).toArray().every(Number.isFinite));});
+ }
+ h.adapter.dispose();
+});

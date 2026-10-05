@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {applyEnvironmentSurface} from './environment-materials.js';
 import {optionalAsset} from './asset-safety.js';
 
 function disposeSource(root){
@@ -21,7 +22,7 @@ export function prepareScarecrow(source){
       }
       o.geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
     }
-    o.material=[o.material].flat().map(m=>{if(!materials.has(m))materials.set(m,m.clone());return materials.get(m);});
+    o.material=[o.material].flat().map(m=>{if(!materials.has(m)){const clone=m.clone();if(m.name==='timber')applyEnvironmentSurface(clone,{kind:'wood'});if(['warning','straw'].includes(m.name))clone.userData.liquidDetail=1;materials.set(m,clone);}return materials.get(m);});
     if(o.material.length===1)o.material=o.material[0];
   });
   const bounds=new THREE.Box3().setFromObject(root),size=bounds.getSize(new THREE.Vector3());
@@ -70,20 +71,22 @@ export function createScarecrowView(scene,anchors,{touch=false,cloth,loader=new 
     let nearest=null,nearestDistance=10;
     for(const record of records){
       const spent=game.progress.activatedCheckpoints.includes(record.checkpoint.id);
+      const ready=!spent&&record.checkpoint.index===game.progress.checkpointIndex;
+      record.group.userData.readiness=spent?'spent':ready?'ready':'locked';
       const distance=Math.hypot(game.player.x-record.checkpoint.x,game.player.z-record.checkpoint.z);
       record.uniforms.clock.value=reduced?0:time;record.uniforms.spent.value=spent?1:0;
-      record.uniforms.strength.value=spent?.20:.72+(reduced?0:Math.sin(time*1.4)*.08);
+      record.uniforms.strength.value=spent?.12:ready?.72+(reduced?0:Math.sin(time*1.4)*.08):.08;
       record.halo.visible=!field&&distance<16;
       if(camera){record.halo.quaternion.copy(camera.quaternion);record.halo.rotation.x=0;record.halo.rotation.z=0;}
       if(spent)stats.spent++;else stats.active++;
       for(const material of record.materials){
         if(['warning','straw'].includes(material.name)&&cloth?.map&&material.map!==cloth.map){
-          material.map=cloth.map;material.normalMap=cloth.normalMap;material.normalScale?.set(.32,.32);
+          material.map=cloth.map;material.normalMap=cloth.normalMap;material.normalScale?.set(.50,.50);
           material.color.setHex(material.name==='warning'?0x766b56:0x9c917b);material.roughness=.96;material.needsUpdate=true;
         }
-        material.emissive?.setHex(spent?0x43050d:0x361141);material.emissiveIntensity=spent?.08:.18;
+        material.emissive?.setHex(spent?0x43050d:0x361141);material.emissiveIntensity=spent?.04:ready?.18:.025;
       }
-      if(!field&&!spent&&distance<nearestDistance){nearest=record;nearestDistance=distance;}
+      if(!field&&ready&&distance<nearestDistance){nearest=record;nearestDistance=distance;}
     }
     point.intensity=nearest?2.4:0;
     if(nearest)point.position.set(nearest.checkpoint.x,1.8,nearest.checkpoint.z);

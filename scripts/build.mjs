@@ -11,7 +11,7 @@ const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 // Deliberate publication boundary: no art sources, scripts, tests, or local output.
 export const runtimeAssets = [
   'cornfield-kit.glb', 'corn_color.png', 'corn_normal.png',
-  'zombie.glb', 'zombie-clips.json', 'zombie-color.jpg', 'zombie-normal.jpg', 'night-sky.jpg',
+  'zombie.glb', 'zombie-clips.json', 'zombie-color.jpg', 'zombie-normal.jpg', 'zombie-roughness.jpg', 'night-sky.jpg',
   'player-arms.glb', 'service-pistol.glb', 'handheld-flashlight.glb', 'player-viewmodel-source.json',
   'scarecrow.glb','scarecrow-source.json',
   'brown_mud_diff_1k.jpg', 'brown_mud_nor_gl_1k.jpg', 'brown_mud_rough_1k.jpg',
@@ -28,7 +28,7 @@ export const runtimeAssets = [
 ].map(name=>`assets/audio/${name}`)).concat([...new Set(Object.values(FOOTSTEP_FILES))].filter(name=>name.startsWith('footsteps/')).map(name=>`assets/audio/${name}`),['assets/audio/footsteps/sources.json']).concat([
   'barlow-condensed.ttf','rubik-glitch.ttf','barlowcondensed-OFL.txt','rubikglitch-OFL.txt','LICENSES.md','sources.json',
 ].map(name=>`assets/fonts/${name}`)).concat([
-  'cruiser.glb','cast.glb','asphalt_diff.jpg','asphalt_nor_gl.jpg','asphalt_rough.jpg','sources.json','LICENSES.md',
+  'cruiser.glb','cast-clarence.glb','cast-stanley.glb','dispatch-radio.glb','asphalt_diff.jpg','asphalt_nor_gl.jpg','asphalt_rough.jpg','sources.json','LICENSES.md',
 ].map(name=>`assets/intro/${name}`)).concat([...PROLOGUE_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/prologue/${name}`)).concat([...SURVIVAL_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/survival/${name}`));
 
 // The game's static ES-module imports, including multiline import/export lists.

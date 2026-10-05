@@ -1,3 +1,5 @@
+import {samplePrologueWake} from './prologue-performance.js';
+import {sampleHallucination} from './prologue-hallucination.js';
 import {interactionPrompt} from './game.js';
 import {GAME_CONFIG} from './game-config.js';
 import {interactionLocked} from './grapple.js';
@@ -82,12 +84,15 @@ export function createUI(document, {debug = false, reducedMotion = false, touch 
       }
       text('credits-roles',INTRO.roles);
     },
+    renderHandoff(amount=0){const veil=node('opening-reveal');if(!veil)return;veil.hidden=amount<=0;veil.style.opacity=String(Math.max(0,Math.min(1,amount)));},
     renderOpening(intro,{touch:openingTouch=touch,portrait=false,coreReady=false,coreError=null,entering=false,pointerError=''}={}){
       const frame=intro.frame(reducedMotion);
       // The original title-only flow remains owned by renderIntro.
       if(!frame.stage)return;
       const active=intro.active,phase=intro.phase,preflight=phase==='preflight',paused=phase==='paused',ready=phase==='ready';
       const playing=active&&phase==='playing',story=frame.stage==='prologue';
+      const lids=node('story-eyelids'),blink=Math.max(samplePrologueWake(frame).blink,sampleHallucination(frame).blink);
+      if(lids){lids.hidden=!playing||!story||blink<=0;lids.style.setProperty('--lid',String(blink));}
       document.body.classList.toggle('story-player',true);
       document.body.classList.toggle('opening-active',active);
       document.body.classList.toggle('opening-story',playing&&story);

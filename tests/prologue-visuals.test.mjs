@@ -6,6 +6,8 @@ import {createPrologueActor} from '../src/prologue-actors.js';
 import {createPrologueEquipment} from '../src/scene.js';
 import {GAME_CONFIG} from '../src/game-config.js';
 import {createPrologue} from '../src/prologue.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {load as loadCpuGltf} from '../scripts/load-glb-cpu.mjs';
 
 test('prologue starts with Mike in the passenger seat and exits at standing height',()=>{
   const car=prologueBlocking({chapter:'car',chapterProgress:0,time:0});
@@ -26,15 +28,15 @@ test('guided chapters join at identical camera positions',()=>{
 test('return holds the exact threshold pose and never restores the men',()=>{
   const end=prologueBlocking({chapter:'arrival',chapterProgress:1});
   const returned=prologueBlocking({chapter:'rupture',chapterProgress:.2,returning:true,returnTime:3});
-  assert.deepEqual(returned.camera,end.camera);assert.deepEqual(returned.camera,[0,GAME_CONFIG.player.eyeHeight,-48]);
-  assert.deepEqual(returned.look,[0,GAME_CONFIG.player.eyeHeight,-56]);assert.equal(returned.menVisible,false);
+  assert.deepEqual(returned.camera,end.camera);assert.deepEqual(returned.camera,[-48,GAME_CONFIG.player.eyeHeight,-4.2]);
+  assert.deepEqual(returned.look,[-56,GAME_CONFIG.player.eyeHeight,-4.2]);assert.equal(returned.menVisible,false);
 });
 
 test('disappearance is concealed by dense mist and reduced mode removes the head turn',()=>{
   assert.equal(prologueBlocking({chapter:'rupture',chapterProgress:.4,mist:.25}).menVisible,true);
   assert.equal(prologueBlocking({chapter:'rupture',chapterProgress:.9,mist:.95}).menVisible,false);
   const reduced=prologueBlocking({chapter:'rupture',chapterProgress:.25,reduced:true});
-  assert.deepEqual(reduced.look,[0,GAME_CONFIG.player.eyeHeight,-56]);
+  assert.deepEqual(reduced.look,[-56,GAME_CONFIG.player.eyeHeight,-4.2]);
 });
 
 test('live maze transfer happens only while fully covered and persists through return',()=>{
@@ -66,12 +68,12 @@ test('the new visions preserve their order and information in reduced effects',(
   for(const reduced of [false,true]){
     const vision=(chapter,chapterTime)=>prologueVisionState({chapter,chapterTime,reduced});
     assert.equal(vision('flashlight',4).corpse,false);
-    assert.equal(vision('undead',1).corpse,true);assert.equal(vision('history',0).corpse,false);
+    assert.equal(vision('undead',1).corpse,false);assert.ok(vision('undead',1).hallucination.bridge>0);assert.equal(vision('history',0).corpse,false);
     assert.equal(vision('redroom',9.9).room,true);assert.equal(vision('return_walk',0).room,false);
     assert.equal(vision('liquid',0).liquid,0);assert.ok(vision('liquid',2).liquid>0);assert.equal(vision('liquid',5).liquid,0);
     assert.equal(vision('rupture',.5).limp,false);assert.equal(vision('rupture',2).limp,true);assert.equal(vision('rupture',2).rise,0);
     assert.ok(vision('rupture',5).rise>.4);assert.equal(vision('rupture',5).dissolve,0);
-    assert.equal(vision('rupture',7).binary,true);assert.ok(vision('rupture',7).dissolve>0);assert.ok(vision('rupture',7).mist<.2);
+    assert.equal(vision('rupture',7).binary,false);assert.ok(vision('rupture',7).liquid>0);assert.ok(vision('rupture',7).dissolve>0);assert.ok(vision('rupture',7).mist<.2);
     assert.equal(vision('rupture',9.1).escortsVisible,false);assert.equal(vision('rupture',9.1).binary,false);assert.equal(vision('rupture',12).mist,1);
     if(reduced)for(const t of [0,1,3.1,6.1,9])assert.equal(vision('rupture',t).lightning,0);
   }
@@ -125,6 +127,30 @@ function rendererStub(onRender){
     render(scene,camera){scene.updateMatrixWorld(true);this.info.render.calls++;onRender(scene,camera);}};
 }
 
+test('opening scenery excludes the giant cone-tree placeholders and retains the other scenery',()=>{
+  for(const touch of [false,true])for(const reduced of [false,true]){
+    let scene;const view=createPrologueVisuals(rendererStub(s=>scene=s),{touch});
+    const frame={chapter:'car',time:20,chapterTime:20,chapterProgress:.75,reduced};
+    const inspect=()=>{
+      const coneBatches=[],skies=[];
+      scene.traverse(object=>{
+        if(object.isInstancedMesh&&object.geometry.type==='ConeGeometry')coneBatches.push(object);
+        if(object.isMesh&&object.geometry.type==='SphereGeometry'&&object.geometry.parameters.radius===155)skies.push(object);
+      });
+      assert.equal(coneBatches.length,0,'placeholder cone scenery must not cross the approaching car view');
+      assert.equal(skies.length,1,'retain the existing night sky');
+      assert.ok(scene.fog?.isFogExp2,'retain the existing fog');
+      assert.ok(scene.getObjectByName('Continuous roadside'),'retain the road');
+      assert.ok(scene.getObjectByName('Roadside corn with door and leaf clearance'),'retain roadside corn');
+      assert.ok(scene.getObjectByName('Westward cornfield approach and threshold'),'retain the approach field');
+      assert.ok(scene.getObjectByName('Cruiser interior, passenger on right'),'retain the cabin');
+      assert.ok(scene.getObjectByName('Pooled cinematic exterior rain'),'retain the rain');
+    };
+    try{view.render(frame);inspect();view.release();view.render(frame);inspect();}
+    finally{view.dispose();}
+  }
+});
+
 test('repeated driving frames never accumulate a half-turn in the seated actor',()=>{
   let scene;const renderer=rendererStub(s=>{scene=s;}),view=createPrologueVisuals(renderer);
   const story=createPrologue();story.begin();story.tick(2);const frame=story.frame();
@@ -148,11 +174,11 @@ test('rendering consumes live motion, draws the red room and capped ascent, then
     view.render(frame);return view.diagnostics();
   }
   let d=draw('walk',1);assert.equal(d.camera.yaw,.42);assert.equal(d.flashlight,true);assert.equal(scene.getObjectByName('Ten second red room').visible,false);
-  d=draw('undead',1);assert.ok(d.actors.every(a=>a.corpse));
-  d=draw('redroom',4);assert.equal(d.environment,'red room');assert.deepEqual(d.roomContents,['projector','original abstract face projection']);assert.equal(scene.getObjectByName('Ten second red room').visible,true);assert.equal(d.camera.pitch,.12);
+  d=draw('undead',1);assert.ok(d.actors.every(a=>!a.corpse));assert.ok(d.hallucination.bridge>0);
+  d=draw('redroom',4);assert.equal(d.environment,'red room');assert.deepEqual(d.roomContents,['projector','original detailed anonymous face projection']);assert.equal(scene.getObjectByName('Ten second red room').visible,true);assert.equal(d.camera.pitch,.12);
   d=draw('liquid',2);assert.ok(d.liquidMaterials>10);assert.equal(scene.getObjectByName('Ten second red room').visible,false);
   d=draw('rupture',5);assert.ok(d.actors.every(a=>a.pose==='limp'));assert.ok(scene.getObjectByName('Prologue Clarence').position.y>.4);assert.equal(d.binaryFragments,0);
-  d=draw('rupture',7,true);assert.equal(d.binaryFragments,96);assert.ok(d.actors.every(a=>a.dissolve>0));assert.equal(d.vision.lightning,0);
+  d=draw('rupture',7,true);assert.equal(d.binaryFragments,0);assert.equal(d.ribbons,6);assert.ok(d.actors.every(a=>a.dissolve>0));assert.equal(d.vision.lightning,0);
   d=draw('rupture',10);assert.equal(d.menVisible,false);assert.equal(d.binaryFragments,0);
   assert.equal(material.onBeforeCompile,priorHook);assert.equal(material.userData.prologueLiquid,undefined);
   view.release();assert.equal(borrowedDisposed,0);view.dispose();geometry.dispose();material.dispose();assert.equal(borrowedDisposed,2);
@@ -182,4 +208,68 @@ test('equipment overlay shows a held radio and liquid gun/skin without touching 
   equipment.release();assert.equal(equipment.stats.meshes,0);assert.equal(equipment.stats.active,false);assert.equal(borrowedDisposed,0);
   renderer.render=()=>{};equipment.render(storyCamera,{...frame,chapter:'dispatch'});assert.equal(equipment.stats.kind,'radio');assert.ok(equipment.stats.meshes>0);
   equipment.dispose();assert.equal(borrowedDisposed,0);for(const mesh of [skin,weapon]){mesh.geometry.dispose();mesh.material.dispose();}assert.equal(borrowedDisposed,4);
+});
+
+// Deterministic light-state checks. These do not establish final pixel quality.
+test('benchmark night hierarchy reuses lights and restores after room/restart',()=>{
+ let scene;const view=createPrologueVisuals(rendererStub(s=>scene=s));
+ const inspect=()=>{const lights=[];scene.traverse(o=>{if(o.isLight)lights.push(o);});return lights;};
+ view.render({chapter:'car',time:1,chapterTime:1,chapterProgress:.1});
+ let lights=inspect(),count=lights.length;
+ const hemi=lights.find(o=>o.isHemisphereLight&&o.parent===scene);
+ const moon=lights.find(o=>o.isDirectionalLight);
+ assert.equal(hemi.intensity,1.12);assert.equal(moon.intensity,1.85);
+ assert.ok(moon.intensity>hemi.intensity);
+ assert.ok(lights.some(o=>o.isPointLight&&o.intensity===.48));
+ view.render({chapter:'redroom',time:60,chapterTime:2,chapterProgress:.2});
+ assert.equal(hemi.intensity,0);assert.equal(moon.intensity,0);
+ view.render({chapter:'walk',time:70,chapterTime:1,chapterProgress:.1});
+ assert.equal(hemi.intensity,1.12);assert.equal(moon.intensity,1.85);
+ assert.equal(inspect().length,count);view.dispose();
+});
+
+test('cinematic rain follows reduced effects, stays on glass during free look and releases on restart',()=>{
+  let scene;const view=createPrologueVisuals(rendererStub(s=>scene=s));
+  const story=createPrologue();story.begin();story.tick(2);const frame=story.frame();
+  view.render(frame);const d=view.diagnostics(),rain=scene.getObjectByName('Pooled cinematic exterior rain'),glass=scene.getObjectByName('Glass-anchored cinematic beads and runoff');
+  assert.equal(d.rain.active,true);assert.equal(d.rain.poolSize,320);assert.equal(d.rain.exteriorCount,320);assert.equal(d.rain.glassSource,'Fallback windshield');assert.equal(glass.parent.name,'Fallback windshield');
+  const geometry=rain.geometry,uv=glass.geometry.attributes.uv.array,local=glass.matrix.clone();
+  frame.player={...frame.player,yaw:1.2,pitch:.2};frame.reduced=true;view.render(frame);
+  assert.equal(view.diagnostics().rain.exteriorCount,90);assert.equal(rain.geometry,geometry);assert.equal(glass.geometry.attributes.uv.array,uv);assert.ok(glass.matrix.equals(local));
+  let disposed=0;geometry.addEventListener('dispose',()=>disposed++);glass.geometry.addEventListener('dispose',()=>disposed++);glass.material.addEventListener('dispose',()=>disposed++);
+  view.release();assert.equal(disposed,3);assert.equal(view.diagnostics().rain,null);assert.equal(rain.parent,null);assert.equal(glass.parent,null);
+  view.render(frame);assert.equal(view.diagnostics().rain.exteriorCount,90);assert.notEqual(scene.getObjectByName('Pooled cinematic exterior rain').geometry,geometry);view.dispose();view.dispose();story.dispose();
+});
+
+test('cinematic rain does not bleed into the red room, return, or borrowed gameplay scene',()=>{
+  let scene;const world={scene:new THREE.Scene(),camera:new THREE.PerspectiveCamera()},view=createPrologueVisuals(rendererStub(s=>scene=s),{getWorld:()=>world});
+  const story=createPrologue();story.begin();story.tick(2);const frame=story.frame();view.render(frame);assert.equal(view.diagnostics().rain.active,true);
+  view.render({chapter:'redroom',chapterTime:2,chapterProgress:.2,time:80});assert.equal(view.diagnostics().rain.active,false);
+  view.render({chapter:'arrival',chapterTime:10,chapterProgress:1,time:100});assert.equal(view.diagnostics().rain.active,false);assert.equal(scene,world.scene);assert.equal(scene.getObjectByName('Pooled cinematic exterior rain'),undefined);
+  view.render({...frame,returning:true});assert.equal(view.diagnostics().rain.active,false);
+  view.render(frame);assert.equal(view.diagnostics().rain.active,true);view.dispose();story.dispose();
+});
+
+
+test('independent role arrival preserves transforms and swaps rain onto only the imported windshield',async()=>{
+  const cast=await loadCpuGltf(new URL('../assets/intro/cast.glb',import.meta.url)),cruiser=await loadCpuGltf(new URL('../assets/intro/cruiser.glb',import.meta.url));
+  const originalDocument=globalThis.document,originalGltfLoad=GLTFLoader.prototype.loadAsync,originalTextureLoad=THREE.TextureLoader.prototype.loadAsync;
+  const pending=new Map(),turn=()=>new Promise(resolve=>setImmediate(resolve));let view,story,scene;
+  try{
+    globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){}})})};
+    GLTFLoader.prototype.loadAsync=function(url){return new Promise((resolve,reject)=>pending.set(url.includes('cruiser')?'car':url.includes('clarence')?'clarence':'stanley',{resolve,reject}));};
+    THREE.TextureLoader.prototype.loadAsync=async()=>new THREE.Texture();
+    view=createPrologueVisuals(rendererStub(s=>scene=s));story=createPrologue();story.begin();story.tick(2);const frame=story.frame();view.render(frame);
+    const oldClarence=scene.getObjectByName('Prologue Clarence'),oldStanley=scene.getObjectByName('Prologue Stanley Yates'),priorPosition=oldClarence.position.clone(),priorRotation=oldClarence.quaternion.clone();
+    const oldRain=scene.getObjectByName('Glass-anchored cinematic beads and runoff');let oldDisposed=0;oldRain.geometry.addEventListener('dispose',()=>oldDisposed++);
+    pending.get('clarence').resolve(cast);await turn();
+    const newClarence=scene.getObjectByName('Prologue Clarence');assert.notEqual(newClarence,oldClarence);assert.equal(scene.getObjectByName('Prologue Stanley Yates'),oldStanley);
+    assert.ok(newClarence.position.equals(priorPosition));assert.ok(newClarence.quaternion.equals(priorRotation));assert.equal(oldClarence.visible,false);assert.equal(oldClarence.parent,newClarence);
+    assert.equal(view.diagnostics().castRoles.clarence,'cast-clarence.glb');assert.equal(view.diagnostics().castRoles.stanley,'procedural fallback');
+    pending.get('stanley').reject(Error('role-specific load failed'));pending.get('car').resolve(cruiser);await turn();
+    assert.equal(view.diagnostics().assets.castRoles.clarence,'ready');assert.equal(view.diagnostics().assets.castRoles.stanley,'fallback');assert.equal(scene.getObjectByName('Prologue Stanley Yates'),oldStanley);
+    const mapped=scene.getObjectByName('Glass-anchored cinematic beads and runoff');assert.equal(mapped.parent.name,'BodyWindshield');assert.equal(view.diagnostics().rain.glassSource,'BodyWindshield');assert.equal(oldDisposed,1);assert.equal(oldRain.parent,null);
+    assert.equal(mapped.parent.geometry.attributes.uv,undefined);let sourceDisposed=0,overlayDisposed=0;mapped.parent.geometry.addEventListener('dispose',()=>sourceDisposed++);mapped.geometry.addEventListener('dispose',()=>overlayDisposed++);
+    view.render(frame);view.release();assert.equal(sourceDisposed,1);assert.equal(overlayDisposed,1);assert.equal(view.diagnostics().rain,null);assert.equal(view.diagnostics().assets,null);
+  }finally{view?.dispose();story?.dispose();GLTFLoader.prototype.loadAsync=originalGltfLoad;THREE.TextureLoader.prototype.loadAsync=originalTextureLoad;if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;}
 });

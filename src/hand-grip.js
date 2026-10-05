@@ -6,9 +6,15 @@ export const HAND_GRIP_CONTACT=Object.freeze({
   pistol:Object.freeze([-.032,-.009,-.104]),
   knife:Object.freeze([-.029,-.008,-.107]),
   flashlight:Object.freeze([-.029,-.008,-.107]),
+  radio:Object.freeze([-.020,-.008,-.088]),
 });
 
 const profiles={
+  radio:{
+    // Wider, flatter grip for the 65 mm radio; only dispatch clones use it.
+    index:[60,104,164],middle:[50,100,177],ring:[46,103,160],pinky:[24,93,95],
+    thumb:[[-.018,.034,-.068],[-.042,.032,-.065],[-.059,.014,-.082]],
+  },
   pistol:{
     // The index reaches the actual trigger, instead of curling behind it.
     index:[0,25,80],middle:[52,137,185],ring:[55,143,192],pinky:[57,142,195],

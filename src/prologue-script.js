@@ -1,10 +1,14 @@
 // Fast playtest adaptation. R=retained, A=adapted, N=new draft, U=user wording.
 // Cue IDs and provenance match CORNFIELDS_FAST_INTERACTIVE_PROLOGUE_REFINEMENT.md.
+import {EXIT_SECONDS} from './prologue-performance.js';
 import {BANG_TIMES} from './prologue-confrontation.js';
 const freeze=Object.freeze;
 const VOICE_TAIL=.12,LINE_GAP=.18;
-const raw=(id,voice,chapter,basis,text)=>freeze({id,voice,chapter,basis,text,speaker:voice==='face'?'PROJECTED FACE':voice==='unknown'?'':voice.toUpperCase()});
+// 2026-10-04: the owner explicitly deferred recordings for these two new cues only.
+export const PROLOGUE_SUBTITLE_ONLY_IDS=freeze(['CAR-00','UND-01']);
+const raw=(id,voice,chapter,basis,text)=>freeze({id,voice,chapter,basis,text,audioMode:PROLOGUE_SUBTITLE_ONLY_IDS.includes(id)?'subtitle-only':'recorded',speaker:voice==='face'?'PROJECTED FACE':voice==='unknown'?'':voice.toUpperCase()});
 const SOURCE=freeze([
+  raw('CAR-00','mike','car','N','Clarence, I need to get something off my chest.'),
   raw('CAR-01','mike','car','A','That standoff in 2002. I lost my partner that day.'),
   raw('CAR-02','mike','car','R',"But I can't get this shit out of my head."),
   raw('CAR-03','mike','car','R',"It won't stop replaying in my head. Like the worst overplayed song you've heard on the radio."),
@@ -27,6 +31,7 @@ const SOURCE=freeze([
   raw('WAL-03','stanley','walk','R','Nothing lives in the cornfields, dearie.'),
   raw('WAL-04','stanley','walk','N','Then she said,'),
   raw('WAL-05','stanley','walk','R','I saw something earlier out there. A man. He had a gray jacket with holes in it.'),
+  raw('UND-01','mike','undead','U','What the fuck.'),
   raw('WAL-06','stanley','history','A','Those cornfields run on for miles and miles and miles. Far beyond our seven hundred acres.'),
   raw('WAL-07','stanley','history','A',"You could be holding a compass and you'd still get lost."),
   raw('WAL-08','stanley','history','A','Our rule was: only go as far as the mind sees north. If that gets blurry, even in the slightest bit, turn back immediately.'),
@@ -45,17 +50,17 @@ const SOURCE=freeze([
   raw('LIQ-01','unknown','liquid','U','WE ARE ONE'),
 ]);
 const CHAPTERS=freeze([
-  {id:'car',title:'Police car',lead:.45},
+  {id:'car',title:'Police car',lead:6},
   {id:'dispatch',title:'Dispatch call',lead:.3},
   {id:'emergence',title:'Stanley emerges',lead:.65},
   {id:'bang',title:'At the window',duration:2},
   {id:'cabin',title:'A private word',lead:.15},
-  {id:'exit',title:'Leave the cruiser',lead:.85},
+  {id:'exit',title:'Leave the cruiser',lead:EXIT_SECONDS},
   {id:'flashlight',title:'Light and warning',lead:.2},
   {id:'walk',title:'Sadie saw someone',lead:.15},
-  {id:'undead',title:'Wrong in the lightning',duration:2},
+  {id:'undead',title:'Wrong in the lightning',duration:5.2,slots:[[2.0,3.5]]},
   {id:'history',title:'The field goes too far',lead:.1},
-  {id:'redroom',title:'The projected face',duration:10,slots:[[1,3],[3,6],[6,9]]},
+  {id:'redroom',title:'The projected face',duration:12.4,slots:[[2.2,4.2],[4.2,7.2],[7.2,10.2]]},
   {id:'return_walk',title:'Only a second',lead:.1},
   {id:'disappearance',title:'Sadie disappears',lead:.15},
   {id:'liquid',title:'Liquid reality',duration:5,slots:[[1,4]]},
@@ -107,7 +112,7 @@ export function createPrologueTimeline({durations={}}={}){
     chapters.push(freeze({id:chapter.id,title:chapter.title,start,end:cursor}));
   }
   const chapter=id=>chapters.find(item=>item.id===id);
-  const cues=[['radio',chapter('dispatch').start+.04],['corn_burst',chapter('emergence').start+.04],...BANG_TIMES.map((at,index)=>['car_bang_'+(index+1),chapter('bang').start+at]),['undead',chapter('undead').start],['redroom',chapter('redroom').start],['liquid',chapter('liquid').start],['crash',chapter('rupture').start]];
+  const cues=[['entertainment_off',4.15],['zombie_scream_1',chapter('undead').start+1.5],['zombie_scream_2',chapter('undead').start+1.72],['radio',chapter('dispatch').start+.04],['corn_burst',chapter('emergence').start+.04],...BANG_TIMES.map((at,index)=>['car_bang_'+(index+1),chapter('bang').start+at]),['undead',chapter('undead').start],['redroom',chapter('redroom').start],['liquid',chapter('liquid').start],['crash',chapter('rupture').start]];
   return freeze({duration:cursor,chapters:freeze(chapters),lines:freeze(lines),cues:freeze(cues.map(freeze))});
 }
 const baseline=createPrologueTimeline();
@@ -119,5 +124,5 @@ export const PROLOGUE_FOLLOW_LINES=freeze([
   raw('FOL-03','clarence','follow','N','Mike! Get back over here!'),
 ].map(line=>timedLine(line,0,durationFor(line,{}))));
 export const PROLOGUE_END_LINE=timedLine(raw('END-01','mike','gameplay','U','Where did they go? Am I going crazy?'),0,4);
-export const PROLOGUE_AUDIO_LINES=freeze([...PROLOGUE_LINES,...PROLOGUE_FOLLOW_LINES,PROLOGUE_END_LINE]);
+export const PROLOGUE_AUDIO_LINES=freeze([...PROLOGUE_LINES,...PROLOGUE_FOLLOW_LINES,PROLOGUE_END_LINE].filter(line=>line.audioMode==='recorded'));
 export const PROLOGUE=freeze({duration:baseline.duration,storyCredit:'Jacob Nangle',perspective:'Mike Hartmouth',cues:baseline.cues,voiceTail:VOICE_TAIL,lateCueWindow:.35});

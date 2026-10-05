@@ -49,15 +49,15 @@ test('source wording, provenance and unanswered identity survive the fast adapta
 
 test('hallucinations hold at the three required completed-sentence boundaries',()=>{
   const timeline=createPrologueTimeline(),chapter=id=>timeline.chapters.find(c=>c.id===id),line=id=>timeline.lines.find(l=>l.id===id);
-  for(const [id,seconds,preceding,next] of [['undead',2,'WAL-05','WAL-06'],['redroom',10,'WAL-09','RET-01'],['liquid',5,'WAL-16',null]]){
+  for(const [id,seconds,preceding,next] of [['undead',5.2,'WAL-05','WAL-06'],['redroom',12.4,'WAL-09','RET-01'],['liquid',5,'WAL-16',null]]){
     const c=chapter(id);assert(Math.abs(c.end-c.start-seconds)<1e-9);assert(c.start>=line(preceding).end);
     if(next)assert(line(next).start>=c.end);
     assert(timeline.lines.filter(l=>l.start>=c.start&&l.start<c.end).every(l=>l.chapter===id));
   }
   assert.equal(chapter('rupture').end-chapter('rupture').start,12);
-  assert(Math.abs(line('RED-01').start-chapter('redroom').start-1)<1e-9);
-  assert(Math.abs(line('RED-02').start-chapter('redroom').start-3)<1e-9);
-  assert(Math.abs(line('RED-03').start-chapter('redroom').start-6)<1e-9);
+  assert(Math.abs(line('RED-01').start-chapter('redroom').start-2.2)<1e-9);
+  assert(Math.abs(line('RED-02').start-chapter('redroom').start-4.2)<1e-9);
+  assert(Math.abs(line('RED-03').start-chapter('redroom').start-7.2)<1e-9);
 });
 
 test('natural recordings drive speech chapters without inherited slot padding or voice acceleration',()=>{
@@ -66,7 +66,7 @@ test('natural recordings drive speech chapters without inherited slot padding or
   verifyTimeline(expanded);verifyTimeline(compact);
   assert(Math.abs(expanded.lines[0].end-expanded.lines[0].start-long-PROLOGUE.voiceTail)<1e-9);
   assert(expanded.duration>PROLOGUE.duration);assert(compact.duration<PROLOGUE.duration);
-  assert.equal(expanded.chapters.find(c=>c.id==='redroom').end-expanded.chapters.find(c=>c.id==='redroom').start,10);
+  assert(Math.abs(expanded.chapters.find(c=>c.id==='redroom').end-expanded.chapters.find(c=>c.id==='redroom').start-12.4)<1e-9);
   for(const value of [undefined,0,-1,NaN,Infinity])assert.equal(createPrologueTimeline({durations:{[first.id]:value}}).duration,PROLOGUE.duration);
   assert.doesNotMatch(fs.readFileSync(new URL('../scripts/build-prologue-voices.py',import.meta.url),'utf8'),/atempo=/);
 });

@@ -1,10 +1,12 @@
 import * as THREE from 'three';
+import {applyEnvironmentSurface,varyWoodUV} from './environment-materials.js';
 import {doorLeaf} from './corn-world.js';
 
 /** Repeated gates and physical corn partitions: geometry comes from collision data. */
 export function createCornView(scene,maze){
   const w=maze.cornWorld,group=new THREE.Group();group.name='Physical corn boundary';scene.add(group);
   const wood=new THREE.MeshStandardMaterial({color:0x777260,roughness:1});
+  applyEnvironmentSurface(wood,{kind:'wood'});varyWoodUV(wood);
   const metal=new THREE.MeshStandardMaterial({color:0x323934,roughness:.8,metalness:.25});
   const foliage=new THREE.MeshStandardMaterial({color:0x293527,roughness:1});
   const dummy=new THREE.Object3D(),doors=w.doors,solidDoors=doors.filter(d=>!d.permanentOpen);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {applyEnvironmentSurface} from './environment-materials.js';
 
 export function tilePropUV(geometry,x,y){
   const uv=geometry.getAttribute('uv');
@@ -46,7 +47,7 @@ export async function installPropDetails({cloth,sack,barrel}){
 // Share the field's already-uploaded maps, rather than loading copies.
 export function reuseFieldMaterials({wood,darkWood,bands},materials){
   for(const [target,color]of [[wood,0xa69c84],[darkWood,0x787665]]){
-    target.copy(materials.wood);target.color.setHex(color);target.needsUpdate=true;
+    target.copy(materials.wood);target.color.setHex(color);applyEnvironmentSurface(target,{kind:'wood'});target.needsUpdate=true;
   }
   bands.copy(materials.wire);bands.needsUpdate=true;
 }

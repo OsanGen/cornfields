@@ -1,3 +1,4 @@
+import {interactionLocked} from './grapple.js';
 import {GAME_CONFIG as C,distance,emitEvent,addEvidence} from './game-config.js';
 import {createEnemy,updateZombie,resumeAfterStagger} from './zombie-ai.js';
 import {cornPath,openDoor,cornOccupy} from './corn-world.js';
@@ -24,7 +25,7 @@ function fieldMaze(g,door){
     cornWorld:{...w,openField:true,activeDoor:door.index,doors},checkpoints:[],landmarks:[]};
 }
 export function enterOpenField(g,door,entry=g.player){
-  if(!g.corridorRun||g.fieldTrip.active||g.interaction||!door.fieldEntrance||(!door.permanentOpen&&g.cornDoors[door.index].amount<.96))return false;
+  if(!g.corridorRun||g.fieldTrip.active||interactionLocked(g)||!door.fieldEntrance||(!door.permanentOpen&&g.cornDoors[door.index].amount<.96))return false;
   const p=g.player,trip=g.fieldTrip;
   const destination={x:-(entry.x-door.x),z:Math.max(.85,-(entry.z-door.z))};
   if(g.enemies.some(e=>e.active&&e.zone==='field'&&distance(e,destination)<e.radius+p.radius+.1))return false;
@@ -57,7 +58,7 @@ export function fieldReturnLanding(g,entry=g.player){
   return null;
 }
 export function leaveOpenField(g,entry=g.player){
-  if(!g.fieldTrip.active||g.interaction)return false;
+  if(!g.fieldTrip.active||interactionLocked(g))return false;
   const p=g.player,door=g.fieldTrip.returnDoor;
   const destination=fieldReturnLanding(g,entry);
   if(!destination){

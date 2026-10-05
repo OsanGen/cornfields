@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {refineCornKit} from './corn-art.js';
+import {applyEnvironmentSurface} from './environment-materials.js';
 import {SURVIVAL_VIEW_BOUNDS as B} from './corn-layout.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {CELL,WIDTH,HEIGHT,centerOf} from './maze.js';
@@ -109,6 +111,7 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
   const kit={};gltf.scene.updateMatrixWorld(true);
   gltf.scene.traverse(o=>{if(o.isMesh){const mesh=o.clone();mesh.geometry=o.geometry.clone().applyMatrix4(o.matrixWorld);mesh.position.set(0,0,0);mesh.quaternion.identity();mesh.scale.set(1,1,1);kit[o.name]=mesh;}});
   for(const name of ['corn_near_0','corn_near_1','corn_near_2','corn_far_0','corn_far_1','corn_far_2','litter_0','litter_1','entrance_door','entrance_frame','entrance_hardware'])if(!kit[name])throw new Error(`Missing visual asset ${name}`);
+  const cornArt=refineCornKit(kit);
   // Production corridors borrow the kit without constructing the retired maze.
   const layout=maze.corridorLayout?{plants:[],fences:[],litter:[]}:fieldLayout(maze),group=new THREE.Group();group.name='Blender corn and timber fences';
   const chunks=new Map(),dummy=new THREE.Object3D(),tint=new THREE.Color();
@@ -162,8 +165,11 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
   for(const map of [mudColor,mudNormal,mudRough])map.repeat.set(WIDTH*CELL/1.3,(maze.cornWorld.height*maze.cornWorld.size)/1.3);
   const ground=new THREE.MeshStandardMaterial({map:mudColor,normalMap:mudNormal,
     normalScale:new THREE.Vector2(wet ? .8 : .6,wet ? .8 : .6),roughnessMap:mudRough,
-    roughness:wet ? .58 : 1,color:wet?0x928476:0xaaa38c});
+    roughness:1,color:wet?0xaaa08e:0xaaa38c});
   const wood=new THREE.MeshStandardMaterial({map:woodColor,normalMap:woodNormal,normalScale:new THREE.Vector2(.55,.55),roughnessMap:woodRough,roughness:1,color:0xaba38d});
+  applyEnvironmentSurface(ground,{kind:'mud',wet});
+  applyEnvironmentSurface(wood,{kind:'wood',wet});
+  applyEnvironmentSurface(fenceMaterial,{kind:'wood',wet});
   kit.entrance_door.material=wood;kit.entrance_frame.material=wood;
   if(details)kit.entrance_hardware.material=wireMaterial;
   const dp=centerOf(maze.door.x,maze.door.z);
@@ -178,7 +184,7 @@ export async function installFieldVisuals({scene,maze,camera,floor,door,entrance
   for(const mesh of [legacy.walls,legacy.stalks,legacy.ears,legacy.leaves,legacy.straw])mesh.visible=false;
   scene.add(group);
   let previousX=Infinity,previousZ=Infinity;
-  const stats={plants:layout.plants.length,fencePanels:layout.fences.length,greenBackingBoxes:0,chunks:chunks.size,near:0,far:0,visibleChunks:0};
+  const stats={cornArt,plants:layout.plants.length,fencePanels:layout.fences.length,greenBackingBoxes:0,chunks:chunks.size,near:0,far:0,visibleChunks:0};
   function update(){
     const {x,z}=camera.position;
     if(Math.hypot(x-previousX,z-previousZ)<1.2)return;

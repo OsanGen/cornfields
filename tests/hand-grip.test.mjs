@@ -111,3 +111,40 @@ test('fitted hand remains identical after runtime knife parenting and attached s
   assert.deepEqual(Object.keys(a.geometry.attributes),Object.keys(b.geometry.attributes));
   for(const key of ['normal','tangent','uv','skinIndex','skinWeight'])if(a.geometry.attributes[key])assert.deepEqual(a.geometry.attributes[key].array,b.geometry.attributes[key].array,key);
 });
+
+test('radio-only profile wraps the wider rear and side without changing the source or other grip profiles',()=>{
+  const original=joints(source).map(b=>b.quaternion.toArray());
+  const right=arm();applyHandGrip(right,'radio');const radio=joints(right).map(b=>b.quaternion.toArray());
+  const bounds={left:-.0525,back:-.108};
+  for(const finger of ['index','middle','ring','pinky']){
+    const tip=at(right,`f_${finger}03R_end`);
+    assert(tip.x<bounds.left+.008||tip.z<bounds.back+.006,`${finger} sits outside the rear or thumb-side surface: ${tip.toArray()}`);
+    assert(tip.toArray().every(Number.isFinite));
+    if(finger!=='pinky')assert(tip.x>-.068&&tip.x<-.0525,`${finger} keeps near-contact instead of floating away from the side`);
+  }
+  const thumb=at(right,'thumb03R_end');assert(thumb.x<-.05&&thumb.z>-.105&&thumb.z<-.055,`Thumb reaches the side PTT: ${thumb.toArray()}`);
+  for(let i=0;i<4;i++){applyHandGrip(right,'flashlight');applyHandGrip(right,'radio');}
+  joints(right).forEach((bone,i)=>bone.quaternion.toArray().forEach((v,j)=>assert(Math.abs(v-radio[i][j])<1e-8)));
+  assert.deepEqual(joints(source).map(b=>b.quaternion.toArray()),original);
+  const torch=arm();applyHandGrip(torch,'flashlight');assert(at(torch,'f_index03R_end').distanceTo(at(right,'f_index03R_end'))>.02);
+});
+
+test('radio grip changes only joint rotations, preserves all attributes, and mirrors without drift',()=>{
+  const right=arm(),left=arm('L');
+  for(const [root,side] of [[right,'R'],[left,'L']]){
+    const bones=joints(root),positions=bones.map(b=>b.position.toArray()),scales=bones.map(b=>b.scale.toArray()),meshes=[];
+    root.traverse(o=>{if(o.isSkinnedMesh)meshes.push({o,geometry:o.geometry,attributes:Object.fromEntries(Object.entries(o.geometry.attributes).map(([key,value])=>[key,[...value.array]]))});});
+    applyHandGrip(root,'radio',side);
+    bones.forEach((b,i)=>{assert.deepEqual(b.position.toArray(),positions[i]);assert.deepEqual(b.scale.toArray(),scales[i]);});
+    for(const {o,geometry,attributes} of meshes){assert.equal(o.geometry,geometry);for(const [key,data] of Object.entries(attributes))assert.deepEqual([...o.geometry.attributes[key].array],data);}
+  }
+  for(const name of ['f_index03','f_middle03','thumb03']){const r=at(right,name+'R_end'),l=at(left,name+'L_end');r.x*=-1;assert(r.distanceTo(l)<.001);}
+});
+
+test('dispatch regrips the actual scaled-pistol clone with the same radio fingertip contacts',()=>{
+  const player=arm();applyHandGrip(player,'pistol','R',{weaponScale:1.15});const original=joints(player).map(b=>b.quaternion.toArray()),radio=cloneSkeleton(player),direct=arm();
+  applyHandGrip(radio,'radio');applyHandGrip(direct,'radio');
+  for(const finger of ['f_index','f_middle','f_ring','f_pinky','thumb'])assert(at(radio,finger+'03R_end').distanceTo(at(direct,finger+'03R_end'))<1e-6);
+  assert.deepEqual(joints(player).map(b=>b.quaternion.toArray()),original);
+  radio.updateMatrixWorld(true);radio.traverse(o=>{if(o.isSkinnedMesh){o.skeleton.update();for(let i=0;i<o.geometry.attributes.position.count;i++)assert(o.getVertexPosition(i,new THREE.Vector3()).toArray().every(Number.isFinite));}});
+});

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createPoreNormal} from './environment-materials.js';
 
 const seeded=seed=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
 
@@ -25,7 +26,7 @@ export function groundDetailLayout(game,{low=false,radius=12}={}){
   return points;
 }
 
-function grassGeometry(){
+export function grassGeometry(){
   const vertices=[],colors=[],random=seeded(493);
   for(let i=0;i<11;i++){
     const a=random()*Math.PI*2,r=random()*.18,x=Math.cos(a)*r,z=Math.sin(a)*r,h=.11+random()*.19,w=.007+random()*.008;
@@ -34,27 +35,45 @@ function grassGeometry(){
     const c=new THREE.Color().setHSL(.19+random()*.035,.23,.15+random()*.10);
     for(let j=0;j<3;j++){const k=j===2?1.18:.8;colors.push(c.r*k,c.g*k,c.b*k);}
   }
+  // Flattened, folded corn husks are part of the same opaque instance batch.
+  // Their existing decoration anchors never enter doorway clearances.
+  for(let leaf=0;leaf<3;leaf++){
+    const angle=leaf*2.399+.4,ox=Math.cos(angle)*.08,oz=Math.sin(angle)*.08,length=.22+leaf*.055,width=.048+leaf*.008;
+    const points=[];
+    for(let j=0;j<=6;j++){
+      const t=j/6,half=Math.sin(t*Math.PI)*width*.5+.0005;
+      for(let k=0;k<3;k++){
+        const q=k-1,reach=(t-.5)*length;
+        points.push([ox+Math.cos(angle)*reach-Math.sin(angle)*q*half,.007+Math.sin(t*Math.PI)*.018-Math.abs(q)*.004,oz+Math.sin(angle)*reach+Math.cos(angle)*q*half]);
+      }
+    }
+    const c=new THREE.Color().setHSL(.11+leaf*.008,.28,.24+leaf*.026);
+    for(let j=0;j<6;j++)for(let k=0;k<2;k++){
+      const a=j*3+k,b=a+3;
+      for(const index of [a,a+1,b,a+1,b+1,b]){vertices.push(...points[index]);const rib=index%3===1?1.17:.86;colors.push(c.r*rib,c.g*rib,c.b*rib);}
+    }
+  }
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();return geometry;
 }
 
 export function createGroundDetails(scene,{touch=false}={}){
-  const group=new THREE.Group();group.name='Sparse grass and stones';scene.add(group);
+  const group=new THREE.Group();group.name='Sparse grass, flattened husks and embedded stones';scene.add(group);
   const grass=new THREE.InstancedMesh(grassGeometry(),new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide}),162);
   const stoneGeometry=new THREE.IcosahedronGeometry(.12,1),position=stoneGeometry.attributes.position;
   for(let i=0;i<position.count;i++){const x=position.getX(i),y=position.getY(i),z=position.getZ(i),n=1+.16*Math.sin(x*52+z*37+y*23);position.setXYZ(i,x*n,y*.48*n+.043,z*n);}
   // Retain smooth stone normals across the non-indexed triangle seams.
   const normals=stoneGeometry.attributes.normal,normal=new THREE.Vector3();
   for(let i=0;i<normals.count;i++){normal.fromBufferAttribute(normals,i);normal.y/=.48;normal.normalize();normals.setXYZ(i,normal.x,normal.y,normal.z);}
-  const rocks=new THREE.InstancedMesh(stoneGeometry,new THREE.MeshStandardMaterial({color:0x626052,roughness:.88}),162);
+  const rocks=new THREE.InstancedMesh(stoneGeometry,new THREE.MeshStandardMaterial({color:0x626052,roughness:.88,normalMap:createPoreNormal(),normalScale:new THREE.Vector2(.35,.35)}),162);
   grass.name='Ground grass';rocks.name='Ground stones';group.add(grass,rocks);
   const dummy=new THREE.Object3D(),color=new THREE.Color();let key='',low=touch;
-  const stats={grass:0,rocks:0,draws:2};
+  const stats={grass:0,husks:0,rocks:0,draws:2};
   return {stats,setQuality(profile){low=profile.rain<=.5;key='';},update(game){
     group.visible=!!game.corridorRun;if(!group.visible)return;
     const next=`${game.player.zone}:${Math.floor(game.player.x/3)}:${Math.floor(game.player.z/3)}:${game.maze.cornWorld.revision}`;
     if(next===key)return;key=next;const counts=[0,0];
     for(const p of groundDetailLayout(game,{low})){const mesh=p.kind?rocks:grass,index=counts[p.kind]++;dummy.position.set(p.x,.002,p.z);dummy.rotation.set(0,p.yaw,0);dummy.scale.setScalar(p.scale);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);if(p.kind){color.setHSL(.12,.08,.32+(p.scale-.65)*.1);mesh.setColorAt(index,color);}}
     for(const [i,mesh]of [grass,rocks].entries()){mesh.count=counts[i];mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();}
-    stats.grass=counts[0];stats.rocks=counts[1];
+    stats.grass=counts[0];stats.husks=counts[0]*3;stats.rocks=counts[1];
   }};
 }

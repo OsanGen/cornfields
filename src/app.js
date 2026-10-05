@@ -51,6 +51,7 @@ export function createGameApp({
   let frameId = null;
   let disposed = false;
   let manual = false;
+  let visualCheckSuspended = false;
   let pointerError = null;
   let audioTicks = 0;
   let entryAttempt = 0;
@@ -58,7 +59,7 @@ export function createGameApp({
   let coreReady = !ready, coreError = null, introAudioAttempt = 0, introEntering = false, pendingCapture = null;
   let creditsOpen = false;
   prologueEnabled=prologueEnabled&&introEnabled;
-  let openingStage=null,endingAt=null;
+  let openingStage=null,endingAt=null,handoffAt=null;
   const intro = prologueEnabled?createOpening({onCue:id=>prologueAudio?.cue(id),onIntroCue:id=>audio.introCue?.(id)}):createIntro({enabled:introEnabled, onCue:id=>audio.introCue?.(id)});
   if(prologueEnabled){ui.node('player-alias').value='MIKE';document.body.classList.toggle('story-player',true);}
   if (ready) Promise.resolve(ready).then(()=>{if(!disposed){coreReady=true;present();}},error=>{
@@ -126,6 +127,7 @@ export function createGameApp({
   function present(time = game.elapsed) {
     syncMode();
     ui.render(game);
+    const reveal=handoffAt===null||intro.active||game.mode!=='playing'?0:Math.max(0,1-(game.elapsed-handoffAt)/.28);ui.renderHandoff?.(reveal);if(reveal<=0&&!intro.active)handoffAt=null;
     ui.renderIntro(intro, {enabled:introEnabled, portrait:touch&&window.innerHeight>window.innerWidth, coreReady, coreError, entering:introEntering, pointerError, creditsOpen, muted:audio.muted, volume:audio.volume});
     if(prologueEnabled)ui.renderOpening(intro,{touch,portrait:touch&&window.innerHeight>window.innerWidth,coreReady,coreError,entering:introEntering,pointerError});
     const endingTime=endingAt===null?Infinity:game.elapsed-endingAt;
@@ -238,7 +240,7 @@ export function createGameApp({
     if(skipped){input.quarantine?.();input.clear();}else{input.quarantineActions?.();input.clearEdges();}
     clock.reset();last=now();
     alias='MIKE';ui.setAlias(alias);startGame(game);previousMode=game.mode;game.player.flashlightOn=light;
-    endingAt=skipped&&!survivalEndingEnabled?null:game.elapsed;audio.startGameplay?.();present();
+    handoffAt=skipped?null:game.elapsed;endingAt=skipped&&!survivalEndingEnabled?null:game.elapsed;audio.startGameplay?.();present();
   }
 
   async function beginOpening({replay=false,skip=false}={}){
@@ -386,6 +388,7 @@ export function createGameApp({
 
   function frame(time) {
     if (disposed) return;
+    if(visualCheckSuspended){last=time;frameId=requestFrame(frame);return;}
     const dt = (time - last) / 1000;
     last = time;
     view.quality?.sample(dt,!manual&&!document.hidden&&!intro.active&&game.mode==='playing'&&!game.interaction&&coreReady);
@@ -511,6 +514,11 @@ export function createGameApp({
   return {
     enter,
     pause,
+    suspendVisualCheck(){
+      if(game.mode!=='menu'||intro.phase!=='preflight'||visualCheckSuspended)throw new Error('Visual checks are available from the start menu.');
+      visualCheckSuspended=true;input.clear();const prior=JSON.stringify(gameSnapshot(game,{diagnostic:true}));
+      return ()=>{visualCheckSuspended=false;input.clear();clock.reset();last=now();present();if(prior!==JSON.stringify(gameSnapshot(game,{diagnostic:true})))throw new Error('Game state changed during the visual check.');};
+    },
     introSnapshot:()=>({...intro.snapshot(),coreReady,entering:introEntering,visuals:introView?.diagnostics?.(),prologueVisuals:prologueView?.diagnostics?.(),prologueAudio:prologueAudio?.diagnostics?.()}),
     restart: () => enter(true),
     startLoop() {

@@ -18,15 +18,15 @@ const advance=ms=>page.evaluate(ms=>window.advanceTime(ms),ms);
 const gameOnly=state=>{const {opening,...game}=state;return game;};
 async function shot(name){await captureGame(page,{path:`${output}/${name}.png`});report.shots.push(name);}
 async function runTo(time){
-  return page.evaluate(target=>{
+  return page.evaluate(async target=>{
+    const {followApproachTarget}=await import('./src/prologue-layout.js');
     for(let n=0;n<12000;n++){
       const s=window.__test.intro(),p=s.story.player;
       if(s.time>=target-1e-7||s.phase!=='playing')break;
       const controls={};
       if(s.story.waitingForExit)throw new Error('Unexpected exit gate');
       if(p.y>1.5&&!['redroom','rupture'].includes(s.story.chapter)){
-        let dx=0,dz=-1;
-        if(p.z<=-3.2){const e=s.story.escorts;dx=(e.clarence.x+e.stanley.x)/2-p.x;dz=(e.clarence.z+e.stanley.z)/2+2.3-p.z;}
+        const target=followApproachTarget(p,s.story.escorts),dx=target.x-p.x,dz=target.z-p.z;
         if(Math.hypot(dx,dz)>.28){controls.forward=1;controls.yaw=Math.atan2(-dx,-dz);}
       }
       window.__test.step(Math.min(.05,target-s.time),controls,false);
@@ -48,7 +48,20 @@ try{
   await advance(0);assert.equal(await page.evaluate(()=>document.pointerLockElement?.id),'scene');
   const yaw=(await intro()).story.player.yaw;await page.mouse.move(340,270);await advance(20);
   assert.notEqual((await intro()).story.player.yaw,yaw);await page.evaluate(()=>window.__test.step(.05,{yaw:0,pitch:0}));
-  await runTo(5);await shot('01-free-look-cruiser');await runTo(at('dispatch',1));await shot('02-handheld-radio');
+  await runTo(5);
+  await page.waitForFunction(()=>Object.values(window.__test.intro().prologueVisuals.assets.castRoles).every(status=>status==='ready'));
+  await advance(0);
+  const candidate=(await intro()).prologueVisuals;
+  assert.deepEqual(candidate.actors.map(actor=>actor.identity).sort(),['clarence','stanley']);
+  assert.deepEqual(candidate.actors.map(actor=>actor.assetId).sort(),['cast-clarence.glb','cast-stanley.glb']);
+  assert.equal(candidate.rain.glassSource,'BodyWindshield');assert.equal(candidate.rain.active,true);assert(candidate.rain.exteriorCount>0);assert(candidate.rain.maxDrawCalls<=2);
+  report.checks.push('Actual role GLBs independently loaded; rain anchored to imported windshield with bounded draw batches');
+  await shot('01-free-look-cruiser');await runTo(at('dispatch',1));
+  await page.waitForFunction(()=>window.__test.diagnostics().visuals.prologueEquipment.radio?.status==='ready');
+  const radio=(await page.evaluate(()=>window.__test.diagnostics())).visuals.prologueEquipment.radio;
+  assert(radio.triangles<=2000);assert(radio.draws<=3);assert.equal(radio.error,null);
+  report.checks.push('Modeled local dispatch radio loaded within approved geometry/draw caps');
+  await shot('02-handheld-radio');
   await runTo(at('emergence')+(at('bang')-at('emergence'))*.52);await shot('02a-father-in-headlights');
   await page.keyboard.press('KeyE');await advance(20);assert.equal((await intro()).story.waitingForExit,false);assert.equal((await intro()).story.player.x,.5);
   await runTo(at('bang',.60));await page.evaluate(()=>window.__test.step(.001,{yaw:-1.52,pitch:.30}));await advance(0);await shot('02b-window-bang');
@@ -72,7 +85,7 @@ try{
   await runTo(timeline.duration);assert.equal((await intro()).stage,'credits');await shot('12-credits');
   await advance(20000);assert.equal((await state()).mode,'playing');assert.equal((await state()).elapsed,0);assert.equal((await state()).player.ammo,2);
   assert.equal(await page.locator('#ending-caption').isVisible(),true);await page.keyboard.down('KeyW');await advance(150);await page.keyboard.up('KeyW');assert.equal((await state()).player.moving,true);
-  await shot('13-immediate-gameplay');await advance(4000);assert.equal((await intro()).prologueAudio.buffers,0);assert.equal((await intro()).prologueVisuals.live,false);
+  await shot('13-immediate-gameplay');await advance(4000);assert.equal((await intro()).prologueAudio.buffers,0);assert.equal((await intro()).prologueVisuals.live,false);assert.equal((await intro()).prologueVisuals.rain,null);
   assert.equal(await page.evaluate(()=>window.__test.diagnostics().visuals.prologueEquipment.meshes),0);
   report.checks.push('Complete interactive story, real look/exit/light, fixed visions, GPU shaders, frozen hunt, 20-second credits, immediate gameplay, ending narration and cleanup');
   await page.evaluate(()=>{window.__test.fixture('encounter');window.__test.step(.56);});assert.equal((await state()).interaction.phase,'qte');
@@ -88,6 +101,7 @@ try{
   await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touchSession.detach();assert.notEqual((await intro()).story.player.yaw,0);
   await runTo(at('bang',.60));await page.evaluate(()=>window.__test.step(.001,{yaw:-1.52,pitch:.30}));await advance(0);await shot('14a-touch-window-bang');
   assert.equal((await intro()).prologueVisuals.confrontation.cameraImpact,0);
+  const reducedRain=(await intro()).prologueVisuals.rain;assert.equal(reducedRain.reduced,true);assert(reducedRain.exteriorCount<reducedRain.poolSize);
   assert.equal(await page.locator('#touch-interact').isVisible(),false);assert.equal((await intro()).story.player.x,.5);
   await runTo(privateLine.start+.1);await advance(0);assert.equal(await page.locator('#story-speaker').textContent(),'MIKE');assert.equal((await intro()).story.escorts.clarence.x,-.45);await shot('14b-touch-private-exchange');
   await runTo(at('exit'));await page.locator('#touch-interact').tap();await advance(1000);assert.equal((await intro()).story.waitingForExit,false);

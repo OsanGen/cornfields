@@ -1,3 +1,4 @@
+import {advanceCheckpointVision} from './checkpoint-vision.js';
 import { cellOf, key, centerOf, moveBody, lineOfSight, cornZoneAt } from './maze.js';
 import { GAME_CONFIG as C, distance, emitEvent, addEvidence } from './game-config.js';
 import {nearestHideAnchor,hiddenInput,updateCornPresence,actorPosition} from './hiding.js';
@@ -186,7 +187,7 @@ export function interact(game) {
 }
 
 function finishMetrics(game, outcome) {
-  game.interaction=null;game.pendingStabs.length=0;game.skyRedUntil=0;
+  game.interaction=null;game.pendingStabs.length=0;game.skyRedUntil=0;advanceCheckpointVision(game);
   game.metrics.outcome = outcome;
   game.metrics.completionTime = game.elapsed;
   game.metrics.ammoRemaining = game.player.ammo;
@@ -381,6 +382,7 @@ export function updateGame(game, dt, input = {}) {
   while (remaining > 1e-9 && game.mode === 'playing') {
     const substep = Math.min(remaining, 1 / 60);
     tick(game, substep, first ? input : continuous);
+    advanceCheckpointVision(game,substep);
     remaining -= substep;
     first = false;
   }

@@ -11,7 +11,7 @@ function fixture(fetcher=async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer
   const opening=createPrologueAudio(audio,{fetcher:(url,options)=>{requests.push(url.pathname);return fetcher(url,options);}});
   return {audio,opening,requests,sources,flush:()=>new Promise(resolve=>setImmediate(resolve))};
 }
-function frame(time=1,line=PROLOGUE_LINES[0],extra={}){
+function frame(time=1,line=PROLOGUE_LINES.find(line=>line.audioMode==='recorded'),extra={}){
   return {time:line.start+time,line,chapter:line.chapter,chapterProgress:.1,...extra};
 }
 function motion(time,index,moving=true){
@@ -69,4 +69,13 @@ test('quiet final-line preparation fetches without speech, ambience or game-bus 
   h.opening.prepareLine(PROLOGUE_END_LINE);await h.flush();
   assert.equal(h.requests.length,1);assert.equal(h.sources.length,0);assert.equal(h.audio.gameGain.gain.value,.7);
   assert.equal(h.opening.diagnostics().buffers,1);assert.equal(h.opening.diagnostics().playing,false);h.opening.dispose();
+});
+
+test('approved subtitle-only cues skip audio requests while preloading the next recorded line',async()=>{
+ const h=fixture();const first=PROLOGUE_LINES.find(l=>l.id==='CAR-00');
+ h.opening.sync(frame(.2,first));await h.flush();h.opening.sync(frame(.5,first));
+ assert.equal(h.opening.diagnostics().playing,false);assert.equal(h.opening.diagnostics().missed,0);
+ assert(h.requests.some(p=>p.endsWith('/CAR-01.mp3')));assert(h.requests.every(p=>!p.endsWith('/CAR-00.mp3')&&!p.endsWith('/UND-01.mp3')));
+ const hallucination=PROLOGUE_LINES.find(l=>l.id==='UND-01');h.opening.sync(frame(.2,hallucination));await h.flush();
+ assert(h.requests.some(p=>p.endsWith('/WAL-06.mp3')));assert(h.requests.every(p=>!p.endsWith('/UND-01.mp3')));assert.equal(h.opening.diagnostics().failed.length,0);h.opening.dispose();
 });

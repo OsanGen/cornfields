@@ -1,3 +1,6 @@
+import {ease as prologueEase} from './prologue-performance.js';
+import {applyHandGrip,HAND_GRIP_CONTACT} from './hand-grip.js';
+import {createPrologueRadio,PROLOGUE_RADIO} from './prologue-radio.js';
 import * as THREE from 'three';
 import {CELL,WIDTH,HEIGHT,centerOf,lineOfSight} from './maze.js';
 import {installFieldVisuals} from './field-visuals.js';
@@ -28,16 +31,17 @@ const material=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughn
 const up=new THREE.Vector3(0,1,0);
 
 /** Story-only clones retain the player's skin/gun assets without touching gameplay. */
-export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAssetVersion=()=>gun.children.length}={}){
+export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAssetVersion=()=>gun.children.length,radioLoader,radioDeadlineMs}={}){
   const overlay=new THREE.Scene(),camera=new THREE.PerspectiveCamera();overlay.add(camera);
-  const fill=new THREE.HemisphereLight(0xb4bdad,0x514234,.8),key=new THREE.DirectionalLight(0xe7e9d8,1.5);
+  const fill=new THREE.HemisphereLight(0xb4bdad,0x514234,.68),key=new THREE.DirectionalLight(0xe7e9d8,1.15);
   key.position.set(-.5,.6,.25);overlay.add(fill,key);key.target.position.set(0,-.2,-.6);overlay.add(key.target);
-  const materials=new Set(),geometries=new Set(),skeletons=new Set(),treatments=[];
-  let pistol=null,radio=null,handheld=null,version=null,disposed=false;
-  const stats={active:false,kind:null,source:'existing player gun and hands',liquid:0,opacity:0,meshes:0};
+  const materials=new Set(),geometries=new Set(),skeletons=new Set(),treatments=[],radioViews=[];
+  let pistol=null,radio=null,doorHand=null,handheld=null,version=null,disposed=false;
+  const stats={active:false,kind:null,source:'existing player gun and hands; locally modeled dispatch radio',liquid:0,opacity:0,meshes:0};
   function clear(){
-    pistol?.removeFromParent();radio?.removeFromParent();handheld?.removeFromParent();pistol=radio=handheld=null;
+    pistol?.removeFromParent();radio?.removeFromParent();doorHand?.removeFromParent();handheld?.removeFromParent();pistol=radio=doorHand=handheld=null;
     for(const resource of [...materials,...geometries,...skeletons])resource.dispose();
+    for(const view of radioViews)view.dispose();radioViews.length=0;
     materials.clear();geometries.clear();skeletons.clear();treatments.length=0;
   }
   function ownMaterial(source){
@@ -53,7 +57,7 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
     addBox(parent,[.082,.098,.12],[.20,-.23,-.31],material);
     addBox(parent,[.08,.085,.32],[.20,-.27,-.10],material);
   }
-  function cloneGun(radioOnly){
+  function cloneGun(radioOnly,withRadio=true){
     const root=cloneSkeleton(gun);root.name=radioOnly?'Story hand and radio':'Story low-ready pistol';root.visible=true;
     root.getObjectByName('Muzzle burst')?.removeFromParent();
     const right=root.getObjectByName('RightArm');
@@ -66,42 +70,60 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
     });
     if(!right)fallbackHand(root);
     if(radioOnly){
-      const prop=new THREE.Group();prop.name='Handheld dispatch radio';
+      if(right)applyHandGrip(right,withRadio?'radio':'flashlight');
+      const view=withRadio?createPrologueRadio({loader:radioLoader,deadlineMs:radioDeadlineMs,prepareMaterial:material=>{
+        treatments.push({material,uniforms:attachPrologueLiquid(material),opacity:material.opacity,transparent:material.transparent});
+      }}):null;
+      const prop=view?.root||new THREE.Group();prop.name='Handheld dispatch radio';
+      if(view){radioViews.push(view);stats.radio=view.stats;}
       const grip=right?.parent?.parent;
-      if(grip){prop.position.set(-.032,.052,-.104);grip.add(prop);}else{prop.position.set(.20,-.16,-.31);root.add(prop);}
-      const housing=new THREE.MeshStandardMaterial({color:0x111619,roughness:.71}),rubber=new THREE.MeshStandardMaterial({color:0x080b0c,roughness:.93}),screen=new THREE.MeshStandardMaterial({color:0x6d8972,emissive:0x254531,emissiveIntensity:.5});
-      for(const material of [housing,rubber,screen]){materials.add(material);treatments.push({material,uniforms:attachPrologueLiquid(material),opacity:1,transparent:false});}
-      addBox(prop,[.084,.19,.048],[0,0,0],housing);addBox(prop,[.014,.24,.014],[.029,.19,0],rubber);
-      addBox(prop,[.057,.034,.004],[0,.048,.026],screen);addBox(prop,[.02,.014,.02],[-.023,.102,0],rubber);
-      for(let i=0;i<4;i++)addBox(prop,[.052,.006,.004],[0,.007-i*.014,.026],rubber);
-      addBox(prop,[.011,.043,.028],[.046,.026,0],rubber);
+      if(grip){prop.position.fromArray(PROLOGUE_RADIO.position);grip.add(prop);}else{prop.position.set(.20,-.16,-.31);root.add(prop);}
     }
     camera.add(root);return root;
   }
   function ensure(){
     const next=getAssetVersion();if(pistol&&version===next)return;
-    clear();version=next;pistol=cloneGun(false);radio=cloneGun(true);
+    clear();version=next;pistol=cloneGun(false);radio=cloneGun(true);doorHand=cloneGun(true,false);doorHand.name='Story hand on passenger door';doorHand.getObjectByName('Handheld dispatch radio').visible=false;
     if(torch?.children.length){
       handheld=cloneSkeleton(torch);handheld.name='Story hand and flashlight';camera.add(handheld);
       handheld.traverse(o=>{o.layers.set(0);if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.isMesh)o.material=Array.isArray(o.material)?o.material.map(ownMaterial):ownMaterial(o.material);});
     }
-    stats.meshes=0;for(const root of [pistol,radio,handheld].filter(Boolean))root.traverse(o=>{if(o.isMesh)stats.meshes++;});
+    stats.meshes=0;for(const root of [pistol,radio,doorHand,handheld].filter(Boolean))root.traverse(o=>{if(o.isMesh)stats.meshes++;});
   }
   function reset(){
-    if(pistol)pistol.visible=false;if(radio)radio.visible=false;if(handheld)handheld.visible=false;
+    if(pistol)pistol.visible=false;if(radio)radio.visible=false;if(doorHand)doorHand.visible=false;if(handheld)handheld.visible=false;
     for(const t of treatments){t.uniforms.amount.value=0;t.material.opacity=t.opacity;if(t.material.transparent!==t.transparent){t.material.transparent=t.transparent;t.material.needsUpdate=true;}}
     Object.assign(stats,{active:false,kind:null,liquid:0,opacity:0});
   }
   return {stats,reset,render(storyCamera,frame={}){
     if(disposed)return;
-    const chapter=frame.chapter,dispatch=chapter==='dispatch';
+    const chapter=frame.chapter,radioReach=chapter==='car'&&(frame.radioHandReach||0)>.001,dispatch=chapter==='dispatch',exiting=chapter==='exit'&&frame.exitPose&&!frame.exitPose.finished;
     const outside=['flashlight','walk','undead','history','redroom','return_walk','disappearance','liquid','arrival','rupture'].includes(chapter);
-    if(!dispatch&&!outside){reset();return;}
-    ensure();const vision=prologueVisionState(frame),fade=outside?1-vision.mist:Math.min(1,Math.max(0,(Number(frame.chapterTime)||0)/.35),Math.max(0,(1-(Number(frame.chapterProgress)||0))/.07));
+    if(!dispatch&&!outside&&!exiting&&!radioReach){reset();return;}
+    ensure();const vision=prologueVisionState(frame),fade=outside?(1-vision.mist)*(1-vision.roomCover):1;
     if(fade<=.001){reset();return;}
-    pistol.visible=outside;radio.visible=dispatch;
+    pistol.visible=outside;radio.visible=dispatch;doorHand.visible=!!exiting||radioReach;
     pistol.position.set(-.035-(storyCamera.aspect<1.3?.045:0),-.035,-.20);pistol.rotation.set(-.09,0,0);
-    radio.position.set(-.025,.045,-.10);radio.rotation.set(-.05,-.10,.10);
+    const raise=prologueEase(Number(frame.chapterTime)||0,0,.42)*(1-prologueEase(Number(frame.chapterProgress)||0,.93,1));
+    radio.position.set(-.025,.045-.34*(1-raise),-.10+.08*(1-raise));radio.rotation.set(-.05+.28*(1-raise),-.10,.10);
+    if(exiting&&frame.exitHandTarget){
+      storyCamera.updateWorldMatrix(true,false);doorHand.position.set(0,0,0);
+      const doorRotation=new THREE.Quaternion().fromArray(frame.exitHandQuaternion||[0,0,0,1]);
+      doorHand.quaternion.copy(storyCamera.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(doorRotation));doorHand.rotateY(-Math.PI/2);
+      const desired=storyCamera.worldToLocal(new THREE.Vector3().fromArray(frame.exitHandTarget));
+      const home=new THREE.Vector3(.30,-.28,-.42);desired.lerp(home,1-frame.exitPose.hand);
+      doorHand.updateMatrixWorld(true);const right=doorHand.getObjectByName('RightArm');
+      const contact=right?.parent?right.parent.localToWorld(new THREE.Vector3(...HAND_GRIP_CONTACT.flashlight)):new THREE.Vector3(.2,-.2,-.3);
+      doorHand.position.copy(desired.sub(contact));
+    }
+    if(radioReach&&frame.radioHandTarget){
+      storyCamera.updateWorldMatrix(true,false);doorHand.position.set(0,0,0);doorHand.rotation.set(-.25,0,-.25-(frame.radioHandTurn||0)*.45);
+      const desired=storyCamera.worldToLocal(new THREE.Vector3().fromArray(frame.radioHandTarget));
+      desired.lerp(new THREE.Vector3(.33,-.38,-.24),1-frame.radioHandReach);
+      doorHand.updateMatrixWorld(true);const right=doorHand.getObjectByName('RightArm');
+      const contact=right?.parent?right.parent.localToWorld(new THREE.Vector3(...HAND_GRIP_CONTACT.flashlight)):new THREE.Vector3(.2,-.2,-.3);
+      doorHand.position.copy(desired.sub(contact));
+    }
     if(handheld){
       handheld.visible=outside&&!!frame.player?.flashlightOn;
       const pose=flashlightPose({time:frame.elapsed??frame.time,steps:frame.player?.distance||0,moving:frame.player?.moving,reduced:frame.reduced,aspect:storyCamera.aspect});
@@ -111,7 +133,7 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
     for(const t of treatments){t.uniforms.amount.value=vision.liquid;t.uniforms.time.value=Number(frame.time)||0;t.material.opacity=t.opacity*fade;const transparent=t.transparent||fade<.999;if(t.material.transparent!==transparent){t.material.transparent=transparent;t.material.needsUpdate=true;}}
     camera.projectionMatrix.copy(storyCamera.projectionMatrix);camera.projectionMatrixInverse.copy(storyCamera.projectionMatrixInverse);camera.near=storyCamera.near;camera.far=storyCamera.far;
     const clear=renderer.autoClear,resetInfo=renderer.info.autoReset;
-    try{renderer.autoClear=false;renderer.info.autoReset=false;renderer.render(overlay,camera);Object.assign(stats,{active:true,kind:dispatch?'radio':'gun',liquid:vision.liquid,opacity:fade});}
+    try{renderer.autoClear=false;renderer.info.autoReset=false;renderer.render(overlay,camera);Object.assign(stats,{active:true,kind:radioReach?'radio knob hand':exiting?'door hand':dispatch?'radio':'gun',liquid:vision.liquid,opacity:fade});}
     finally{renderer.autoClear=clear;renderer.info.autoReset=resetInfo;}
   },release(){clear();reset();stats.meshes=0;},dispose(){if(disposed)return;disposed=true;clear();reset();}};
 }

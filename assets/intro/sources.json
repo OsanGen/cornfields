@@ -12,7 +12,7 @@
       "author": "supersteve",
       "license": "CC0-1.0",
       "url": "https://opengameart.org/content/npc-male-steve",
-      "changes": "PBR conversion, bundled textures, seated/talk/walk clips, slightly recessed eyes"
+      "changes": "PBR conversion, bundled textures, seated/talk/walk clips, slightly recessed eyes; 2026-10-03 same-rig ear UV fit to original head atlas, removed unrelated ear arm/eye and shirt mouth weights, runtime skin/eye roughness separation"
     },
     {
       "name": "Small Plastic Torch",
@@ -33,9 +33,9 @@
     "carParts": {
       "BodyWindshield": {
         "position": [
-          0.0,
-          0.0,
-          0.0
+          0,
+          0,
+          0
         ],
         "bounds": [
           [
@@ -180,9 +180,9 @@
       },
       "BodyRoofPanel": {
         "position": [
-          0.0,
-          0.0,
-          0.0
+          0,
+          0,
+          0
         ],
         "bounds": [
           [
@@ -332,11 +332,240 @@
     },
     "cast.glb": {
       "bytes": 714324,
-      "sha256": "3b1bfcafb69fd33eac98e6767d5362b9f8ce512413e033dc95ac9964b1ee116d"
+      "sha256": "739d9b6604511712ddab6c4bff76b12ea65b2b57b5ef18e6cc15b9519c27c096",
+      "repair": {
+        "date": "2026-10-03",
+        "sourceSha256": "3b1bfcafb69fd33eac98e6767d5362b9f8ce512413e033dc95ac9964b1ee116d",
+        "source": "Same bundled NPC male Steve by supersteve, CC0-1.0",
+        "method": "scripts/repair-cast-face.py; binary edit limited to 2 UV accessors and 3 weight accessors",
+        "newAssets": 0,
+        "topologyChanged": false,
+        "skeletonChanged": false,
+        "animationChanged": false
+      }
     },
     "handheld-flashlight.glb": {
       "bytes": 687100,
       "sha256": "cbb713cea1fc114abf4df4fffb8770b58a66c2171525e246de2598f906d764f3"
+    },
+    "cast-clarence.glb": {
+      "sha256": "22f66118a0881ed8779952031e5f710b40569fc3ca894f1a022a911a68e80073",
+      "bytes": 716440,
+      "triangles": 4843,
+      "sourceSha256": "739d9b6604511712ddab6c4bff76b12ea65b2b57b5ef18e6cc15b9519c27c096",
+      "identity": {
+        "cinematicCharacter": "clarence",
+        "revision": "cinematic-v2",
+        "sourceSha256": "739d9b6604511712ddab6c4bff76b12ea65b2b57b5ef18e6cc15b9519c27c096",
+        "heightPreserved": true,
+        "lidSkinColorLinear": [
+          0.6,
+          0.49,
+          0.37
+        ],
+        "geometryIdentity": "narrow angular jaw, lean cheek and straight slender nose",
+        "eyeColor": "brown",
+        "runtimeEyelids": "fitted from actual eye bounds; 384 additional runtime triangles (four five-row strips)",
+        "armRefinement": [
+          {
+            "mesh": 8,
+            "movedVertices": 208,
+            "blendedElbowVertices": 60,
+            "handAndFingerWeights": "unchanged"
+          },
+          {
+            "mesh": 9,
+            "movedVertices": 47,
+            "blendedElbowVertices": 0,
+            "handAndFingerWeights": "unchanged"
+          }
+        ]
+      },
+      "headMapSize": [
+        512,
+        512
+      ],
+      "eyeMapSize": [
+        256,
+        256
+      ],
+      "joints": 56,
+      "runtimeLidTriangles": 384,
+      "totalWithLids": 5227,
+      "authoring": "art/working/cast-distinct-v2.blend",
+      "method": "scripts/export-cinematic-characters.py",
+      "license": "CC0-1.0",
+      "changes": "Independently authored head/jaw/nose/eye geometry, role-specific embedded 512 skin and 256 iris maps, matching hand skin, local elbow silhouette/weight refinement. Original 56-joint rig, original clips, repaired ear UVs and unrelated-weight removal retained. No new downloaded assets."
+    },
+    "cast-stanley.glb": {
+      "sha256": "5c07d36da61e10485b0ae63f7dc66ec0a73b927e5480f39c3b9868e556d7ffbd",
+      "bytes": 715200,
+      "triangles": 4843,
+      "sourceSha256": "739d9b6604511712ddab6c4bff76b12ea65b2b57b5ef18e6cc15b9519c27c096",
+      "identity": {
+        "cinematicCharacter": "stanley",
+        "revision": "cinematic-v2",
+        "sourceSha256": "739d9b6604511712ddab6c4bff76b12ea65b2b57b5ef18e6cc15b9519c27c096",
+        "heightPreserved": true,
+        "lidSkinColorLinear": [
+          0.7,
+          0.58,
+          0.5
+        ],
+        "geometryIdentity": "broad heavy jaw, full cheek and wide rounded nose",
+        "eyeColor": "gray-blue",
+        "runtimeEyelids": "fitted from actual eye bounds; 384 additional runtime triangles (four five-row strips)",
+        "armRefinement": [
+          {
+            "mesh": 8,
+            "movedVertices": 208,
+            "blendedElbowVertices": 60,
+            "handAndFingerWeights": "unchanged"
+          },
+          {
+            "mesh": 9,
+            "movedVertices": 47,
+            "blendedElbowVertices": 0,
+            "handAndFingerWeights": "unchanged"
+          }
+        ]
+      },
+      "headMapSize": [
+        512,
+        512
+      ],
+      "eyeMapSize": [
+        256,
+        256
+      ],
+      "joints": 56,
+      "runtimeLidTriangles": 384,
+      "totalWithLids": 5227,
+      "authoring": "art/working/cast-distinct-v2.blend",
+      "method": "scripts/export-cinematic-characters.py",
+      "license": "CC0-1.0",
+      "changes": "Independently authored head/jaw/nose/eye geometry, role-specific embedded 512 skin and 256 iris maps, matching hand skin, local elbow silhouette/weight refinement. Original 56-joint rig, original clips, repaired ear UVs and unrelated-weight removal retained. No new downloaded assets."
+    }
+  },
+  "cinematicRevision": {
+    "date": "2026-10-04",
+    "revision": "cinematic-v2",
+    "baselineCastPreserved": true,
+    "surfaceEvidence": "Matched isolated Blender renders are asset inspection only, not browser or continuous playtest acceptance",
+    "landmarks": {
+      "baseline": {
+        "jawWidthSourceUnits": 0.2664874196052551,
+        "meanCheekFrontSourceUnits": 0.2358412742614746,
+        "headCrownY": 3.3764808177948,
+        "neckMinY": 2.6726808547973633
+      },
+      "clarence": {
+        "jawWidthSourceUnits": 0.21875691413879395,
+        "meanCheekFrontSourceUnits": 0.2129187285900116,
+        "headCrownY": 3.3764808177948,
+        "neckMinY": 2.6726808547973633
+      },
+      "stanley": {
+        "jawWidthSourceUnits": 0.35042792558670044,
+        "meanCheekFrontSourceUnits": 0.24283263087272644,
+        "headCrownY": 3.3764808177948,
+        "neckMinY": 2.6726808547973633
+      }
+    }
+  },
+  "facesRadioV1": {
+    "date": "2026-10-04",
+    "releaseMode": "local candidate only; not deployed",
+    "sourceCommit": "547be8b117031249bc14fdafe4a4cbb94b9e7c74",
+    "faces": {
+      "stanley": {
+        "sha256": "412378dae8059494615c82717a634db7c9a14b0bf4d024a4a6aa34f578a54da6",
+        "bytes": 2957068,
+        "triangles": 15353,
+        "topology": {
+          "1": 1508,
+          "2": 180,
+          "3": 180,
+          "6": 9078
+        },
+        "joints": 56,
+        "runtimeLidTriangles": 384,
+        "totalWithLids": 15737,
+        "sourceSha256": "5c07d36da61e10485b0ae63f7dc66ec0a73b927e5480f39c3b9868e556d7ffbd"
+      },
+      "clarence": {
+        "sha256": "d1c31bb31b1a012d5e16ff32b4e6f484d9f2699c009bd553827973d238f0547e",
+        "bytes": 2909688,
+        "triangles": 15319,
+        "topology": {
+          "1": 1504,
+          "2": 180,
+          "3": 180,
+          "6": 9048
+        },
+        "joints": 56,
+        "runtimeLidTriangles": 384,
+        "totalWithLids": 15703,
+        "sourceSha256": "22f66118a0881ed8779952031e5f710b40569fc3ca894f1a022a911a68e80073"
+      }
+    },
+    "faceAuthoring": "art/working/prologue-faces-v3.blend",
+    "faceMethod": "scripts/export-prologue-faces-v3.py",
+    "faceChanges": "Independent Black Clarence and older Stanley directions: sculpted nose/lip/cheek/brow planes; continuous welded facial loops and budgeted retopology; locally authored 1K color with transferred microdetail from the credited CC0 role atlas, packed surface maps, and Blender CPU high-to-low tangent normal bake; 512px irises and anatomically narrower runtime lid openings; matching exposed skin. Original source neck points and joint influences, crown, 56-joint rigs, body geometry and clip bytes retained. Reviewed local diagonal repairs remove seven orientation outliers without moving any point. No face service, scans, downloads or concept image textures.",
+    "radio": {
+      "runtimeFile": "dispatch-radio.glb",
+      "asset": "assets/intro/dispatch-radio.glb",
+      "sha256": "8f854a30f58d90f5f3c7c32ad95f195def460297f18cd03b1c85dad72d666d9e",
+      "bytes": 264232,
+      "triangles": 1970,
+      "materialDraws": 3,
+      "materials": [
+        "Original charcoal polymer",
+        "Soft dark rubber and recesses",
+        "Muted green LCD"
+      ],
+      "bodyDimensionsMm": [
+        65,
+        145,
+        40
+      ],
+      "provenance": "Original locally authored unbranded mesh and textures; no downloads.",
+      "textureCount": 3,
+      "workingSource": "art/working/prologue-radio-v1.blend",
+      "evidenceClass": "Asset inventory; not runtime or performance evidence",
+      "authoring": "art/working/prologue-radio-v1.blend",
+      "method": "scripts/export-prologue-radio-v1.py",
+      "license": "Original Cornfields project artwork; no third-party asset or texture inputs",
+      "changes": "New unbranded 65 \u00d7 145 \u00d7 40 mm beveled housing; actual open recessed LCD bezel and speaker bed; round antenna and knobs; thumb-side PTT; parting seam; restrained original texture wear. Original local 256px polymer base-color and packed roughness/metalness; original 256 \u00d7 128 LCD image. One GLB mesh, three material primitives. Existing Mike arm geometry/weights/maps are unchanged; dispatch-only finger rotations and attachment are fitted.",
+      "conceptUse": "Proposal concept was direction only, not a runtime texture",
+      "placement": [
+        -0.02,
+        0.027,
+        -0.088
+      ]
+    },
+    "evidenceLimits": "Offline renders and CPU poses are not runtime screenshots, continuous playtests or GPU/device performance measurements."
+  },
+  "liquid_cinematic_v1": {
+    "date": "2026-10-04",
+    "authorship": "Original local RKNIGHT implementation at the project owner's direction",
+    "changes": [
+      "Unbranded sedan hood/trunk, black-white panels, POLICE door graphics and unlit lightbar",
+      "Original dashboard entertainment receiver",
+      "Bundled Brown Mud/Asphalt/Solitude Night reuse; bounded material/cloud refinements",
+      "Original projector reels/stand and analytic face details",
+      "Two render-only copies of the already licensed Pixelhouse zombie, liquid ribbons and screen veil"
+    ],
+    "newExternalAssets": false,
+    "newSpendingUSD": 0,
+    "offlineVoiceStatus": "CAR-00 and UND-01 intentionally subtitle-only by explicit owner decision on 2026-10-04; no new speech generated",
+    "sourceHashes": {
+      "src/prologue-assets.js": "46ebb911760825527e9f3c88fd9d2ccd15732eae0e9ceb14e51c9ec3e385f592",
+      "src/prologue-cabin.js": "29ac4e429b3a9a39f1929cd92f771f49f57a086529921a3cdd6f2dc5d5725eb0",
+      "src/blood-room.js": "16514b89c1067304d69f4b0438d37c190fe72b5dc5e3900b1e202ae224fb6ae4",
+      "src/prologue-hallucination.js": "536c1cb246b4b992e775ff44c9a3423fe2696c2834a13eec1ab5c13ed5c7f27e",
+      "src/prologue-liquid-transition.js": "f99071bd8850c751e3676d46cdf0379acace5ff6da8fc2c6ccb7a0d98d9b8327",
+      "src/liquid-material.js": "00869a9f5fc38c30bde65af5857bf2563cc2394da25977dfcd08092e9e76f7cd"
     }
   }
 }

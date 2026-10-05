@@ -55,7 +55,8 @@ export function createHidePortals(corridorGroup,fieldGroup,maze,{touch=false,loa
     const mist=mistMaterials.map((m,i)=>{const s=new THREE.Sprite(m);s.position.set((i?1:-1)*(width/2+.06),.65+i*.6,.10);s.scale.set(1.1,2,1);group.add(s);return s;});
     return {group,mist,door:d};
   });
-  const back=new THREE.Mesh(geometry,material);back.name='Liquid return border';back.position.set(0,1.25,FIELD_PORTAL.planeOffset);fieldGroup.add(back);
+  const returnMaterial=material.clone();returnMaterial.uniforms=uniforms;returnMaterial.side=THREE.FrontSide;
+  const back=new THREE.Mesh(geometry,returnMaterial);back.name='Liquid return border';back.position.set(0,1.25,FIELD_PORTAL.planeOffset);fieldGroup.add(back);
   let disposed=false,settled=false,limit=touch?1:2;
   const stats={visible:0,maxVisible:limit,draws:0,texture:loader?'loading':'fallback',reduced:false,time:0};
   const timer=loader?setTimeout(()=>{settled=true;stats.texture='fallback';},8000):null;
@@ -66,14 +67,14 @@ export function createHidePortals(corridorGroup,fieldGroup,maze,{touch=false,loa
   return {stats,setQuality(profile){limit=profile.rain<=.5?1:touch?1:2;uniforms.detail.value=profile.rain<=.5?2:4;stats.maxVisible=limit;},
     update(game,reduced=false){
       uniforms.time.value=reduced?0:game.elapsed;stats.time=uniforms.time.value;stats.reduced=reduced;
-      const inField=game.player.zone==='field';back.visible=inField;
+      const inField=game.player.zone==='field';back.visible=inField&&game.player.z>FIELD_PORTAL.planeOffset;
       const near=portals.map(p=>({p,d:Math.hypot(p.door.x-game.player.x,p.door.z-game.player.z)})).sort((a,b)=>a.d-b.d);
       let shown=0;
       for(const {p,d} of near){
         p.group.visible=!inField&&d<18&&shown<limit;if(!p.group.visible)continue;shown++;
         for(const [i,s]of p.mist.entries()){s.visible=d<9&&uniforms.detail.value>2;s.position.y=.65+i*.6+Math.sin(uniforms.time.value*.3+i)*.09;}
       }
-      stats.visible=shown;stats.draws=inField?1:shown*2+portals.reduce((n,p)=>n+(p.group.visible?p.mist.filter(s=>s.visible).length:0),0);
+      stats.visible=shown;stats.draws=inField?(back.visible?1:0):shown*2+portals.reduce((n,p)=>n+(p.group.visible?p.mist.filter(s=>s.visible).length:0),0);
     },
     dispose(){disposed=true;clearTimeout(timer);},
   };

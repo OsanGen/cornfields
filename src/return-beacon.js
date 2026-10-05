@@ -27,7 +27,7 @@ function gradient(stops,value){
 export function createReturnBeacon(scene,fieldGroup,lantern,light,{camera,touch=false,loader=typeof document==='undefined'?null:new THREE.TextureLoader()}={}){
   const sky=new THREE.Group();sky.name='Red return sky beacon';sky.visible=false;scene.add(sky);
   const beamStops=[[0,0],[.25,.16],[.44,1],[.56,1],[.75,.16],[1,0]],fadeStops=[[0,0],[.24,.65],[.9,1],[1,0]];
-  const beamTexture=alphaTexture(64,256,(x,y)=>gradient(beamStops,x)*gradient(fadeStops,1-y));
+  const beamTexture=alphaTexture(64,256,(x,y)=>gradient(beamStops,x)*gradient(fadeStops,1-y)*(Math.abs(x-.5)<.07?1:.88+.12*Math.sin(y*31+x*17)*Math.sin(y*13-x*19)));
   const geometry=new THREE.PlaneGeometry(1,1).translate(0,.5,0);
   const beamMaterial=new THREE.MeshBasicMaterial({map:beamTexture,color:0xff180b,transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false,side:THREE.DoubleSide});
   const shaft=new THREE.Mesh(geometry,beamMaterial);shaft.renderOrder=3;sky.add(shaft);

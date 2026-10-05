@@ -13,11 +13,72 @@
     "authorship": "Original local procedural choreography on the existing Pixelhouse rig",
     "externalClipsIntegrated": true,
     "additionalClipBank": "zombie-clips.json",
-    "additionalSourceClips": ["Pixelhouse Fury", "Pixelhouse Collapse"],
+    "additionalSourceClips": [
+      "Pixelhouse Fury",
+      "Pixelhouse Collapse"
+    ],
     "rootTravel": "Frozen horizontally; navigation remains authoritative",
     "presentationAcceptance": "Static silhouette reviewed; motion and in-game camera acceptance are separate checks"
   },
   "triangles": 3573,
-  "bytes": 1251972,
-  "sha256": "6296c3f586e5695b0f3ddd52b3c1da135e56356a984a2b3896d3ab709b70ef74"
+  "bytes": 1389552,
+  "sha256": "e0266f171f1709717eebd9421d1ce295c1ec93e0e2e1f81ad97d52e22f45f89e",
+  "cinematicRevision": {
+    "sha256": "e0266f171f1709717eebd9421d1ce295c1ec93e0e2e1f81ad97d52e22f45f89e",
+    "bytes": 1389552,
+    "triangles": 3573,
+    "sourceSha256": "6296c3f586e5695b0f3ddd52b3c1da135e56356a984a2b3896d3ab709b70ef74",
+    "identity": {
+      "cinematicCharacter": "zombie",
+      "revision": "cinematic-v2",
+      "sourceSha256": "6296c3f586e5695b0f3ddd52b3c1da135e56356a984a2b3896d3ab709b70ef74",
+      "geometryIdentity": "elongated narrow cranium, hollow cheeks, flattened nose and asymmetric pointed jaw",
+      "headLocalEyes": [
+        [
+          1.3499972987004847,
+          1.4525456093303526,
+          -0.4365797060731395
+        ],
+        [
+          1.3499972987004847,
+          1.4547366819805672,
+          0.32678316164186244
+        ]
+      ],
+      "headLocalEyeScale": [
+        0.085,
+        0.08,
+        0.117
+      ],
+      "runtimeHeightMeters": 2.32,
+      "armRefinement": [
+        {
+          "mesh": 0,
+          "movedVertices": 123,
+          "blendedElbowVertices": 25,
+          "handAndFingerWeights": "unchanged"
+        }
+      ],
+      "roughnessMap": "zombie-roughness.jpg"
+    },
+    "joints": 56,
+    "textures": {
+      "zombie-color.jpg": {
+        "sha256": "c4629d70509f78fde0fc9d9dc8fbecfb985140f133e489094c52d028537b4d95",
+        "bytes": 830029
+      },
+      "zombie-normal.jpg": {
+        "sha256": "6e649199ef2a45028eb0d5f0172414f98ec4f2b5347a34a61bdaf4b0120a2b5a",
+        "bytes": 181646
+      },
+      "zombie-roughness.jpg": {
+        "sha256": "263f0734ec17313d48546b082c9e55c9c8c18b211689190cbc9322e9767b16ec",
+        "bytes": 162531
+      }
+    },
+    "date": "2026-10-04",
+    "authoring": "art/working/zombie-cinematic-v2.blend",
+    "method": "scripts/export-cinematic-characters.py",
+    "changes": "Locally authored narrow elongated cranium, hollow cheek planes, flattened nose and asymmetric jaw; preserved outfit, source height bounds, original 56-joint rig, lurch and external clip compatibility. Elbow volume and blend refinement; existing licensed 2K diffuse / 1K normal regraded, independently authored 1K roughness. No new asset download."
+  }
 }

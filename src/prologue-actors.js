@@ -1,3 +1,5 @@
+import {defaultActorWheelMatrix,wheelGrip} from './prologue-cabin.js';
+import {sampleSpeech} from './prologue-speech.js';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {reachPrologueArm} from './prologue-confrontation.js';
@@ -8,10 +10,10 @@ export const PROLOGUE_CAST_PROVENANCE = 'Original articulated meshes and animati
 
 function material(color, roughness = .86) { return new THREE.MeshStandardMaterial({color, roughness}); }
 function shape(profile, sx = 1, sz = 1) {
-  const geometry = new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), 14);
+  const geometry = new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), 10);
   geometry.scale(sx, 1, sz); return geometry;
 }
-function ellipsoid(x, y, z) { return new THREE.SphereGeometry(1, 16, 12).scale(x, y, z); }
+function ellipsoid(x, y, z) { return new THREE.SphereGeometry(1, 8, 6).scale(x, y, z); }
 function piece(parent, geometry, mat, position = [0, 0, 0], rotation = [0, 0, 0]) {
   const mesh = new THREE.Mesh(geometry, mat); mesh.position.fromArray(position); mesh.rotation.set(...rotation); parent.add(mesh); return mesh;
 }
@@ -38,13 +40,15 @@ function compact(parent) {
 
 export function createPrologueActor({name = 'Clarence', police = true} = {}) {
   const root = new THREE.Group(); root.name = `Prologue ${name}`;
-  const skin = material(police ? 0xb78a72 : 0xb78870, .74);
-  const shade = material(police ? 0x916755 : 0x92654e, .88);
+  const identity=police?'clarence':'stanley';
+  root.userData.actorIdentity=identity;
+  const skin = material(police ? 0x61402d : 0xc09d88, .74);
+  const shade = material(police ? 0x432b22 : 0x92654e, .88);
   const cloth = material(police ? 0x202e39 : 0x625544);
   const clothEdge = material(police ? 0x17212b : 0x423e36);
   const pants = material(police ? 0x182129 : 0x394442);
   const boots = material(0x151617, .66), hair = material(police ? 0x28211f : 0x706962);
-  const eyeWhite = material(0xc3bbae, .46), iris = material(0x3d4540, .42);
+  const eyeWhite = material(0xc3bbae, .46), iris = material(police?0x483326:0x687d89, .42);
   const mouthMat = material(0x49372f), brass = material(0xb59b58, .42);
   const shirt = material(police ? 0x19212a : 0x9b9989);
   const hip = group(root, 0, .91, 0);
@@ -74,12 +78,16 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
     for(const sign of [-1,1]) piece(body,new THREE.BoxGeometry(.009,.31,.008),clothEdge,[sign*.045,.20,.142],[0,0,sign*.025]);
   }
   piece(body, shape([[.049,0],[.047,.09],[.053,.13]],1,.93),skin,[0,.428,-.008]);
-  const head = group(body,0,.60,0);
-  // A continuous jaw/skull contour avoids stacked spherical cheeks and chin.
-  piece(head,shape([[.031,-.115],[.051,-.097],[.068,-.066],[.081,-.027],[.086,.029],[.084,.074],[.064,.109],[.026,.131],[0,.134]],1,1.04),skin,[0,0,-.006]);
+  const head = group(body,0,.60,0);head.name=`Fallback ${identity} head`;
+  // Independent jaw/cheek silhouettes keep each role recognizable without
+  // relying on wardrobe, hair or color when the optional GLB is unavailable.
+  const contour=police
+    ? [[.026,-.119],[.043,-.102],[.057,-.071],[.073,-.027],[.078,.029],[.076,.074],[.060,.109],[.026,.131],[0,.134]]
+    : [[.049,-.110],[.074,-.090],[.087,-.057],[.097,-.017],[.094,.032],[.087,.076],[.065,.112],[.027,.131],[0,.134]];
+  piece(head,shape(contour,1,police?1.055:.98),skin,[0,0,-.006]);
   for(const sign of [-1,1]) {
-    piece(head,ellipsoid(.013,.028,.014),skin,[sign*.081,-.010,-.002]);
-    piece(head,ellipsoid(.005,.017,.004),shade,[sign*.090,-.009,.006]);
+    piece(head,ellipsoid(.013,.028,.014),skin,[sign*(police?.075:.091),-.010,-.002]);
+    piece(head,ellipsoid(.005,.017,.004),shade,[sign*(police?.084:.100),-.009,.006]);
     piece(head,ellipsoid(.027,.010,.007),shade,[sign*.031,.027,.077]);
     piece(head,ellipsoid(.020,.007,.005),eyeWhite,[sign*.030,.026,.080]);
     piece(head,ellipsoid(.006,.006,.003),iris,[sign*.030,.026,.085]);
@@ -87,14 +95,14 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
     piece(head,ellipsoid(.024,.003,.004),hair,[sign*.031,.044,.082],[0,0,sign*(police?-.035:.11)]);
     if(!police) piece(head,ellipsoid(.022,.007,.006),shade,[sign*.037,.009,.084],[0,0,sign*.1]);
   }
-  piece(head,ellipsoid(.009,.029,.014),skin,[0,.004,.087],[-.13,0,0]);
-  piece(head,ellipsoid(.014,.010,.013),skin,[0,-.021,.094]);
+  piece(head,ellipsoid(police?.008:.014,police?.031:.026,.014),skin,[0,.004,police?.092:.087],[-.13,0,0]);
+  piece(head,ellipsoid(police?.011:.021,police?.009:.012,police?.015:.012),skin,[0,-.021,police?.101:.097]);
   for(const sign of [-1,1])piece(head,ellipsoid(.004,.002,.003),shade,[sign*.009,-.027,.099]);
   const jaw = group(head,0,-.063,.059);
   piece(jaw,ellipsoid(.021,.004,.004),shade);
   piece(jaw,ellipsoid(.018,.0015,.003),mouthMat,[0,-.001,.003]);
   // Hair follows the skull rather than making a detached helmet silhouette.
-  piece(head,shape([[.087,.024],[.087,.050],[.086,.075],[.066,.112],[.028,.134],[0,.138]],1.045,1.08),hair,[0,0,-.006]);
+  piece(head,shape(police?[[.079,.024],[.079,.050],[.078,.075],[.062,.112],[.028,.134],[0,.138]]:[[.090,.074],[.087,.087],[.066,.118],[.028,.134],[0,.138]],1.045,1.08),hair,[0,0,-.006]);
   for(const sign of [-1,1])piece(head,ellipsoid(.015,.040,.059),hair,[sign*.072,.043,-.022]);
   if(!police) {
     piece(head,ellipsoid(.039,.008,.010),hair,[0,-.043,.086]);
@@ -126,6 +134,20 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
     legs.push({thigh,knee,sign});
   }
   compact(root);
+  // Fallback hands have a separate curled silhouette for driving. The generic
+  // open fingers remain available for the window knock and other performances.
+  for(const arm of arms){
+    arm.openHandMeshes=arm.hand.children.filter(child=>child.isMesh);
+    const grip=new THREE.Group();grip.name='Fallback curled wheel grip';grip.visible=false;arm.hand.add(grip);arm.wheelHand=grip;
+    piece(grip,ellipsoid(.035,.050,.020),skin,[0,-.035,.008]);
+    for(let finger=0;finger<4;finger++){
+      const x=(finger-1.5)*.016,y=[-.072,-.078,-.075,-.064][finger];
+      const curve=new THREE.CatmullRomCurve3([[x,y,.011],[x,y-.010,-.008],[x,y-.006,-.033],[x,y+.014,-.040]].map(p=>new THREE.Vector3(...p)));
+      piece(grip,new THREE.TubeGeometry(curve,8,.008,5,false),skin);
+    }
+    const thumb=new THREE.CatmullRomCurve3([[arm.sign*.035,-.024,.018],[arm.sign*.045,-.044,.011],[arm.sign*.027,-.060,-.008]].map(p=>new THREE.Vector3(...p)));
+    piece(grip,new THREE.TubeGeometry(thumb,6,.010,5,false),skin);compact(grip);
+  }
   const materials=[skin,shade,cloth,clothEdge,pants,boots,hair,eyeWhite,iris,mouthMat,brass,shirt];
   const colors=materials.map(m=>m.color.clone()),decay={value:0};
   for(const mat of materials){
@@ -143,7 +165,7 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
   let windowContacts=[],windowTargets=[];
   return {
     root,
-    pose({time=0,phase=0,mode='standing',speaking=false,distress=0,look=0,gesture=0,reduced=false,corpse=false,dissolve=0,bang=0,bangTargets=null}={}) {
+    pose({time=0,phase=0,mode='standing',speaking=false,distress=0,look=0,gesture=0,reduced=false,corpse=false,dissolve=0,steer=0,wheelMatrix=null,bang=0,bangTargets=null,performance={},exitPose=null,crouch=0,limpWeight=mode==='limp'?1:0}={}) {
       lastPose=mode;
       lastCorpse=!!corpse;lastDissolve=Math.max(0,Math.min(1,dissolve));decay.value=lastDissolve;
       materials.forEach((mat,i)=>mat.color.copy(colors[i]));
@@ -153,7 +175,7 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
       hip.position.y=.91+(walking?Math.abs(Math.sin(cycle))*(running?.033:.009):Math.sin(time*(2+distress*2))*.006*(1+distress));
       body.rotation.set(-distress*.035,0,walking?Math.sin(cycle)*.022:0);
       head.rotation.set(Math.sin(time*1.1)*.013*motion-distress*.03,Math.max(-.72,Math.min(.72,look)),Math.sin(time*.71)*.014*motion);
-      jaw.scale.y=speaking?1+Math.max(0,Math.sin(time*17))*1.3:1;
+      jaw.scale.y=speaking?1+sampleSpeech(performance.lineId,performance.lineOffset)*.9:1;
       for(const {thigh,knee,sign} of legs){
         const phase=cycle+(sign>0?Math.PI:0);
         thigh.rotation.set(Math.sin(phase)*stride,0,0);
@@ -164,10 +186,11 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
         shoulder.rotation.set(Math.sin(phase)*stride*.72-distress*.12,0,sign*(.045+distress*.04));
         elbow.rotation.set(-.11-(running?.65:0)-distress*.15,0,0);hand.rotation.set(.04,0,sign*.05);
       }
-      if(mode==='drive'){
-        hip.position.y=.91;body.rotation.x=-.035;
-        for(const {thigh,knee}of legs){thigh.rotation.x=-1.34;knee.rotation.x=1.48;}
-        for(const {shoulder,elbow,hand,sign}of arms){shoulder.rotation.set(-.88,sign*.10,-sign*.10);elbow.rotation.x=-.55;hand.rotation.x=-.40;}
+      if(mode==='drive'||mode==='exit'){
+        const seated=mode==='drive'?1:1-(exitPose?.transfer??1);
+        hip.position.y=.91;body.rotation.x=-.035*seated;
+        for(const {thigh,knee}of legs){thigh.rotation.x=-1.34*seated;knee.rotation.x=1.48*seated;}
+        for(const {shoulder,elbow,hand,sign}of arms){shoulder.rotation.set(-.88*seated,sign*.10*seated,-sign*.10*seated);elbow.rotation.x=-.55*seated;hand.rotation.x=-.40*seated;}
       }else if(gesture>0){
         const arm=arms[1];arm.shoulder.rotation.x=-.45*gesture;arm.shoulder.rotation.z=-.2*gesture;arm.elbow.rotation.x=-.9*gesture;
         arm.hand.rotation.z=-.2*gesture;
@@ -179,11 +202,22 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
         body.rotation.x=-.09-distress*.055;head.rotation.x=-.10;
         for(const arm of arms){arm.shoulder.rotation.x=-.25;arm.elbow.rotation.x=-.46;}
       }
+      if(crouch){hip.position.y-=.15*crouch;body.rotation.x+=.07*crouch;for(const leg of legs){leg.thigh.rotation.x-=.22*crouch;leg.knee.rotation.x+=.46*crouch;}}
       if(corpse){head.rotation.x=.20;head.rotation.z=police?.09:-.12;jaw.scale.y=3.8;body.rotation.x=.05;}
       if(mode==='limp'){
         hip.position.y=.91;body.rotation.set(.12,0,police?.06:-.05);head.rotation.set(.72,0,police?.16:-.18);jaw.scale.y=1.5;
         for(const {shoulder,elbow,hand,sign}of arms){shoulder.rotation.set(.03,0,sign*.09);elbow.rotation.set(-.04,0,0);hand.rotation.set(.50,0,sign*.15);}
         for(const {thigh,knee,sign}of legs){thigh.rotation.set(sign*.055,0,sign*.015);knee.rotation.set(.13,0,0);}
+      }
+      for(const arm of arms){arm.wheelHand.visible=mode==='drive';for(const mesh of arm.openHandMeshes)mesh.visible=mode!=='drive';}
+      if(mode==='drive'){
+        const matrix=wheelMatrix||defaultActorWheelMatrix(root,steer);root.updateWorldMatrix(true,true);
+        for(const arm of arms){
+          const grip=wheelGrip(arm.sign>0?'L':'R',matrix),target=root.worldToLocal(grip.wrist.clone());
+          reachPrologueArm(root,arm.shoulder,arm.elbow,arm.hand,target,new THREE.Vector3(arm.sign*.36,1.10,.22));
+          const rotation=grip.rotation.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),Math.PI));
+          arm.hand.quaternion.copy(arm.hand.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(rotation));
+        }
       }
       windowContacts=[];windowTargets=[];
       if(mode==='bang'&&bangTargets)for(const [index,arm]of arms.entries()){
@@ -191,6 +225,6 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
         windowTargets.push(contact.toArray());windowContacts.push(reachPrologueArm(root,arm.shoulder,arm.elbow,arm.hand,target,new THREE.Vector3(arm.sign*.40,1.1,.12)));
       }
     },
-    diagnostics:()=>({name,kind:police?'uniformed police officer':'civilian father',pose:lastPose,corpse:lastCorpse,dissolve:lastDissolve,provenance:PROLOGUE_CAST_PROVENANCE,windowTargets,windowContacts}),
+    diagnostics:()=>({name,identity,assetId:`fallback:${identity}`,kind:police?'uniformed police officer':'civilian father',pose:lastPose,corpse:lastCorpse,dissolve:lastDissolve,provenance:PROLOGUE_CAST_PROVENANCE,windowTargets,windowContacts}),
   };
 }

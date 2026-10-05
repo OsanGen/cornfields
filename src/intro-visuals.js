@@ -6,12 +6,12 @@ import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 
 // Original, time-sampled effect. Text stays in the DOM, outside this shader.
 const composite = {
-  uniforms: {tDiffuse: {value: null}, clock: {value: 0}, warp: {value: 0}, accent: {value: 0},
+  uniforms: {handoffFade:{value:0},tDiffuse: {value: null}, clock: {value: 0}, warp: {value: 0}, accent: {value: 0},
     tunnel: {value: 0}, reduced: {value: 0}, pixels: {value: new THREE.Vector2(960, 540)}},
   vertexShader: 'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader: `
     uniform sampler2D tDiffuse;
-    uniform float clock, warp, accent, tunnel, reduced;
+    uniform float clock, warp, accent, tunnel, reduced,handoffFade;
     uniform vec2 pixels;
     varying vec2 vUv;
     float noise(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
@@ -30,7 +30,7 @@ const composite = {
       float vignette=1.-smoothstep(.22,.75,length(vUv-.5));
       c*=.48+.52*vignette;
       c+=vec3((noise(floor(vUv*pixels))-.5)*.004);
-      gl_FragColor=vec4(max(c,vec3(0.)),1.);
+      gl_FragColor=vec4(max(c,vec3(0.))*(1.-handoffFade),1.);
     }`,
 };
 
@@ -121,7 +121,7 @@ export function createIntroVisuals(renderer, {getCorn = () => null, enhanced = t
     for (let i=0;i<layers.length;i++) layers[i].position.x=Math.sin(time*.15+i)*.055*motion;
     eyes.visible=frame.eyes>0; eyes.position.set(frame.shot==='watching_eyes'?.6+frame.retreat*1.8:.05,1.9,-1.8);
     eyeMaterial.opacity=Math.min(1,frame.eyes); eyeMaterial.color.setRGB(1,1-frame.red*.97,1-frame.red*.94);
-    if (effect) { const u=effect.uniforms; u.clock.value=time; u.warp.value=frame.breathing; u.accent.value=frame.accent; u.tunnel.value=frame.tunnel; u.reduced.value=frame.reduced?1:0; }
+    if (effect) { const u=effect.uniforms;u.handoffFade.value=frame.handoffFade||0; u.clock.value=time; u.warp.value=frame.breathing; u.accent.value=frame.accent; u.tunnel.value=frame.tunnel; u.reduced.value=frame.reduced?1:0; }
     // Composer changes viewport/targets. Restore borrowed renderer state even on failure.
     const target=renderer.getRenderTarget(), auto=renderer.autoClear, infoAuto=renderer.info.autoReset;
     renderer.getViewport(viewport); renderer.getScissor(scissor); const scissorTest=renderer.getScissorTest();

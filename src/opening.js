@@ -1,3 +1,4 @@
+import {ease} from './prologue-performance.js';
 import {createIntro,INTRO} from './intro.js';
 import {createPrologue,PROLOGUE} from './prologue.js';
 import {PROLOGUE_VOICE_TIMING} from './prologue-voice-timing.js';
@@ -31,7 +32,7 @@ export function createOpening({onCue=()=>{},onIntroCue=()=>{},durations=PROLOGUE
     skip(){if(disposed||phase==='finished'||phase==='preflight')return;skipped=true;story.finish();titles.finish();phase='ready';},
     finish(){story.finish();titles.finish();phase='finished';},
     frame(reduced=false){
-      if(stage==='credits')return {...titles.frame(reduced),stage,returning:false};
+      if(stage==='credits'){const frame=titles.frame(reduced),handoffFade=ease(frame.time,19.65,20);return {...frame,opacity:frame.opacity*(1-handoffFade),handoffFade,stage,returning:false};}
       const frame=story.frame(reduced);
       return {...frame,stage,shot:'prologue',label:'',name:'',opacity:0,accent:0};
     },

@@ -18,7 +18,7 @@ function disposeModel(model) {
 }
 
 /** Reusable adapter also exercised with the real rig by the headless pose tests. */
-export function attachZombieModel(enemy, gltf, {primary = true} = {}) {
+export function attachZombieModel(enemy, gltf, {primary = true,cinematic=false} = {}) {
   const model = gltf.scene;
   model.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(model);
@@ -44,20 +44,25 @@ export function attachZombieModel(enemy, gltf, {primary = true} = {}) {
   const head = poses.bone('Head');
   const eyeGeometry = new THREE.SphereGeometry(1, 10, 6);
   const eyeMaterial = new THREE.MeshBasicMaterial({color:0xe2eee1, toneMapped:false, depthTest:true, depthWrite:true});
+  // Authored head edits carry their own seated eye centers in the unchanged
+  // Bip01 head space. Older compatible exports retain the original positions.
+  const eyeFit=gltf.asset?.extras;
+  const vector=value=>Array.isArray(value)&&value.length===3&&value.every(Number.isFinite);
   const eyes = [-1, 1].map((side, index) => {
     const eye = new THREE.Mesh(eyeGeometry, eyeMaterial);
     eye.name = index ? 'Creature right eye' : 'Creature left eye';
     // Bip01 head axes: +X crown, +Y face, +/-Z left/right.
     // Face-surface sampling places these just outside the eyelid geometry.
-    eye.position.set(1.35, 1.48, side * .43 - .055);
-    eye.scale.set(.085, .08, .13);
+    const center=eyeFit?.headLocalEyes?.[index],size=eyeFit?.headLocalEyeScale;
+    if(vector(center))eye.position.fromArray(center);else eye.position.set(1.35, 1.48, side * .43 - .055);
+    if(vector(size)&&size.every(v=>v>0&&v<.3))eye.scale.fromArray(size);else eye.scale.set(.085, .08, .13);
     head.add(eye);
     return eye;
   });
   const animation=createZombieAnimation(model,gltf.animations);
   let trial=null;
   for (const child of enemy.children) if (child !== centered) child.visible = false;
-  const beams = createZombieBeams({space:enemy, head, eyes, primary});
+  const beams = cinematic?{update(){},dispose(){},diagnostics:()=>({active:false,cinematic:true})}:createZombieBeams({space:enemy, head, eyes, primary});
   let presentation = {name:'painful', eyes:'white', age:0};
   let previousTime = null, previousState = '', previousPosition = null, clipTime = 0,previousOwner=null;
 
@@ -108,7 +113,7 @@ export function attachZombieModel(enemy, gltf, {primary = true} = {}) {
     diagnostics() {
       return {...poses.diagnostics(), eyeWorldLeft:eyes[0].getWorldPosition(new THREE.Vector3()).toArray(),
         eyeWorldRight:eyes[1].getWorldPosition(new THREE.Vector3()).toArray(),
-        sourceClips:gltf.animations.map(clip=>clip.name), externalClipsIntegrated:gltf.animations.length>1,animation:animation.snapshot(),trial,beams:beams.diagnostics()};
+        identity:eyeFit?.cinematicCharacter||'pixelhouse-baseline',runtimeHeight:2.32,sourceClips:gltf.animations.map(clip=>clip.name), externalClipsIntegrated:gltf.animations.length>1,animation:animation.snapshot(),trial,beams:beams.diagnostics()};
     },
     dispose() {
       beams.dispose();

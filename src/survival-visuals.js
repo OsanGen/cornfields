@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createBloodRoom} from './blood-room.js';
+import {applyEnvironmentSurface} from './environment-materials.js';
 import {GAME_CONFIG} from './game-config.js';
 
 export function createSurvivalVisuals(view,{touch=false}={}){
@@ -22,8 +23,9 @@ export function createSurvivalVisuals(view,{touch=false}={}){
   function ensurePit(game){
     if(pit)return;release();scene=new THREE.Scene();scene.background=new THREE.Color(0x0e0306);scene.fog=new THREE.FogExp2(0x2b0508,.035);
     camera=new THREE.PerspectiveCamera(70,1,.065,200);scene.add(camera);pit=new THREE.Group();pit.position.set(game.survivalEnding.center.x,0,game.survivalEnding.center.z);scene.add(pit);
-    const ground=new THREE.Mesh(new THREE.RingGeometry(10,24,64),new THREE.MeshStandardMaterial({color:0x3b211e,roughness:1,side:THREE.DoubleSide}));ground.rotation.x=-Math.PI/2;pit.add(ground);
-    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(10,10,160,64,1,true),new THREE.MeshBasicMaterial({side:THREE.BackSide,color:0x3b0709}));shaft.position.y=-80;pit.add(shaft);
+    const earth=new THREE.MeshStandardMaterial({color:0x695040,roughness:1,side:THREE.DoubleSide});applyEnvironmentSurface(earth,{kind:'earth'});
+    const ground=new THREE.Mesh(new THREE.RingGeometry(10,24,64),earth);ground.rotation.x=-Math.PI/2;pit.add(ground);
+    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(10,10,160,64,1,true),new THREE.MeshStandardMaterial({side:THREE.BackSide,color:0x594034,roughness:1}));shaft.position.y=-80;applyEnvironmentSurface(shaft.material,{kind:'earth'});shaft.name='Layered earthen shaft';pit.add(shaft);
     const depth=new THREE.Mesh(new THREE.CircleGeometry(9.99,64),new THREE.MeshBasicMaterial({color:0x260207}));depth.position.y=-130;depth.rotation.x=-Math.PI/2;pit.add(depth);
     for(let i=0;i<8;i++){
       const ring=new THREE.Mesh(new THREE.TorusGeometry(9.94,.055,3,64),new THREE.MeshBasicMaterial({color:i%2?0x7b130d:0xc83a11,transparent:true,opacity:.25}));ring.rotation.x=Math.PI/2;ring.position.y=-5-i*i*1.6;pit.add(ring);
