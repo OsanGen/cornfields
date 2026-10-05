@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import {defaultActorWheelMatrix,wheelGrip} from './prologue-cabin.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {createPrologueActor} from './prologue-actors.js';
 import {smooth,clamp as unitClamp} from './prologue-performance.js';
 import {sampleSpeech} from './prologue-speech.js';
-import {samplePrologueSoleGait} from './prologue-motion.js';
+import {samplePrologueSoleGait,PROLOGUE_WALK_STRIDE} from './prologue-motion.js';
 import {reachPrologueArm} from './prologue-confrontation.js';
 
 export const TEXTURED_CAST_PROVENANCE = 'NPC male Steve by supersteve, CC0; fitted and animated for the Cornfields prologue';
@@ -40,7 +41,7 @@ function decayMaterial(material, decay) {
 }
 
 /** Clone a preloaded cast. Geometry/textures belong to the scene's asset owner. */
-export function createTexturedPrologueActor({name = 'Clarence', police = true, gltf, onMaterial} = {}) {
+export function createTexturedPrologueActor({name = 'Clarence', police = true, gltf, onMaterial, sourceHeight = null, uniformDetails = true} = {}) {
   if (!gltf?.scene || !gltf.animations?.some(clip => clip.name === 'Walk')) {
     const fallback = createPrologueActor({name, police});
     const materials = new Set();
@@ -51,22 +52,51 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
     return {...fallback, dispose() {}};
   }
 
+  const authoredUniform=!!gltf.asset?.extras?.authoredUniformV3;
   const identity=gltf.asset?.extras?.cinematicCharacter||(police?'clarence':'stanley');
   const root = new THREE.Group(); root.name = `Prologue ${name}`;root.userData.actorIdentity=identity;
   const fit = new THREE.Group(); root.add(fit);
   const model = cloneSkeleton(gltf.scene); fit.add(model);
   model.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(model);
-  const height = bounds.max.y - bounds.min.y;
+  const height = Number.isFinite(sourceHeight)&&sourceHeight>0?sourceHeight:bounds.max.y-bounds.min.y;
   const scale = 1.8 / Math.max(.01, height);
   model.scale.multiplyScalar(scale);
   model.position.y -= bounds.min.y * scale;
 
+  const clothingGeometry=[];
   const materials = new Map(), skeletons = new Set(), bones = new Map(), decay = {value:0};
   model.traverse(object => {
     if (object.isBone) bones.set(object.name.replaceAll('.', ''), object);
     if (object.isSkinnedMesh) {
       skeletons.add(object.skeleton);
+      if(/shoe/i.test(object.name)){
+        // The source rear sole includes small calf influences. A dress-shoe
+        // sole should remain rigid while its ankle collar can flex. Fit only
+        // the lower 4.5 cm, retaining the existing foot/toe weight ratio.
+        // This idempotent asset fit preserves shared scene-owned geometry.
+        const geometry=object.geometry,weights=geometry.attributes.skinWeight,ids=geometry.attributes.skinIndex;
+        const footIds=new Set(object.skeleton.bones.flatMap((bone,index)=>/^foot[12][LR]$/.test(bone.name)?[index]:[]));
+        for(let vertex=0;vertex<weights.count;vertex++){
+          if(geometry.attributes.position.getY(vertex)*scale+model.position.y>.045)continue;
+          let footWeight=0;for(let slot=0;slot<4;slot++)if(footIds.has(ids.getComponent(vertex,slot)))footWeight+=weights.getComponent(vertex,slot);
+          if(footWeight<=.75)continue;
+          for(let slot=0;slot<4;slot++)weights.setComponent(vertex,slot,footIds.has(ids.getComponent(vertex,slot))?weights.getComponent(vertex,slot)/footWeight:0);
+        }
+        weights.needsUpdate=true;
+      }
+      if(police&&/^(shirt|manpants)$/.test(object.name)){
+        // Refit the existing shirt hem and waistband to the measured waist.
+        // Keep cuffs, knees, skin weights, faces and skeleton topology intact.
+        const geometry=object.geometry.clone(),position=geometry.attributes.position;
+        for(let i=0;i<position.count;i++){
+          const x=position.getX(i)*scale,y=position.getY(i)*scale+model.position.y;
+          const shift=object.name==='shirt'?.132*(1-smooth((y-.84)/.32))*(1-smooth((Math.abs(x)-.155)/.062)):.132*smooth((y-.65)/.205);
+          position.setY(i,position.getY(i)+shift/scale);
+        }
+        position.needsUpdate=true;geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+        object.geometry=geometry;clothingGeometry.push(geometry);
+      }
       // The source clip bounds differ significantly between standing and seated.
       object.frustumCulled = false;
     }
@@ -78,7 +108,12 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
         // The same source atlas now has fitted ear UVs; retain its detail.
         if (/head|cheek|ear/i.test(source.name) && !source.roughnessMap) material.roughness = .67;
         if (/eye/i.test(source.name)) {material.roughness = .30; material.color.setHex(0xffffff);}
-        if (/shirt|pants/i.test(source.name)) material.color.multiply(new THREE.Color(police ? 0x70829c : 0xb5a48c));
+        if (/shirt|pants/i.test(source.name)&&!(authoredUniform&&/shirt/i.test(source.name))) material.color.multiply(new THREE.Color(police ? 0x314761 : 0xb5a48c));
+        if(gltf.asset?.extras?.fittedUndershirtV3&&source.name==='Mike fitted cotton and continuous upper-arm skin'){
+          const before=material.onBeforeCompile,key=material.customProgramCacheKey.bind(material);
+          material.onBeforeCompile=shader=>{before(shader);shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n#ifdef USE_COLOR\nroughnessFactor=mix(.84,.68,step(.15,vColor.r));\n#endif');};
+          material.customProgramCacheKey=()=>key()+'|cotton-skin-roughness-v3';
+        }
         onMaterial?.(material);
         decayMaterial(material, decay);
         materials.set(source, {material, color:material.color.clone(), skin});
@@ -93,10 +128,26 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
   const idle=new THREE.AnimationClip('Idle',2,neutralSource.tracks.map(track=>{
     const size=track.getValueSize(),copy=track.clone();copy.times=new Float32Array([0,2]);copy.values=new Float32Array([...track.values.slice(0,size),...track.values.slice(0,size)]);return copy;
   }));clips.set('Idle',idle);
-  const run=clips.get('Walk').clone();run.name='Run';clips.set('Run',run);
+  // An independently authored urgency cycle starts from neutral, with its own
+  // timing and counter-rotation. It never copies or time-scales the Walk clip.
+  // Root/feet and flexed arm reach are authored below from the same phase.
+  const runTimes=Float32Array.from({length:9},(_,i)=>i*.78/8);
+  const run=new THREE.AnimationClip('Run',.78,idle.tracks.map(source=>{
+    const track=source.clone(),size=track.getValueSize(),neutral=source.values.slice(0,size),values=[];
+    for(let i=0;i<9;i++){
+      const phase=i/8*TAU;
+      if(track.name==='torso.quaternion'){
+        const rotation=new THREE.Quaternion().fromArray(neutral);
+        rotation.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(.045,-.075*Math.sin(phase),.028*Math.sin(phase))));
+        values.push(...rotation.toArray());
+      }else values.push(...neutral);
+    }
+    track.times=runTimes.slice();track.values=new Float32Array(values);return track;
+  }));clips.set('Run',run);
   const mixer = new THREE.AnimationMixer(model);const actions=new Map([...clips].map(([name,clip])=>[name,mixer.clipAction(clip).play()]));
   const feet=['L','R'].map((side,index)=>({side,index,upper:bones.get('legup'+side),lower:bones.get('leglo'+side),foot:bones.get('foot1'+side),toe:bones.get('foot2'+side),anchor:null,cycle:null}));
-  let footDiagnostics=[],lastSupportTime=null,blendDiagnostics={},speechValue=0;
+  let footDiagnostics=[],lastSupportTime=null,lastSupportPosition=null,blendDiagnostics={},speechValue=0,pelvisCalibration=0;
+  const uniformGeometry=[];
   const eyes=[bones.get('eyeL'),bones.get('eyeR')].filter(Boolean);
   const lids=[],lidGeometry=[];let lidsReady=false,lastBlink=null;
   let action = null, clipName = null, lastPose = 'standing', lastCorpse = false, disposed = false;
@@ -167,36 +218,53 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
 
   function plantFeet({phase,walking,running,gait=1,support,mode,bang,exitPose,limpWeight=0}){
     footDiagnostics=[];
+    // An independent foot IK control interpolates through space when clips blend.
+    // Restore its calibrated shin reach before solving, so start/stop blends
+    // cannot silently shorten or lengthen the limb.
+    root.updateWorldMatrix(true,true);
+    for(const leg of feet)if(leg.foot&&leg.lower&&leg.shinLength){
+      const knee=root.worldToLocal(leg.lower.getWorldPosition(new THREE.Vector3()));
+      const ankle=root.worldToLocal(leg.foot.getWorldPosition(new THREE.Vector3()));
+      const direction=ankle.sub(knee).normalize();
+      leg.foot.position.copy(leg.foot.parent.worldToLocal(root.localToWorld(knee.addScaledVector(direction,leg.shinLength))));
+      leg.foot.updateWorldMatrix(false,true);
+    }
     if(limpWeight>=.99){for(const leg of feet)leg.anchor=null;return;}
-    if(mode==='drive'||mode==='exit'){
+    if(mode==='drive'||mode==='seated'||mode==='exit'){
       root.updateWorldMatrix(true,true);for(const leg of feet){if(!leg.upper||!leg.lower||!leg.foot)continue;leg.anchor=null;leg.release=null;let target=new THREE.Vector3(leg.index?-.13:.13,.40,.60);
         if(mode==='exit'&&exitPose?.footTargets){target.fromArray(exitPose.footTargets[leg.index]);root.parent?.localToWorld(target);root.worldToLocal(target);}
         const result=reachPrologueArm(root,leg.upper,leg.lower,leg.foot,target,new THREE.Vector3(leg.index?-.2:.2,.65,.75),true);worldRotation(leg.foot,root.getWorldQuaternion(new THREE.Quaternion()).multiply(leg.levelRotation||new THREE.Quaternion()));footDiagnostics.push({side:leg.side,planted:mode==='exit'&&(leg.index?exitPose?.time>1.42:exitPose?.time>.93),position:result,target:target.toArray(),error:new THREE.Vector3().fromArray(result).distanceTo(target),locked:false});
       }return;}
     root.updateWorldMatrix(true,true);
-    const discontinuity=support&&lastSupportTime!==null&&(support.time<lastSupportTime||support.time-lastSupportTime>.5);
-    if(support)lastSupportTime=support.time;
-    const stride=support?.stride||(running?.85:.48),full=stride*2,stance=running?.38:.62;
+    const supportPosition=root.getWorldPosition(new THREE.Vector3());
+    const discontinuity=support&&lastSupportTime!==null&&(support.time<lastSupportTime||support.time-lastSupportTime>.5||lastSupportPosition&&supportPosition.distanceTo(lastSupportPosition)>.65);
+    if(support){lastSupportTime=support.time;lastSupportPosition=supportPosition;}
+    const stride=support?.stride||(running?.85:PROLOGUE_WALK_STRIDE[identity]||.38),full=stride*2,stance=samplePrologueSoleGait(0,0,{running}).stance;
+    const plans=[];
     for(const leg of feet){
       if(!leg.upper||!leg.lower||!leg.foot)continue;
-      const wasMoving=leg.wasMoving||false,movingNow=!!(support?.moving??walking);
+      const wasMoving=!discontinuity&&leg.wasMoving||false,movingNow=!!(support?.moving??walking);
       const priorAnchor=leg.anchor?.clone();
-      if(discontinuity){leg.stopFrom=null;leg.startFrom=null;leg.swing=null;leg.anchor=null;leg.anchorRotation=null;leg.lastRotation=null;leg.startRotation=null;leg.stopRotation=null;}
+      if(discontinuity){leg.lastWorld=null;leg.wasMoving=false;leg.stopFrom=null;leg.startFrom=null;leg.swing=null;leg.anchor=null;leg.anchorRotation=null;leg.lastRotation=null;leg.startRotation=null;leg.stopRotation=null;}
       if(support&&movingNow&&!wasMoving){leg.startFrom=leg.lastWorld?.clone();leg.startRotation=leg.lastRotation?.clone();}
       if(support&&!movingNow&&wasMoving){leg.stopFrom=leg.lastWorld?.clone();leg.stopRotation=leg.lastRotation?.clone();leg.stopPitch=leg.lastPitch||0;}
       const sole=samplePrologueSoleGait(phase,leg.index,{running,gait}),{cycle,u,swing}=sole;let planted=sole.planted;
-      const front=full*stance*.5,ankleHeight=leg.ankleHeight??.045;
-      const z=planted?front-full*u: -front+2*front*smooth(swing),lift=planted?0:Math.sin(swing*Math.PI)*(running?.17:.075);
+      const terrainHeight=support?.terrainHeights?.[leg.side]??support?.groundHeight??0;
+      const front=full*stance*.5,ankleHeight=(leg.ankleHeight??.045)+terrainHeight;
+      const z=planted?front-full*u: -front+2*front*smooth(swing),lift=sole.lift;
       const target=new THREE.Vector3(leg.index?-.132:.129,ankleHeight+lift*gait,(walking?z:0)*gait);
       const world=root.localToWorld(target.clone()),rootRotation=root.getWorldQuaternion(new THREE.Quaternion());
       let supportRotation=rootRotation.clone();
       if(discontinuity||!walking||leg.release?.cycle!==cycle)leg.release=null;
-      if(support?.anchors?.[leg.side]&&walking&&planted&&support.grounded&&!leg.release){world.fromArray(support.anchors[leg.side]);world.y=ankleHeight;root.parent?.localToWorld(world);if(leg.cycle!==cycle||!leg.anchorRotation)leg.anchorRotation=rootRotation.clone();leg.anchor=world.clone();leg.cycle=cycle;}
-      else if(support&&walking&&planted&&support.grounded&&!leg.release&&!discontinuity&&leg.anchor&&leg.cycle===cycle)world.copy(leg.anchor);
-      else if(support&&walking&&planted&&support.grounded&&!leg.release){leg.anchor=world.clone();leg.anchorRotation=rootRotation.clone();leg.cycle=cycle;}
+      if(support?.anchors?.[leg.side]&&walking&&planted&&gait>=.999&&support.grounded&&!leg.release){world.fromArray(support.anchors[leg.side]);world.y=ankleHeight;root.parent?.localToWorld(world);if(leg.cycle!==cycle||!leg.anchorRotation)leg.anchorRotation=rootRotation.clone();leg.anchor=world.clone();leg.cycle=cycle;}
+      else if(support&&walking&&planted&&gait>=.999&&support.grounded&&!leg.release&&!discontinuity&&leg.anchor&&leg.cycle===cycle)world.copy(leg.anchor);
+      else if(support&&walking&&planted&&gait>=.999&&support.grounded&&!leg.release){leg.anchor=world.clone();leg.anchorRotation=rootRotation.clone();leg.cycle=cycle;}
       else{leg.anchor=null;leg.cycle=null;}
       if(leg.anchor&&leg.anchorRotation)supportRotation.copy(leg.anchorRotation);
-      else if(leg.anchorRotation)supportRotation.copy(leg.anchorRotation).slerp(rootRotation,smooth(swing));
+      else if(leg.anchorRotation)supportRotation.copy(leg.anchorRotation).slerp(rootRotation,support&&movingNow&&gait<1?1:smooth(swing));
+      // During start-up there is no locked support yet. Let the existing
+      // startRotation blend below approach the current turn even if this phase
+      // is classified as stance (swing=0), avoiding a snap when gait reaches 1.
       if(support&&movingNow&&!planted&&!leg.release){
         if(!leg.swing||leg.swing.cycle!==cycle){
           let origin=priorAnchor||leg.lastWorld?.clone();
@@ -204,16 +272,21 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
           leg.swing={cycle,from:origin||world.clone()};
         }
         const landing=root.localToWorld(new THREE.Vector3(leg.index?-.132:.129,ankleHeight,front));
-        world.copy(leg.swing.from).lerp(landing,smooth(swing));const up=new THREE.Vector3(0,1,0).applyQuaternion(root.parent?.getWorldQuaternion(new THREE.Quaternion())||new THREE.Quaternion());world.addScaledVector(up,Math.sin(swing*Math.PI)*(running?.17:.075));
+        world.copy(leg.swing.from).lerp(landing,smooth(swing));const up=new THREE.Vector3(0,1,0).applyQuaternion(root.parent?.getWorldQuaternion(new THREE.Quaternion())||new THREE.Quaternion());world.addScaledVector(up,sole.lift);
       }else if(planted)leg.swing=null;
       const hip=leg.upper.getWorldPosition(new THREE.Vector3()),knee=leg.lower.getWorldPosition(new THREE.Vector3()),ankle=leg.foot.getWorldPosition(new THREE.Vector3());
       const reach=hip.distanceTo(knee)+knee.distanceTo(ankle);
       // A turn must release a support foot before the target becomes unreachable.
       // Let it swing to the next plant instead of stretching the leg or lifting a
       // supposedly locked ankle. This also handles the restart after headlights.
-      if(support&&walking&&planted&&!leg.release&&(hip.distanceTo(world)>reach*.988||supportRotation.angleTo(rootRotation)>.9)){
+      const relative=root.worldToLocal(world.clone()).sub(root.worldToLocal(hip.clone()));
+      // A long turn can exceed horizontal anatomical reach. Ordinary stride
+      // reach is corrected jointly through the pelvis below, never by stretching.
+      if(support&&walking&&planted&&!leg.release&&(Math.hypot(relative.x,relative.z)>(running?reach*.68:Math.max(reach*.29,front+.018))||supportRotation.angleTo(rootRotation)>.9)){
         const start=leg.lastWorld?leg.lastWorld.clone():root.localToWorld(new THREE.Vector3(leg.index?-.132:.129,ankleHeight,0));
-        const startDelta=start.clone().sub(hip);if(startDelta.length()>reach*.995)start.copy(hip).addScaledVector(startDelta.normalize(),reach*.995);
+        // Begin from the actual previous contact, not a reach-clamped point
+        // evaluated before this frame's pelvis calibration. Clamping here used
+        // to lift a turning support shoe by 10+ cm in one frame.
         leg.release={cycle,u,from:start};
       }
       if(leg.release&&support&&walking){
@@ -236,19 +309,61 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
       const adjustment=pivot.clone().sub(pivot.clone().applyQuaternion(roll));
       let soleMin=Infinity;
       for(const point of leg.soleOffsets||[])soleMin=Math.min(soleMin,point.y*Math.cos(pitch)-point.z*Math.sin(pitch)+adjustment.y);
-      if(Number.isFinite(soleMin))adjustment.y+=-ankleHeight-soleMin+.004;
+      if(Number.isFinite(soleMin))adjustment.y+=-(leg.ankleHeight??.045)-soleMin+.004;
       world.add(adjustment.applyQuaternion(supportRotation));
       const orientation=supportRotation.clone().multiply(roll).multiply(leg.levelRotation||new THREE.Quaternion());
       if(leg.toe&&leg.toeNeutral)leg.toe.quaternion.copy(leg.toeNeutral);
       const from=leg.foot.getWorldPosition(new THREE.Vector3());world.lerp(from,limpWeight);
+      plans.push({leg,world,orientation,adjustment,supportRotation,pitch,movingNow,planted,sole,cycle,terrainHeight});
+    }
+    // Calibrate the pelvis against both actual support targets in actor space.
+    // The source neutral pose is the upright reference. A modest phase dip is
+    // allowed only when the fixed anatomical reach needs it.
+    pelvisCalibration=0;
+    if(walking&&limpWeight<.5){
+      for(const {leg,world,planted} of plans){
+        const hip=root.worldToLocal(leg.upper.getWorldPosition(new THREE.Vector3()));
+        const knee=root.worldToLocal(leg.lower.getWorldPosition(new THREE.Vector3()));
+        const ankle=root.worldToLocal(leg.foot.getWorldPosition(new THREE.Vector3()));
+        const target=root.worldToLocal(world.clone()),a=hip.distanceTo(knee),b=knee.distanceTo(ankle);
+        const kneeAngle=THREE.MathUtils.degToRad(planted?(running?17:9):2);
+        const reachSquared=a*a+b*b+2*a*b*Math.cos(kneeAngle);
+        const horizontal=(target.x-hip.x)**2+(target.z-hip.z)**2;
+        const allowed=target.y+Math.sqrt(Math.max(.01,reachSquared-horizontal));
+        pelvisCalibration=Math.min(pelvisCalibration,allowed-hip.y);
+      }
+      fit.position.y+=pelvisCalibration;root.updateWorldMatrix(true,true);
+    }
+    for(const {leg,world,orientation,adjustment,supportRotation,pitch,movingNow,planted,sole,cycle,terrainHeight}of plans){
       const desired=root.worldToLocal(world.clone());
       const contact=reachPrologueArm(root,leg.upper,leg.lower,leg.foot,desired,new THREE.Vector3(leg.index?-.13:.13,.45,.65),true);
       // Independent ankle orientation follows the heel/sole/toe support frame.
       worldRotation(leg.foot,orientation);
       root.updateWorldMatrix(true,true);
       const actual=leg.foot.getWorldPosition(new THREE.Vector3());leg.lastWorld=actual.clone().sub(adjustment);leg.lastRotation=supportRotation.clone();leg.lastPitch=pitch;leg.wasMoving=movingNow;
-      footDiagnostics.push({side:leg.side,planted:walking?planted:true,error:actual.distanceTo(world),position:contact,target:desired.toArray(),locked:!!leg.anchor&&Math.abs(pitch)<1e-7,contactLocked:!!leg.anchor,contact:sole.contact,pitch,cycle,turnRelease:!!leg.release});
+      const hip=leg.upper.getWorldPosition(new THREE.Vector3()),knee=leg.lower.getWorldPosition(new THREE.Vector3());
+      const kneeDegrees=180-THREE.MathUtils.radToDeg(hip.clone().sub(knee).angleTo(actual.clone().sub(knee)));
+      footDiagnostics.push({side:leg.side,kneeDegrees,terrainHeight,planted:walking?planted:true,error:actual.distanceTo(world),position:contact,target:desired.toArray(),locked:!!leg.anchor&&Math.abs(pitch)<1e-7,contactLocked:!!leg.anchor,contact:sole.contact,pitch,cycle,turnRelease:!!leg.release});
     }
+  }
+
+  function reachActorArm(arm,target,pole){
+    // The imported shoulder hierarchy carries non-uniform bind scales. A pure
+    // quaternion two-bone solve slightly changes world-space segment lengths.
+    // Keep its orientation solve, then place the existing elbow/control at the
+    // calibrated two-sphere intersection. No bone or mesh scale is animated.
+    reachPrologueArm(root,arm.upper,arm.lower,arm.hand,target,pole,true);
+    if(!arm.upperLength||!arm.forearmLength)return root.worldToLocal(arm.hand.getWorldPosition(new THREE.Vector3())).toArray();
+    const a=arm.upper.getWorldPosition(new THREE.Vector3()),oldElbow=arm.lower.getWorldPosition(new THREE.Vector3()),oldHand=arm.hand.getWorldPosition(new THREE.Vector3());
+    const scale=root.getWorldScale(new THREE.Vector3()).y,lengthA=arm.upperLength*scale,lengthB=arm.forearmLength*scale;
+    const direction=root.localToWorld(target.clone()).sub(a),reach=clamp(direction.length(),Math.abs(lengthA-lengthB)+.0001,lengthA+lengthB-.0001);direction.normalize();
+    const destination=a.clone().addScaledVector(direction,reach),bend=root.localToWorld(pole.clone()).sub(a);bend.addScaledVector(direction,-bend.dot(direction)).normalize();
+    const along=(lengthA*lengthA-lengthB*lengthB+reach*reach)/(2*reach),elbow=a.clone().addScaledVector(direction,along).addScaledVector(bend,Math.sqrt(Math.max(0,lengthA*lengthA-along*along)));
+    aimBone(arm.upper,oldElbow.clone().sub(a),elbow.clone().sub(a));
+    arm.lower.position.copy(arm.lower.parent.worldToLocal(elbow.clone()));arm.lower.updateWorldMatrix(false,true);
+    aimBone(arm.lower,oldHand.clone().sub(oldElbow),destination.clone().sub(elbow));
+    arm.hand.position.copy(arm.hand.parent.worldToLocal(destination));arm.hand.updateWorldMatrix(false,true);
+    return root.worldToLocal(arm.hand.getWorldPosition(new THREE.Vector3())).toArray();
   }
 
   function holdWheel(steer,wheelMatrix,weight=1) {
@@ -278,7 +393,7 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
         forward.copy(wrist).sub(solvedElbow).normalize();
       }
       const local=root.worldToLocal(wrist.clone().lerp(currentWrist,1-weight));
-      reachPrologueArm(root,arm.upper,arm.lower,arm.hand,local,pole,true);
+      reachActorArm(arm,local,pole);
       forward.copy(arm.hand.getWorldPosition(new THREE.Vector3())).sub(arm.lower.getWorldPosition(new THREE.Vector3())).normalize();
       back.copy(radial).addScaledVector(forward,-radial.dot(forward)).normalize();across.crossVectors(forward,back).normalize();
       const rotation=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(across,forward,back));
@@ -299,6 +414,7 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
     leg.levelRotation=root.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(leg.foot.getWorldQuaternion(new THREE.Quaternion()));
     leg.toeNeutral=leg.toe?.quaternion.clone();leg.soleOffsets=[];
     const ankle=root.worldToLocal(leg.foot.getWorldPosition(new THREE.Vector3()));
+    leg.shinLength=ankle.distanceTo(root.worldToLocal(leg.lower.getWorldPosition(new THREE.Vector3())));
     model.traverse(mesh=>{
       if(!mesh.isSkinnedMesh||!/shoe/i.test(mesh.name))return;
       mesh.skeleton.update();const ids=mesh.geometry.attributes.skinIndex,weights=mesh.geometry.attributes.skinWeight;
@@ -314,11 +430,64 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
   }
   for(const state of sampled){state.position.copy(state.bone.position);state.quaternion.copy(state.bone.quaternion);state.scale.copy(state.bone.scale);}
   ensureLids();blinkLids(0);
+  if(police&&torso&&uniformDetails){
+    // Original fictional uniform details are fitted in the upright body's frame,
+    // then attached to the existing bones. No real insignia or extra texture.
+    const batches=new Map(),makeMaterial=(color,roughness)=>{
+      const material=new THREE.MeshStandardMaterial({color,roughness});
+      onMaterial?.(material);decayMaterial(material,decay);
+      materials.set(material,{material,color:material.color.clone(),skin:false});return material;
+    };
+    const navy=makeMaterial(0x182b42,.88),metal=makeMaterial(0xa69c73,.43),leather=makeMaterial(0x12171c,.77);
+    const add=(bone,mat,geometry,position,rotation=[0,0,0])=>{
+      if(authoredUniform&&bone===torso){geometry.dispose();return;}
+      geometry.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...position),new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)),new THREE.Vector3(1,1,1)));
+      if(position[2]>.11){
+        // Fit the chest details/buckle to the actual posed clothing surface;
+        // the source shirt is tapered rather than a flat front panel.
+        const clothing=[model.getObjectByName('shirt'),model.getObjectByName('manpants')].filter(Boolean);
+        for(const mesh of clothing)mesh.skeleton?.update();
+        const points=geometry.attributes.position,ray=new THREE.Raycaster();
+        for(let i=0;i<points.count;i++){
+          const p=new THREE.Vector3().fromBufferAttribute(points,i),origin=root.localToWorld(new THREE.Vector3(p.x,p.y,1));
+          ray.set(origin,new THREE.Vector3(0,0,-1).applyQuaternion(root.getWorldQuaternion(new THREE.Quaternion())));
+          const hit=ray.intersectObjects(clothing,false)[0];
+          if(hit)p.z=root.worldToLocal(hit.point).z+(p.z-position[2])+.005;
+          points.setXYZ(i,p.x,p.y,p.z);
+        }
+        geometry.computeVertexNormals();
+      }
+      geometry.applyMatrix4(bone.matrixWorld.clone().invert().multiply(root.matrixWorld));
+      const id=bone.name+':'+mat.uuid;if(!batches.has(id))batches.set(id,{bone,mat,geometries:[]});batches.get(id).geometries.push(geometry);
+    };
+    for(const side of [-1,1]){
+      add(torso,navy,new THREE.BoxGeometry(.079,.013,.055),[side*.180,1.438,-.003],[0,0,-side*.16]);
+      add(torso,navy,new THREE.BoxGeometry(.080,.016,.012),[side*.089,1.330,.119]);
+      add(torso,navy,new THREE.BoxGeometry(.074,.064,.006),[side*.089,1.290,.120]);
+    }
+    add(torso,navy,new THREE.BoxGeometry(.014,.254,.008),[0,1.287,.124]);
+    add(torso,metal,new THREE.CylinderGeometry(.021,.017,.006,6),[-.087,1.384,.126],[Math.PI/2,0,0]);
+    add(torso,metal,new THREE.BoxGeometry(.052,.010,.006),[.088,1.382,.126]);
+    const beltBone=bones.get('waist')||torso;
+    for(const side of [-1,1]){
+      add(beltBone,leather,new THREE.BoxGeometry(.055,.035,.144),[side*.160,.988,.018]);
+      add(beltBone,leather,new THREE.BoxGeometry(.034,.068,.049),[side*.170,.973,.061]);
+    }
+    add(beltBone,leather,new THREE.BoxGeometry(.291,.035,.016),[0,.988,.132]);
+    add(beltBone,metal,new THREE.BoxGeometry(.042,.028,.007),[0,.988,.144]);
+    for(const {bone,mat,geometries}of batches.values()){
+      const geometry=mergeGeometries(geometries,false);for(const g of geometries)g.dispose();
+      if(!geometry)continue;uniformGeometry.push(geometry);
+      const mesh=new THREE.Mesh(geometry,mat);mesh.name='Fictional police uniform '+bone.name+' '+(mat===metal?'insignia':mat===leather?'duty belt':'shirt details');bone.add(mesh);
+    }
+  }
   for(const arm of arms){
     for(const finger of [...arm.fingers,arm.thumb].filter(Boolean))finger.userData.wheelNeutral=finger.quaternion.clone();
     if(!arm.lower||!arm.hand)continue;
     // Calibrate the forearm's longitudinal and dorsal axes from the source rig,
     // whose hand is an independent IK child rather than a forearm child.
+    arm.upperLength=root.worldToLocal(arm.upper.getWorldPosition(new THREE.Vector3())).distanceTo(root.worldToLocal(arm.lower.getWorldPosition(new THREE.Vector3())));
+    arm.forearmLength=root.worldToLocal(arm.hand.getWorldPosition(new THREE.Vector3())).distanceTo(root.worldToLocal(arm.lower.getWorldPosition(new THREE.Vector3())));
     const inverse=arm.lower.getWorldQuaternion(new THREE.Quaternion()).invert();
     const forward=arm.hand.getWorldPosition(new THREE.Vector3()).sub(arm.lower.getWorldPosition(new THREE.Vector3())).normalize().applyQuaternion(inverse);
     const back=new THREE.Vector3(0,0,1).applyQuaternion(arm.hand.getWorldQuaternion(new THREE.Quaternion())).applyQuaternion(inverse);
@@ -332,7 +501,7 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
     pose({time = 0, phase = 0, mode = 'standing', speaking = false, distress = 0, look = 0, reduced = false, corpse = false, dissolve = 0, steer = 0, wheelMatrix = null, bang = 0, bangTargets = null, performance = {}, crouch = 0, runWeight = mode==='run'?1:0, gait = null, support = null, exitPose = null, limpWeight = mode==='limp'?1:0} = {}) {
       if (disposed) return;
       for (const state of sampled) {state.bone.position.copy(state.position); state.bone.quaternion.copy(state.quaternion); state.bone.scale.copy(state.scale);}
-      lastPose = mode; lastCorpse = !!corpse; decay.value = clamp(dissolve, 0, 1);
+      pelvisCalibration=0;lastPose = mode; lastCorpse = !!corpse; decay.value = clamp(dissolve, 0, 1);
       for (const {material, color, skin} of materials.values()) {
         material.color.copy(color);
         if (corpse) material.color.multiply(new THREE.Color(skin ? 0x71816b : 0xa6aca3));
@@ -341,19 +510,20 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
       fit.position.set(0, 0, 0); fit.rotation.set(0, 0, 0);
       const walking = mode === 'walk' || mode === 'run';
       const walkWeight=gait===null?(walking?1:0):unitClamp(gait);
-      if(mode==='drive'){
+      if(mode==='drive'||mode==='seated'){
         sample('Seated',reduced?0:time*.12);fit.position.set(0,.19,.075);
       }else if(mode==='exit'){
         const transfer=exitPose?.transfer??1;
         sample('Idle',0,transfer,'Seated',0);fit.position.set(0,.19*(1-transfer),.075*(1-transfer));
         fit.rotation.z=-.10*Math.sin(transfer*Math.PI);
       }else if(walking||walkWeight>0){
-        sample(mode==='run'?'Run':'Walk',(Number.isFinite(phase)?phase:0)/TAU*clips.get('Walk').duration,walkWeight);
-        fit.position.y=(-.095+.007*Math.cos(phase*2))*walkWeight;
+        const gaitClip=mode==='run'?'Run':'Walk';
+        sample(gaitClip,(Number.isFinite(phase)?phase:0)/TAU*clips.get(gaitClip).duration,walkWeight);
+        fit.position.y=(-.003+.003*Math.cos(phase*2))*walkWeight;
         fit.position.x=.008*Math.sin(phase)*walkWeight;
         fit.rotation.z=.014*Math.sin(phase)*walkWeight;
         fit.rotation.y=.021*Math.sin(phase)*walkWeight;
-        if(mode==='run'){fit.rotation.x=.10;fit.position.y=-.095+Math.max(0,Math.sin(phase*2))*.02;}
+        if(mode==='run'){fit.rotation.x=.075;fit.position.y=.026*Math.max(0,Math.sin(phase*2))-.012;}
       }else sample('Idle',0);
 
       for (const state of sampled) {state.position.copy(state.bone.position); state.quaternion.copy(state.bone.quaternion); state.scale.copy(state.bone.scale);}
@@ -362,13 +532,30 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
       if(torso&&walkWeight>0&&mode!=='drive'&&mode!=='exit'){torso.rotation.y-=.032*Math.sin(phase)*walkWeight;torso.rotation.z-=.010*Math.sin(phase)*walkWeight;torso.rotation.x+=.014*walkWeight;}
       if(torso){torso.rotation.x+=(mode==='breathe'?-.035:0)-clamp(distress,0,1)*.018+(performance.breath||0);}
       if(mode!=='drive'&&mode!=='bang'&&mode!=='exit'&&limpWeight<.5){const arm=arms[1],emphasis=performance.emphasis||0;if(arm.upper)arm.upper.rotation.x-=.12*emphasis;if(arm.lower)arm.lower.rotation.x-=.15*emphasis;}
+      // Forearm IK controls are independent just like the feet. Counter-motion
+      // and clip blending must retain their neutral anatomical reach as well.
+      root.updateWorldMatrix(true,true);
+      for(const arm of arms)if(arm.lower&&arm.hand&&arm.forearmLength){
+        const elbow=root.worldToLocal(arm.lower.getWorldPosition(new THREE.Vector3()));
+        const direction=root.worldToLocal(arm.hand.getWorldPosition(new THREE.Vector3())).sub(elbow).normalize();
+        arm.hand.position.copy(arm.hand.parent.worldToLocal(root.localToWorld(elbow.addScaledVector(direction,arm.forearmLength))));
+        arm.hand.updateWorldMatrix(false,true);
+      }
       if(runWeight>0&&mode!=='drive'&&mode!=='exit'){
         root.updateWorldMatrix(true,true);
         for(const [index,arm]of arms.entries())if(arm.upper&&arm.lower&&arm.hand){
-          const target=new THREE.Vector3(arm.sign*.25,1.10+.04*Math.sin(phase),-.025+.22*Math.cos(phase+(index?0:Math.PI)));
+          const pump=phase+(index?0:Math.PI),urgency=index?1:.90;
+          const target=new THREE.Vector3(arm.sign*(.222+.008*Math.sin(pump)),1.23+.06*Math.cos(pump),.10+.22*urgency*Math.cos(pump));
           const current=root.worldToLocal(arm.hand.getWorldPosition(new THREE.Vector3()));target.lerp(current,1-unitClamp(runWeight));
-          reachPrologueArm(root,arm.upper,arm.lower,arm.hand,target,new THREE.Vector3(arm.sign*.43,.94,-.23),true);
-          for(const finger of arm.fingers)finger.rotation.x-=.25*unitClamp(runWeight);
+          reachActorArm(arm,target,new THREE.Vector3(arm.sign*.235,1.02,-.28));
+          const forward=arm.hand.getWorldPosition(new THREE.Vector3()).sub(arm.lower.getWorldPosition(new THREE.Vector3())).normalize();
+          const back=new THREE.Vector3(arm.sign,0,0).applyQuaternion(root.getWorldQuaternion(new THREE.Quaternion()));
+          back.addScaledVector(forward,-back.dot(forward)).normalize();
+          const across=new THREE.Vector3().crossVectors(forward,back).normalize();
+          const rotation=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(across,forward,back));
+          worldRotation(arm.hand,arm.hand.getWorldQuaternion(new THREE.Quaternion()).slerp(rotation,unitClamp(runWeight)));
+          for(const finger of arm.fingers){finger.quaternion.copy(finger.userData.wheelNeutral);finger.rotateX(-.95*unitClamp(runWeight));}
+          if(arm.thumb){arm.thumb.quaternion.copy(arm.thumb.userData.wheelNeutral);arm.thumb.rotateX(-.25*unitClamp(runWeight));}
         }
       }
       if (head) {
@@ -385,6 +572,16 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
       if(limpWeight){fit.rotation.x+=.10*limpWeight;fit.rotation.z+=(police?.05:-.05)*limpWeight;for(const arm of arms)if(arm.hand)arm.hand.rotation.x+=.35*limpWeight;}
       fit.position.y-=.24*unitClamp(crouch);fit.rotation.x+=.065*unitClamp(crouch);
       if(mode==='bang'){if(torso)torso.rotation.x-=.035*bang;fit.position.y-=.018*bang;}
+      if(support?.terrainHeights&&(walking||walkWeight>.001)&&bones.get('pelvis')){
+        // Small uneven-ground obliquity is a pelvic rotation on the existing
+        // rig, not per-leg scaling. The independently controlled torso stays
+        // upright while each sole uses its measured terrain elevation.
+        root.updateWorldMatrix(true,true);
+        const pelvis=bones.get('pelvis'),left=support.terrainHeights.L||0,right=support.terrainHeights.R||0;
+        const span=Math.abs(root.worldToLocal(feet[0].upper.getWorldPosition(new THREE.Vector3())).x-root.worldToLocal(feet[1].upper.getWorldPosition(new THREE.Vector3())).x);
+        const axis=new THREE.Vector3(0,0,1).applyQuaternion(root.getWorldQuaternion(new THREE.Quaternion()));
+        worldRotation(pelvis,new THREE.Quaternion().setFromAxisAngle(axis,clamp(Math.atan2(left-right,Math.max(.15,span)),-.16,.16)).multiply(pelvis.getWorldQuaternion(new THREE.Quaternion())));
+      }
       plantFeet({phase,walking:walking||walkWeight>.001,running:mode==='run',gait:walkWeight,support,mode,bang,exitPose,limpWeight});
       windowContacts = []; windowTargets = [];
       if (mode === 'bang' && bangTargets) for (const [index, arm] of arms.entries()) {
@@ -395,7 +592,7 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
         const skinOffset=index===0?.014:.010;
         const target=contact.clone();target.z-=.20*(1-clamp(bang,0,1))+skinOffset;
         windowTargets.push(contact.toArray());
-        const wrist=reachPrologueArm(root,arm.upper,arm.lower,arm.hand,target,new THREE.Vector3(arm.sign*.40,1.1,.12),true);windowContacts.push([wrist[0],wrist[1],wrist[2]+skinOffset]);
+        const wrist=reachActorArm(arm,target,new THREE.Vector3(arm.sign*.40,1.1,.12));windowContacts.push([wrist[0],wrist[1],wrist[2]+skinOffset]);
         for (const finger of arm.fingers) finger.rotation.x = 0;
       }
       // The final solve happens after breathing/torso adjustments, so no later
@@ -409,20 +606,20 @@ export function createTexturedPrologueActor({name = 'Clarence', police = true, g
     },
     // Interactive contacts include history. Capture it with a checkpoint rather
     // than pretending that an arbitrary timestamp contains prior support events.
-    capturePoseState:()=>({version:1,lastSupportTime,feet:feet.map(leg=>({side:leg.side,cycle:leg.cycle,anchor:leg.anchor?.toArray()||null,anchorRotation:leg.anchorRotation?.toArray()||null,lastRotation:leg.lastRotation?.toArray()||null,startRotation:leg.startRotation?.toArray()||null,stopRotation:leg.stopRotation?.toArray()||null,lastPitch:leg.lastPitch||0,stopPitch:leg.stopPitch||0,lastWorld:leg.lastWorld?.toArray()||null,wasMoving:!!leg.wasMoving,stopFrom:leg.stopFrom?.toArray()||null,startFrom:leg.startFrom?.toArray()||null,swing:leg.swing?{cycle:leg.swing.cycle,from:leg.swing.from.toArray()}:null,release:leg.release?{cycle:leg.release.cycle,u:leg.release.u,from:leg.release.from.toArray()}:null}))}),
+    capturePoseState:()=>({version:1,lastSupportTime,lastSupportPosition:lastSupportPosition?.toArray()||null,feet:feet.map(leg=>({side:leg.side,cycle:leg.cycle,anchor:leg.anchor?.toArray()||null,anchorRotation:leg.anchorRotation?.toArray()||null,lastRotation:leg.lastRotation?.toArray()||null,startRotation:leg.startRotation?.toArray()||null,stopRotation:leg.stopRotation?.toArray()||null,lastPitch:leg.lastPitch||0,stopPitch:leg.stopPitch||0,lastWorld:leg.lastWorld?.toArray()||null,wasMoving:!!leg.wasMoving,stopFrom:leg.stopFrom?.toArray()||null,startFrom:leg.startFrom?.toArray()||null,swing:leg.swing?{cycle:leg.swing.cycle,from:leg.swing.from.toArray()}:null,release:leg.release?{cycle:leg.release.cycle,u:leg.release.u,from:leg.release.from.toArray()}:null}))}),
     restorePoseState(state){
       if(state?.version!==1||!Array.isArray(state.feet)||state.feet.length!==2)return false;
       const vector=v=>Array.isArray(v)&&v.length===3&&v.every(Number.isFinite)?new THREE.Vector3().fromArray(v):null;
-      lastSupportTime=Number.isFinite(state.lastSupportTime)?state.lastSupportTime:null;
+      lastSupportTime=Number.isFinite(state.lastSupportTime)?state.lastSupportTime:null;lastSupportPosition=vector(state.lastSupportPosition);
       const rotation=value=>Array.isArray(value)&&value.length===4?new THREE.Quaternion().fromArray(value):null;
       for(const leg of feet){const data=state.feet.find(f=>f.side===leg.side);if(!data)return false;leg.cycle=data.cycle;leg.anchor=vector(data.anchor);leg.anchorRotation=rotation(data.anchorRotation);leg.lastRotation=rotation(data.lastRotation);leg.startRotation=rotation(data.startRotation);leg.stopRotation=rotation(data.stopRotation);leg.lastPitch=data.lastPitch||0;leg.stopPitch=data.stopPitch||0;leg.lastWorld=vector(data.lastWorld);leg.wasMoving=!!data.wasMoving;leg.stopFrom=vector(data.stopFrom);leg.startFrom=vector(data.startFrom);leg.swing=data.swing&&vector(data.swing.from)?{cycle:data.swing.cycle,from:vector(data.swing.from)}:null;leg.release=data.release&&vector(data.release.from)?{cycle:data.release.cycle,u:data.release.u,from:vector(data.release.from)}:null;}
       return true;
     },
-    diagnostics:() => ({name,identity,assetId:gltf.asset?.extras?.cinematicCharacter?`cast-${identity}.glb`:'cast.glb', kind:police ? 'uniformed police officer' : 'civilian father', pose:lastPose, corpse:lastCorpse, dissolve:decay.value, provenance:TEXTURED_CAST_PROVENANCE, textured:true, clip:clipName, height:1.8,blends:{...blendDiagnostics},speech:speechValue,feet:footDiagnostics,wristTargets:wristTargets.map(point => [...point]),windowTargets,windowContacts}),
+    diagnostics:() => ({name,identity,assetId:identity==='mike'?'mike-body.glb':gltf.asset?.extras?.cinematicCharacter?`cast-${identity}.glb`:'cast.glb', kind:police ? 'uniformed police officer' : 'civilian father', pose:lastPose, corpse:lastCorpse, dissolve:decay.value, provenance:TEXTURED_CAST_PROVENANCE, textured:true, clip:clipName, height:1.8,locomotion:{uprightReference:'neutral fitted Talk frame',pelvisCorrection:pelvisCalibration,fitYOffset:fit.position.y,run:'independent authored neutral-based urgency cycle'},uniform:police?'fitted fictional police shirt, epaulettes, badge and duty belt':'civilian',blends:{...blendDiagnostics},speech:speechValue,feet:footDiagnostics,wristTargets:wristTargets.map(point => [...point]),windowTargets,windowContacts}),
     dispose() {
       if (disposed) return;
       disposed = true; mixer.stopAllAction(); mixer.uncacheRoot(model);
-      for (const skeleton of skeletons) skeleton.dispose();for(const geometry of lidGeometry)geometry.dispose();
+      for (const skeleton of skeletons) skeleton.dispose();for(const geometry of [...lidGeometry,...uniformGeometry,...clothingGeometry])geometry.dispose();
       // The parent disposes cloned materials while traversing its scene. Shared
       // geometry and texture disposal happens once, in the parent's asset owner.
     },

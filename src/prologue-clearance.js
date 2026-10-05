@@ -10,3 +10,16 @@ export function cornInstanceEnvelope(geometry,matrix,parentMatrix=new THREE.Matr
 }
 export function cornClearsParkedCruiser(geometry,matrix,parentMatrix){return !cornInstanceEnvelope(geometry,matrix,parentMatrix).intersectsBox(carBox);}
 export function parkedCruiserClearanceBox(){return carBox.clone();}
+
+/** Radio envelope in cabin metres, independent of the current head-look frame.
+ * The passenger glass is at x=1.025; a 1 cm solid-surface margin is required.
+ */
+export function cabinRadioEnvelope(object,cabinMatrix=new THREE.Matrix4()){
+  object.updateWorldMatrix(true,true);const inverse=cabinMatrix.clone().invert(),bounds=new THREE.Box3();
+  object.traverse(mesh=>{
+    if(!mesh.isMesh||!mesh.visible)return;
+    if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
+    bounds.union(mesh.geometry.boundingBox.clone().applyMatrix4(inverse.clone().multiply(mesh.matrixWorld)));
+  });
+  return {min:bounds.min.toArray(),max:bounds.max.toArray(),rightMargin:1.025-bounds.max.x,clear:!bounds.isEmpty()&&bounds.max.x<=1.015};
+}

@@ -8,17 +8,18 @@ const smooth=value=>{const t=clamp(value);return t*t*(3-2*t);};
 const mix=(a,b,t)=>a+(b-a)*t;
 const WALK={walk:[0,.27],history:[.27,.62],disappearance:[.62,.84],arrival:[.84,1]};
 const CHAPTERS=Object.keys(WALK),IDS=['mike','clarence','stanley'],EYE=GAME_CONFIG.player.eyeHeight;
-const STEP={mike:.50,clarence:.45,stanley:.48},OFFSET={mike:0,clarence:.37,stanley:.73};
+export const PROLOGUE_WALK_STRIDE=Object.freeze({mike:.50,clarence:.35,stanley:.35});
+const STEP=PROLOGUE_WALK_STRIDE,OFFSET={mike:0,clarence:.37,stanley:.73};
 const RUN_DISTANCE=ROADSIDE_DISTANCE,RUN_STEP=.85;
 
 /** Shared distance phase: heel contact stays exactly on the audio contact clock. */
 export function samplePrologueSoleGait(phase=0,index=0,{running=false,gait=1}={}){
   const cycles=phase/(Math.PI*2)+index*.5,cycle=Math.floor(cycles),u=cycles-cycle;
-  const stance=running?.38:.62,heelEnd=stance*.22,toeStart=stance*.71;
+  const stance=running?.38:.56,heelEnd=stance*.22,toeStart=stance*.71;
   const swing=clamp((u-stance)/(1-stance));
   const heel=running?-.15:-.20,toe=running?.38:.30;
   const pitch=u<heelEnd?heel*(1-smooth(u/heelEnd)):u<toeStart?0:u<stance?toe*smooth((u-toeStart)/(stance-toeStart)):mix(toe,heel,smooth(swing));
-  return {cycle,u,stance,swing,planted:u<stance,pitch:pitch*clamp(gait),contact:u<heelEnd?'heel':u<toeStart?'sole':u<stance?'toe':'swing',lift:u<stance?0:Math.sin(swing*Math.PI)*(running?.17:.075)};
+  return {cycle,u,stance,swing,planted:u<stance,pitch:pitch*clamp(gait),contact:u<heelEnd?'heel':u<toeStart?'sole':u<stance?'toe':'swing',lift:u<stance?0:running?Math.pow(Math.sin(swing*Math.PI),.85)*(.19+(index?.018:0)):Math.sin(swing*Math.PI)*.055};
 }
 
 export function prologueWorldTransition(frame={},available=false){

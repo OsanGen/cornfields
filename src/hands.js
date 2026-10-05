@@ -41,8 +41,13 @@ export function installHands({gun,knife,torch,placeholders,weaponPlaceholders=[]
   });
   const attachArm=(source,parent,position,rotation,grasp,side='R')=>{
     const arm=cloneSkeleton(source),pivot=new THREE.Group();pivot.add(arm);pivot.position.set(...position);pivot.rotation.set(...rotation);parent.add(pivot);groups.push(pivot);
-    applyHandGrip(arm,grasp,side,{weaponScale:grasp==='pistol'?POSE.pistolScale:1});prepare(arm,true);
-    if(grasp==='knife'&&side==='R')fitKnifeForearm(arm);
+    applyHandGrip(arm,grasp,side,{weaponScale:grasp==='pistol'?POSE.pistolScale:1});
+    if(arm.userData.anatomicalForearmV3){
+      const fit=createStoryForearmFit(arm,{side});
+      const endpoint=(grasp==='flashlight'||(grasp==='knife'&&side==='R'))?[0,.22,.22]:[side==='R'?.025:-.025,-.24,.17];
+      pivot.updateWorldMatrix(true,true);fit.fit(pivot.localToWorld(new THREE.Vector3(...endpoint)));
+    }else if(grasp==='knife'&&side==='R')fitKnifeForearm(arm);
+    prepare(arm,true);
     return pivot;
   };
   // This optional load has its own deadline and error channel. Its failure must
@@ -112,4 +117,53 @@ export function installHands({gun,knife,torch,placeholders,weaponPlaceholders=[]
     disposed=expired=torchExpired=true;stats.status='disposed';if(torch)stats.flashlightStatus='disposed';clearTimeout(timer);clearTimeout(torchTimer);rejectDeadline(new Error('Player view disposed'));rejectTorchDeadline?.(new Error('Flashlight view disposed'));
     cleanup();
   }};
+}
+
+/** Fit canonical anatomical forearms on owned geometry. Legacy v13 assets retain
+ * their exact reversible 8× recovery; v3 authored arms must never be divided twice.
+ * Every finger and the first 25mm of wrist remain byte-equivalent in pose.
+ * Body-elbow fitting is evaluated in the actual skinned wrist frame, never from
+ * an unskinned bounding box. The gameplay geometry and skeleton are untouched.
+ */
+export function createStoryForearmFit(arm,{side='R',ownGeometry=()=>{}}={}){
+  arm.updateWorldMatrix(true,false);arm.updateMatrixWorld(true);
+  const frame=arm.parent,frameInverse=(frame?.matrixWorld||new THREE.Matrix4()).clone().invert(),records=[];
+  arm.traverse(mesh=>{
+    if(!mesh.isSkinnedMesh)return;mesh.skeleton.update();
+    const source=mesh.geometry,geometry=source.clone(),position=source.attributes.anatomicalPosition||source.attributes.position,weights=source.attributes.skinWeight,indices=source.attributes.skinIndex;
+    geometry.setAttribute('position',position.clone());
+    geometry.setAttribute('anatomicalPosition',position.clone());
+    const points=[],inverse=[],blend=new THREE.Matrix4(),toWrist=new THREE.Matrix4();
+    for(let i=0;i<position.count;i++){
+      blend.elements.fill(0);
+      for(let j=0;j<4;j++)for(let k=0;k<16;k++)blend.elements[k]+=mesh.skeleton.boneMatrices[indices.getComponent(i,j)*16+k]*weights.getComponent(i,j);
+      toWrist.copy(frameInverse).multiply(mesh.matrixWorld).multiply(mesh.bindMatrixInverse).multiply(blend).multiply(mesh.bindMatrix);
+      const p=new THREE.Vector3().fromBufferAttribute(position,i).applyMatrix4(toWrist);
+      if(p.z>.025){
+        if(!arm.userData.anatomicalForearmV3){
+          p.z=.025+(p.z-.025)/8;const amount=.6*Math.min(1,(p.z-.025)/.245);
+          p.x=(p.x-(side==='R'?.055:-.055)*amount)/(1-amount);p.y=(p.y+.17*amount)/(1-amount);
+        }
+        points[i]=p;inverse[i]=toWrist.clone().invert();
+      }
+    }
+    mesh.geometry=geometry;ownGeometry(geometry);records.push({mesh,geometry,points,inverse});
+  });
+  const fit=elbow=>{
+    frame?.updateWorldMatrix(true,false);
+    const target=elbow?frame.worldToLocal(elbow.clone()):new THREE.Vector3(side==='R'?-.042712:.042712,.019992,.262975);
+    const delta=target.sub(new THREE.Vector3(side==='R'?-.042712:.042712,.019992,.262975));
+    for(const {geometry,points,inverse}of records){
+      const position=geometry.attributes.position;
+      points.forEach((point,i)=>{const t=Math.max(0,Math.min(1,(point.z-.025)/.238));const p=point.clone().addScaledVector(delta,t*t*(3-2*t)).applyMatrix4(inverse[i]);position.setXYZ(i,p.x,p.y,p.z);});
+      position.needsUpdate=true;geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    }
+  };
+  function supportContact(direction){
+    arm.updateMatrixWorld(true);let support=-Infinity;const contact=new THREE.Vector3();
+    for(const {mesh}of records){mesh.skeleton.update();for(let i=0;i<mesh.geometry.attributes.position.count;i++){
+      const p=mesh.getVertexPosition(i,new THREE.Vector3()).applyMatrix4(mesh.matrixWorld),d=p.dot(direction);if(d>support){support=d;contact.copy(p);const weights=mesh.geometry.attributes.skinWeight,indices=mesh.geometry.attributes.skinIndex;let weight=0,bone=null;for(let j=0;j<4;j++)if(weights.getComponent(i,j)>weight){weight=weights.getComponent(i,j);bone=mesh.skeleton.bones[indices.getComponent(i,j)]?.name;}arm.userData.storyContact={vertex:i,bone};}
+    }}return contact;
+  }
+  fit();return {fit,records,supportContact};
 }

@@ -26,8 +26,10 @@ test('talking, full blink, eye look, restart and extreme steering retain finite 
   actor.pose({performance:{blink:0}});const lids=[];actor.root.traverse(o=>{if(o.name.startsWith('Fitted '))lids.push(o);});assert.equal(lids.length,4);const open=lids.map(o=>Array.from(o.geometry.attributes.position.array));actor.pose({performance:{blink:1}});assert.notDeepEqual(lids.map(o=>Array.from(o.geometry.attributes.position.array)),open);actor.pose({performance:{blink:0}});assert.deepEqual(lids.map(o=>Array.from(o.geometry.attributes.position.array)),open);actor.dispose();
  }
 });
-test('same-rig repair keeps exact cast triangles, mesh submissions, materials and joints',()=>{
- const actor=createTexturedPrologueActor({gltf:cast});actor.pose({});let triangles=0,meshes=0;const mats=new Set(),bones=new Set();actor.root.traverse(o=>{if(o.isBone)bones.add(o);if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;mats.add(o.material);}});assert.equal(triangles,4939);assert.equal(meshes,14);assert.equal(mats.size,11);assert.equal(bones.size,56);actor.dispose();
+// 2026-10-05 v2: preserve the exact inherited cast check separately from
+// the explicitly approved added uniform details (covered by identity/budget tests).
+test('same-rig repair keeps exact underlying cast triangles, mesh submissions, materials and joints',()=>{
+ const actor=createTexturedPrologueActor({gltf:cast,uniformDetails:false});actor.pose({});let triangles=0,meshes=0;const mats=new Set(),bones=new Set();actor.root.traverse(o=>{if(o.isBone)bones.add(o);if(o.isMesh){meshes++;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;mats.add(o.material);}});assert.equal(triangles,4939);assert.equal(meshes,14);assert.equal(mats.size,11);assert.equal(bones.size,56);actor.dispose();
 });
 
 // Repeat the same deformation, normalization, UV, ownership and expression

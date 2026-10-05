@@ -14,10 +14,17 @@ export class FieldAudio {
     if(!await this.lifecycle.resume())return false;
     this.applyVolume();
     this.footsteps ||= createFootstepBank(this);void this.footsteps.load();
-    this.samplesReady ||= Promise.all(Object.entries({distress:'distress.wav',scream:'scream.wav',pistol:'pistol-shot.wav',growl:'creature-growl.mp3',roar:'creature-roar.mp3',roarAlt:'creature-roar-alt.mp3',unity:'prologue/LIQ-01.mp3'}).map(async([name,file])=>{
+    this.samplesReady ||= Promise.all(Object.entries({distress:'distress.wav',scream:'scream.wav',pistol:'pistol-shot.wav',growl:'creature-growl.mp3',roar:'creature-roar.mp3',roarAlt:'creature-roar-alt.mp3',unity:'prologue/LIQ-01.mp3',titleMusic:'prologue/title-music.mp3'}).map(async([name,file])=>{
       if(name==='pistol')this.weaponStats.sample='loading';
       const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),8000);
-      try{const response=await fetch(new URL(`../assets/audio/${file}`,import.meta.url),{signal:abort.signal});if(!response.ok)throw new Error('Optional audio unavailable');this.samples[name]=await this.ctx.decodeAudioData(await response.arrayBuffer());if(name==='pistol')this.weaponStats.sample='ready';}
+      try{
+        const response=await fetch(new URL(`../assets/audio/${file}`,import.meta.url),{signal:abort.signal});if(!response.ok)throw new Error('Optional audio unavailable');
+        const bytes=await response.arrayBuffer();if(name==='titleMusic'&&bytes.byteLength>300000)throw new Error('Title music exceeds 300KB budget');
+        const buffer=await this.ctx.decodeAudioData(bytes);
+        // Loading never starts a voice. Only a currently rendered title can do so.
+        if(name!=='titleMusic'||!abort.signal.aborted)this.samples[name]=buffer;
+        if(name==='pistol')this.weaponStats.sample='ready';
+      }
       catch{if(name==='pistol')this.weaponStats.sample='fallback';}finally{clearTimeout(timer);}
     }));
     return true;
@@ -76,7 +83,35 @@ export class FieldAudio {
     if(id==='creator_pulse'){this.introSound({freq:61,end:38,duration:.65,gain:.09});return;}
     this.introSound({noise:true,duration:id==='title_rise'?1.5:id==='studio_swell'?.6:.19,gain:.14,filter:900});
   }
+  syncIntro(frame){
+    const time=frame?.time,buffer=this.samples.titleMusic;
+    // The title shot begins at 16, but CORNFIELDS is invisible until after 17.8.
+    // A cue may be consumed during catch-up without that title ever being shown.
+    if(!this.ctx||this.ctx.state!=='running'||!this.introGain||this.muted||frame?.ready||frame?.shot!=='title'||!(frame.opacity>0)||!Number.isFinite(time)||time<17.8||time>=20){this.stopTitleMusic();return;}
+    if(!buffer)return;
+    const ctx=this.ctx,offset=time-17.8,end=Math.min(2.2,buffer.duration),remaining=end-offset;
+    if(!(remaining>0)){this.stopTitleMusic();return;}
+    // The presentation clock remains the owner, including clamped slow frames.
+    const voice=this.titleMusicVoice;
+    if(voice&&Math.abs(ctx.currentTime-voice.started+voice.offset-offset)>.12)this.stopTitleMusic();
+    if(this.titleMusicVoice||this.introSources.size>=8)return;
+    const source=ctx.createBufferSource(),level=ctx.createGain(),now=ctx.currentTime,owner=this.introSources;
+    source.buffer=buffer;source.loop=false;source.connect(level).connect(this.introGain);
+    const peak=1,fadeAt=Math.max(0,end-.35),gain=peak*Math.min(1,remaining/.35),attack=Math.min(.015,remaining/3);
+    level.gain.setValueAtTime(0,now);level.gain.linearRampToValueAtTime(gain,now+attack);
+    if(offset<fadeAt)level.gain.setValueAtTime(peak,now+fadeAt-offset);
+    level.gain.linearRampToValueAtTime(0,now+remaining);
+    const item={source,level,started:now,offset};this.titleMusicVoice=item;owner.add(source);
+    source.onended=()=>{owner.delete(source);if(this.titleMusicVoice===item)this.titleMusicVoice=null;source.disconnect();level.disconnect();};
+    source.start(now,offset,remaining);source.stop(now+remaining);
+  }
+  stopTitleMusic(){
+    const voice=this.titleMusicVoice;if(!voice)return;this.titleMusicVoice=null;
+    try{voice.source.stop();}catch{}
+    this.introSources?.delete(voice.source);voice.source.disconnect();voice.level.disconnect();
+  }
   stopIntro(){
+    this.stopTitleMusic();
     for(const source of this.introSources||[]){try{source.stop();}catch{}}
     this.introSources?.clear();
     if(this.introGain){this.introGain.gain.cancelScheduledValues(this.ctx.currentTime);this.introGain.disconnect();this.introGain=null;}

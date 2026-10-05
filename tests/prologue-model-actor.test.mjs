@@ -235,4 +235,101 @@ test('visible textured hand skin contacts the pane without wrist-origin penetrat
   }actor.dispose();
 });
 
+
+test('v2 walk calibrates upright mid-stance and preserves measured anatomy without the old crouch',()=>{
+  const actor=createTexturedPrologueActor({gltf:cast}),joints=bones(actor);
+  actor.pose({mode:'standing'});const refY=joints.get('legupL').getWorldPosition(new THREE.Vector3()).y;
+  const reference=['L','R'].map(side=>{const a=joints.get('legup'+side).getWorldPosition(new THREE.Vector3()),b=joints.get('leglo'+side).getWorldPosition(new THREE.Vector3()),c=joints.get('foot1'+side).getWorldPosition(new THREE.Vector3());return[a.distanceTo(b),b.distanceTo(c)];});
+  let flatSamples=0;
+  for(let i=0;i<128;i++){
+    actor.pose({mode:'walk',phase:i/128*Math.PI*2});
+    actor.diagnostics().feet.forEach((foot,j)=>{
+      const a=joints.get('legup'+foot.side).getWorldPosition(new THREE.Vector3()),b=joints.get('leglo'+foot.side).getWorldPosition(new THREE.Vector3()),c=joints.get('foot1'+foot.side).getWorldPosition(new THREE.Vector3());
+      assert(refY-a.y<=.03+1e-6,`pelvis below upright reference by ${refY-a.y}`);
+      assert(Math.abs(a.distanceTo(b)/reference[j][0]-1)<.01);assert(Math.abs(b.distanceTo(c)/reference[j][1]-1)<.01);
+      if(foot.planted&&foot.contact==='sole'){flatSamples++;assert(foot.kneeDegrees>=5&&foot.kneeDegrees<=20,`mid-stance knee ${foot.kneeDegrees}`);}
+      assert(foot.error<.01);
+    });
+  }
+  assert(flatSamples>40);actor.dispose();
+});
+
+test('v2 independent run has different flight, leg and arm poses at the same shared phase',()=>{
+  const actor=createTexturedPrologueActor({gltf:cast}),joints=bones(actor);let distinct=0;
+  for(let i=0;i<8;i++){const phase=i/8*Math.PI*2;actor.pose({mode:'walk',phase});const walk=joints.get('handL').getWorldPosition(new THREE.Vector3()),foot=joints.get('foot1L').getWorldPosition(new THREE.Vector3());
+    actor.pose({mode:'run',phase});assert.equal(actor.diagnostics().clip,'Run');assert(actor.diagnostics().locomotion.run.startsWith('independent authored'));
+    if(walk.distanceTo(joints.get('handL').getWorldPosition(new THREE.Vector3()))>.08&&foot.distanceTo(joints.get('foot1L').getWorldPosition(new THREE.Vector3()))>.06)distinct++;
+  }
+  assert(distinct>=6);actor.dispose();
+});
+
+test('body-only normalization and seated pose do not add wheel grips or optional uniform draws',()=>{
+  const box=new THREE.Box3().setFromObject(cast.scene),sourceHeight=box.getSize(new THREE.Vector3()).y;
+  const actor=createTexturedPrologueActor({gltf:cast,sourceHeight,uniformDetails:false});actor.pose({mode:'seated'});
+  assert.equal(actor.diagnostics().clip,'Seated');assert.deepEqual(actor.diagnostics().wristTargets,[]);
+  assert.equal(actor.diagnostics().feet.length,2);assert(actor.diagnostics().feet.every(f=>f.error<.012));
+  let details=0;actor.root.traverse(o=>{if(o.name.startsWith('Fictional police uniform '))details++});assert.equal(details,0);actor.dispose();
+});
+
+
+test('supported walk, turns, uneven soles and start-stop keep anatomy and ground-contact bounds',()=>{
+  for(const scenario of ['straight','turn','uneven','start-stop']){
+    const actor=createTexturedPrologueActor({gltf:cast}),joints=bones(actor),shoe=actor.root.getObjectByName('black_fancy_shoes'),g=shoe.geometry;
+    const vertices=['L','R'].map(side=>{const ids=new Set(shoe.skeleton.bones.flatMap((b,i)=>b.name==='foot1'+side||b.name==='foot2'+side?[i]:[]));return Array.from({length:g.attributes.position.count},(_,v)=>v).filter(v=>{let w=0;for(let k=0;k<4;k++)if(ids.has(g.attributes.skinIndex.getComponent(v,k)))w+=g.attributes.skinWeight.getComponent(v,k);return w>.75;});});
+    actor.pose({});const pelvisY=joints.get('pelvis').getWorldPosition(new THREE.Vector3()).y;
+    const lengths=['L','R'].map(side=>{const a=joints.get('legup'+side).getWorldPosition(new THREE.Vector3()),b=joints.get('leglo'+side).getWorldPosition(new THREE.Vector3()),c=joints.get('foot1'+side).getWorldPosition(new THREE.Vector3());return[a.distanceTo(b),b.distanceTo(c)];});
+    let distance=0,flatCount=0;const anchors=new Map();
+    for(let i=0;i<180;i++){
+      const moving=scenario!=='start-stop'||i>=15&&i<130,gait=scenario==='start-stop'?i<15?0:i<30?(i-15)/15:i<130?1:i<145?1-(i-130)/15:0:1;
+      if(moving)distance+=.005;const phase=distance/.35*Math.PI,terrainHeights=scenario==='uneven'?{L:.015,R:-.010}:null;
+      actor.root.position.z=distance;if(scenario==='turn')actor.root.rotation.y=Math.min(1,i/240);
+      actor.pose({mode:moving?'walk':'standing',phase,gait,support:{time:i/60,distance,stride:.35,moving,grounded:true,terrainHeights}});shoe.skeleton.update();
+      assert(pelvisY-joints.get('pelvis').getWorldPosition(new THREE.Vector3()).y<=.03+1e-6,scenario+' upright pelvis');
+      for(const[j,f]of actor.diagnostics().feet.entries()){
+        const a=joints.get('legup'+f.side).getWorldPosition(new THREE.Vector3()),b=joints.get('leglo'+f.side).getWorldPosition(new THREE.Vector3()),c=joints.get('foot1'+f.side).getWorldPosition(new THREE.Vector3());
+        assert(Math.abs(a.distanceTo(b)/lengths[j][0]-1)<.01,scenario+' thigh length');assert(Math.abs(b.distanceTo(c)/lengths[j][1]-1)<.01,scenario+' shin length');assert(f.error<.01,scenario+' contact reach');
+        if(f.planted){let minimum=Infinity;for(const v of vertices[j])minimum=Math.min(minimum,shoe.localToWorld(shoe.getVertexPosition(v,new THREE.Vector3())).y-(terrainHeights?.[f.side]||0));assert(minimum>=-.01&&minimum<=.01,scenario+' visible sole clearance '+minimum);}
+        if(f.planted&&f.contact==='sole'&&gait>=.99){flatCount++;assert(f.kneeDegrees>=5&&f.kneeDegrees<=20,scenario+' mid-stance knee '+f.kneeDegrees);}
+        if(f.locked&&gait>=.99){const key=f.side+':'+f.cycle;if(anchors.has(key))assert(c.distanceTo(anchors.get(key))<=.02,scenario+' support drift');else anchors.set(key,c);}
+      }
+    }
+    assert(flatCount>25);actor.dispose();
+  }
+});
+
+
+test('run urgency and steering preserve both measured arm segments on the scaled source rig',()=>{
+ const actor=createTexturedPrologueActor({gltf:cast}),joints=bones(actor),lengths=()=>['L','R'].map(s=>{const p=['armup','armlo','hand'].map(n=>joints.get(n+s).getWorldPosition(new THREE.Vector3()));return[p[0].distanceTo(p[1]),p[1].distanceTo(p[2])];});
+ actor.pose({});const reference=lengths();
+ for(const mode of ['walk','run','drive'])for(let i=0;i<32;i++){
+  actor.pose({mode,phase:i/32*Math.PI*2,gait:mode==='walk'?.5:null,steer:Math.sin(i/32*Math.PI*2)*.12});
+  lengths().forEach((pair,j)=>pair.forEach((length,k)=>assert(Math.abs(length/reference[j][k]-1)<.01,mode+' arm segment length')));
+ }
+ actor.dispose();
+});
+
+
+test('turning restart blends support orientation continuously when full gait is reached',()=>{
+ const actor=createTexturedPrologueActor({gltf:cast}),joints=bones(actor),stride=.35,startDistance=3.126547615174693;
+ actor.root.position.set(-1.3,0,-3.48);actor.root.rotation.y=Math.PI;
+ actor.pose({mode:'standing',phase:(startDistance/stride+.37)*Math.PI,gait:0,support:{time:0,distance:startDistance,stride,moving:false,grounded:true}});
+ let prior=['L','R'].map(side=>joints.get('foot1'+side).getWorldQuaternion(new THREE.Quaternion()));
+ for(let i=1;i<=24;i++){
+  const distance=startDistance+i*.0108333333333333,phase=(distance/stride+.37)*Math.PI,gait=Math.min(1,i/16.8);
+  actor.root.position.x=-1.3-i*.0108;actor.root.rotation.y=Math.PI+i*.0466666666666667;
+  actor.pose({mode:'walk',phase,gait,support:{time:i/60,distance,phase,stride,moving:true,grounded:true}});
+  const current=['L','R'].map(side=>joints.get('foot1'+side).getWorldQuaternion(new THREE.Quaternion()));
+  current.forEach((q,j)=>assert(q.angleTo(prior[j])<.15,'turning startup must not snap on its full-gait frame'));prior=current;
+ }
+ actor.dispose();
+});
+
+
+test('rigid lower shoe sole retains shared geometry while the ankle collar keeps its flexible weights',()=>{
+ const first=createTexturedPrologueActor({gltf:cast}),second=createTexturedPrologueActor({gltf:cast}),shoe=first.root.getObjectByName('black_fancy_shoes'),other=second.root.getObjectByName('black_fancy_shoes');assert.equal(shoe.geometry,other.geometry);
+ const ids=new Set(shoe.skeleton.bones.flatMap((bone,index)=>/^foot[12][LR]$/.test(bone.name)?[index]:[])),g=shoe.geometry;let rigid=0,flexible=0;
+ for(let v=0;v<g.attributes.skinWeight.count;v++){let sum=0;for(let k=0;k<4;k++)if(ids.has(g.attributes.skinIndex.getComponent(v,k)))sum+=g.attributes.skinWeight.getComponent(v,k);if(sum>.9999)rigid++;else if(sum>.75)flexible++;}
+ assert(rigid>100,'the visible sole has rigid foot/toe binding');assert(flexible>0,'upper collar retains calf-weighted flexibility');first.dispose();second.dispose();
+});
+
 }

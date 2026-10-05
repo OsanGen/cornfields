@@ -228,5 +228,133 @@
       "sha256": "e28eebd99e4e28dd1f814da3fd0fa524353ccfe23e2faeb6a09e1fcbb5436072",
       "duration": 1.904
     }
+  },
+  "subtitle_only_cues": [
+    {
+      "id": "CAR-00",
+      "text": "Clarence, I gotta tell you something.",
+      "mode": "subtitle-only"
+    },
+    {
+      "id": "UND-01",
+      "text": "What the fuck.",
+      "mode": "subtitle-only"
+    }
+  ],
+  "subtitle_only_decision": "2026-10-04: owner explicitly deferred the voice requirement for these two new cues only; no new speech generated.",
+  "humanRoadsideV2": {
+    "newSound": "Original bounded two-tone car horn synthesized locally at the single car_honk reaction cue",
+    "implementation": "src/prologue-audio.js",
+    "frequenciesHz": [
+      370,
+      466
+    ],
+    "durationSeconds": 0.32,
+    "newVoiceGeneration": false,
+    "voiceFiles": "Byte-identical to pinned private v12; inherited provenance is retained, not independently recertified",
+    "newMusic": {
+      "file": "entertainment-music.mp3",
+      "title": "Cold Funk",
+      "artist": "Kevin MacLeod",
+      "sourceURL": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100499",
+      "downloadURL": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cold%20Funk.mp3",
+      "license": "CC-BY-4.0",
+      "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceSha256": "a7d0b772f05b99c4ac3df28cb2feaa5190781c2b87bceef5052cc45408b6fc75",
+      "sha256": "5a913c704a2edb73f49015bfe0ae2f91e023929b4ec1a437388730b0fce17c6f",
+      "bytes": 321035,
+      "sourceIntervalSeconds": [
+        0,
+        20
+      ],
+      "decodedDurationSeconds": 20,
+      "containerDurationSeconds": 20.035918,
+      "codec": "MP3 stereo 44.1kHz 128kbps",
+      "modifications": "Excerpted from 0:00 to 0:20; runtime bandpass for fictional car radio. Playback cut, knob and hand share CAR-01 start; not word-level aligned.",
+      "newSpendUSD": 0,
+      "historicalV2": {
+        "sha256": "c0658371c2b08c838351ff54fb77b6f403a08aa40d55dd2f2b30ee45c7b50550",
+        "bytes": 50512,
+        "sourceIntervalSeconds": [
+          0,
+          4.15
+        ],
+        "decodedDurationSeconds": 4.15,
+        "containerDurationSeconds": 4.179592,
+        "codec": "MP3 mono 44.1kHz 96kbps",
+        "modifications": "Excerpted from0:00 to0:04.15, 18ms onset and20ms ending fades, volume-adjusted; runtime bandpass for a fictional car radio"
+      },
+      "audition": "Unverified; owner uninterrupted listening review required",
+      "musicLeadSeconds": 14,
+      "byteCap": 524288
+    },
+    "dogBark": "Historical v2 had no bark; see visualOverhaulV3.bark for approved v3 integration.",
+    "newExternalProcessing": false,
+    "titleMusic": {
+      "file": "title-music.mp3",
+      "title": "The House of Leaves",
+      "artist": "Kevin MacLeod",
+      "isrc": "USUAN1100710",
+      "sourceURL": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100710",
+      "downloadURL": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/The%20House%20of%20Leaves.mp3",
+      "license": "CC-BY-4.0",
+      "licenseURL": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceSha256": "ceb97d6a0b8553f765a15ba7c4acbfd8e127bce472606a3d3667562247229573",
+      "sha256": "2689f129cd95b016e1e5eb23879b3af8879222eeaedc4f5134a8c96e7c6b2dc0",
+      "bytes": 27315,
+      "sourceIntervalSeconds": [
+        22,
+        24.2
+      ],
+      "decodedDurationSeconds": 2.2,
+      "containerDurationSeconds": 2.246531,
+      "codec": "MP3 mono44.1kHz96kbps",
+      "modifications": "Excerpted from0:22.0 to0:24.2,30ms onset fade,350ms ending fade,0.8 gain; bounded title-window playback",
+      "newSpendUSD": 0,
+      "audition": "Owner listening QA pending; technical signal checks are not an audition",
+      "signal": {
+        "meanDbFS": -24.1,
+        "peakDbFS": -10.9,
+        "longSilenceDetected": false,
+        "silenceThresholdDbFS": -45,
+        "silenceWindowSeconds": 0.15
+      }
+    }
+  },
+  "visualOverhaulV3": {
+    "openingLeadSeconds": 14,
+    "radioOffCue": "CAR-01 start",
+    "musicContinuesUnder": "CAR-00 subtitle",
+    "newVoiceAudio": false,
+    "newSpendUSD": 0,
+    "listening": "unverified",
+    "bark": {
+      "file": "roadside-dog-bark.wav",
+      "title": "Dog barking mono",
+      "artist": "Brandon Morris",
+      "uploader": "HaelDB",
+      "sourceURL": "https://opengameart.org/content/dog-barking-mono",
+      "downloadURL": "https://opengameart.org/sites/default/files/dog_barking_mono.wav",
+      "license": "CC0-1.0",
+      "licenseURL": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseChoice": "CC0 selected from publisher offered OGA-BY 3.0 / CC0; OpenGameArt FAQ allows choosing one license.",
+      "licenseChoiceSource": "https://opengameart.org/content/faq#q-multilicense",
+      "verifiedAtUTC": "2026-10-05T13:52:00Z",
+      "sha256": "bbd0f908b3514dd3bd7d2bc04dcf64f8d360a161e7f43cac5d6761e7add79451",
+      "bytes": 179848,
+      "byteCap": 262144,
+      "codec": "PCM signed 16-bit little-endian mono WAV, 44100 Hz",
+      "sampleFrames": 89902,
+      "decodedDurationSeconds": 2.03859410430839,
+      "modifications": "Original source bytes unchanged. Runtime 8 ms onset and 20 ms end envelopes, bounded attenuation/pan and car lowpass. One source, 9.4-second presentation cycle, pause/release owned by prologue bus. Jaw uses measured 20 ms RMS envelope of this recording.",
+      "signal": {
+        "peakDbFS": -7.04,
+        "rmsDbFS": -25.74
+      },
+      "audition": "Unverified; technical measurements and mocked audio lifecycle tests do not establish listening quality.",
+      "newSpendUSD": 0,
+      "newExternalProcessing": false,
+      "approvedMessage": "Sentinel_ebf1c14d50bc8191bcc3e5705334cfbb"
+    }
   }
 }

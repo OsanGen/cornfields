@@ -1,0 +1,242 @@
+{
+  "version": 2,
+  "outcome": "Cornfields Human Motion and Roadside Proposal v2",
+  "createdAt": "2026-10-05T00:38:32.612Z",
+  "baseline": "d6192dc8582d9792b262957c2cb5f6ab80db85d5",
+  "authoring": {
+    "script": "scripts/export-human-roadside-v2.py",
+    "blend": "art/working/human-roadside-v2.blend",
+    "tool": "Blender 4.3.2, local CPU export",
+    "externalDownloads": [],
+    "newDependencies": [],
+    "newChargesUSD": 0
+  },
+  "assets": [
+    {
+      "file": "assets/intro/roadside-set.glb",
+      "sha256": "cdbdc35d78384696a8f23cf47aeff5a35c7b7c74f328d4767da70a6dca894da0",
+      "bytes": 134500,
+      "triangles": 1168,
+      "materialDraws": 7,
+      "nodes": [
+        "Roadside Cleared Poly Haven weathered timber",
+        "Roadside Original weathered slate and chimney",
+        "Roadside Original faded porch trim",
+        "Roadside Original dark windows and recessed door",
+        "Roadside Original unmarked mailbox and pole",
+        "Roadside Original warm streetlight lens",
+        "Roadside Original driveway gravel"
+      ],
+      "images": 1,
+      "license": "Original Cornfields project artwork; roadside timber texture separately credited below",
+      "authorship": "Original local geometry and all projector atlas pixels created for the project owner",
+      "animations": "Static exterior shell only. No dog, house interior, identity or address."
+    },
+    {
+      "file": "assets/intro/projector.glb",
+      "sha256": "335e906ac0f691df561d77d72a8f52f165c7a38454ab2ea14cb13769394c9346",
+      "bytes": 444552,
+      "triangles": 2148,
+      "materialDraws": 3,
+      "nodes": [
+        "Projector housing and threaded film",
+        "Feed reel",
+        "Takeup reel"
+      ],
+      "images": 1,
+      "license": "Original Cornfields project artwork; roadside timber texture separately credited below",
+      "authorship": "Original local geometry and all projector atlas pixels created for the project owner",
+      "animations": "Two reel nodes plus film atlas UV motion are sampled by the existing presentation clock in src/blood-room.js; no standalone timers."
+    },
+    {
+      "file": "assets/intro/mike-body.glb",
+      "sha256": "1231ff700b2b42417618d0fe9963f4fb7f3aad37e1ca162e184635b4bd4dcf6c",
+      "bytes": 314372,
+      "triangles": 2001,
+      "materialDraws": 3,
+      "source": "Body, trousers, boots and existing rig from NPC male Steve by supersteve, via baseline cast-clarence.glb",
+      "license": "CC0-1.0 source geometry/rig; original fictional uniform details",
+      "sourceURL": "https://opengameart.org/content/npc-male-steve",
+      "licenseURL": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Body-only asset omits head and duplicate arms; original midnight-blue generic uniform pockets, epaulettes, buttons and duty belt. Three material draws. Metadata identifies Mike and original full-body height.",
+      "assetExtras": {
+        "cinematicCharacter": "mike",
+        "assetId": "mike-body.glb",
+        "sourceFullBodyHeight": 3.374371126294136
+      }
+    }
+  ],
+  "textures": [
+    {
+      "usedBy": "assets/intro/roadside-set.glb",
+      "file": "assets/field/wood_planks_dirt_diff_1k.jpg",
+      "sha256": "230bb4aabaebde24ead3ae593a48f8f45e93705aaf3cfdc438589bb49c2a7af3",
+      "author": "Rob Tuytel / Poly Haven",
+      "source": "https://polyhaven.com/a/wood_planks_dirt",
+      "license": "CC0-1.0",
+      "licenseURL": "https://polyhaven.com/license",
+      "changes": "Already shipped source texture; embedded 512px downsample only, no new acquisition."
+    },
+    {
+      "usedBy": "assets/intro/projector.glb",
+      "description": "Original deterministic 512px metal, recess, focus-ring and perforated-film atlas",
+      "source": "Locally authored by export-human-roadside-v2.py",
+      "license": "Original Cornfields project artwork",
+      "sha256": "52f2886faee5bbd6c987652d9926fc5790d1c356661e3b14b175a06f671d7dc4"
+    }
+  ],
+  "runtimeRefinements": {
+    "files": [
+      "src/prologue-cabin.js",
+      "src/prologue-assets.js",
+      "src/prologue-visuals.js",
+      "src/blood-room.js"
+    ],
+    "description": "Original fitted receiver fascia, presets and indexed knob; preserved wheel/grip anchors; existing cleared cruiser lamp material/lens refinements; original slow police-light envelope; one warm driveway light. No siren or new bark/music; no new shadow caster.",
+    "newNonshadowLocalLights": 3
+  },
+  "evidence": {
+    "budgetSource": "verification/human-roadside-v2/props/asset-budgets.json",
+    "studio": "CPU Cycles stills of reimported exact GLBs, not browser screenshots or measured runtime performance",
+    "claimsNotEstablished": [
+      "final browser placement and lighting",
+      "continuous projector playtest",
+      "combined flash evaluation",
+      "physical-device performance",
+      "owner QA"
+    ]
+  },
+  "visualOverhaulV3": {
+    "date": "2026-10-05",
+    "baselineCommit": "3d8b872b987905f4726c4408d712e719369ce375",
+    "authoringScript": "scripts/export-visual-overhaul-v3.py",
+    "editableScene": "art/working/visual-overhaul-v3.blend",
+    "currentAssets": [
+      {
+        "file": "assets/field/player-arms.glb",
+        "bytes": 545004,
+        "sha256": "ab7a5d6dd71d27423ae130ecd86dd18f2eeef7b1e07131083efc5e778cfe302e",
+        "triangles": 7460,
+        "draws": 2,
+        "images": 1,
+        "extras": {
+          "anatomicalForearmV3": true,
+          "forearmExtensionRemoved": 8,
+          "elbowCapsClosed": true
+        }
+      },
+      {
+        "file": "assets/intro/mike-body.glb",
+        "bytes": 468528,
+        "sha256": "d9cbd5c5598465f9297cbcad2b3d507d325696b9c9d8171f194b7b121096c209",
+        "triangles": 1515,
+        "draws": 3,
+        "images": 0,
+        "extras": {
+          "cinematicCharacter": "mike",
+          "assetId": "mike-body.glb",
+          "sourceFullBodyHeight": 3.374371126294136,
+          "fittedUndershirtV3": true,
+          "skinArmEndpoint": "elbow",
+          "originalLowerBodyUnchanged": true
+        }
+      },
+      {
+        "file": "assets/intro/cast-clarence.glb",
+        "bytes": 3018452,
+        "sha256": "0202b3dbb978bd97546a6d9ac3a6971644aca28ff9000a0219ed3c6ef4fecc1c",
+        "triangles": 16556,
+        "draws": 14,
+        "images": 10,
+        "extras": {
+          "cinematicCharacter": "clarence",
+          "revision": "faces-radio-v1",
+          "sourceSha256": "739d9b6604511712ddab6c4bff76b12ea65b2b57b5ef18e6cc15b9519c27c096",
+          "heightPreserved": true,
+          "lidSkinColorLinear": [
+            0.10048150993772331,
+            0.03468407622580734,
+            0.016338144740016113
+          ],
+          "geometryIdentity": "narrow angular jaw, lean cheek and straight slender nose",
+          "eyeColor": "brown",
+          "runtimeEyelids": "fitted from actual eye bounds; 384 additional runtime triangles (four five-row strips)",
+          "armRefinement": [
+            {
+              "mesh": 8,
+              "movedVertices": 208,
+              "blendedElbowVertices": 60,
+              "handAndFingerWeights": "unchanged"
+            },
+            {
+              "mesh": 9,
+              "movedVertices": 47,
+              "blendedElbowVertices": 0,
+              "handAndFingerWeights": "unchanged"
+            }
+          ],
+          "baselineRoleSha256": "22f66118a0881ed8779952031e5f710b40569fc3ca894f1a022a911a68e80073",
+          "skinTone": "medium-dark brown",
+          "textureContract": {
+            "skinColor": [
+              1024,
+              1024
+            ],
+            "skinNormal": [
+              1024,
+              1024
+            ],
+            "skinSurface": [
+              1024,
+              1024
+            ]
+          },
+          "normalBake": "Blender BVH CPU selected-to-active high-detail sculpt",
+          "retopology": "subdivided source facial loops, independent anatomical sculpt and budgeted head retopology",
+          "authoredUniformV3": true,
+          "uniformRevision": "visual-upgrade-v3-clarence-v1",
+          "uniformBaselineSha256": "d1c31bb31b1a012d5e16ff32b4e6f484d9f2699c009bd553827973d238f0547e",
+          "uniformMaterial": "Matte navy cloth, original woven tangent normals and roughness, fictional shield and anonymous nameplate",
+          "uniformIntegration": "Skip duplicated generated shirt details/insignia and extra shirt color multiplier; retain runtime belt/buckle and shirt hem/pants refit",
+          "faceRefinementV3": "Subtle lips, cheek/neck transition and ear rim; original rig, identity, head bounds and eye surfaces retained"
+        },
+        "wholeActorTriangles": 17012
+      },
+      {
+        "file": "assets/intro/roadside-set.glb",
+        "bytes": 240104,
+        "sha256": "13dd5a7b790e208fa8da395b2d2303591bb36aa015904150f6cadc04461e7f66",
+        "triangles": 2640,
+        "draws": 8,
+        "images": 1,
+        "extras": {
+          "visualOverhaulV3": true,
+          "litWindows": 4,
+          "recessedApertures": true,
+          "gradedDriveway": true,
+          "projectorUnchanged": true
+        }
+      },
+      {
+        "file": "assets/intro/roadside-dog-v1.glb",
+        "bytes": 174628,
+        "sha256": "419cdb1d3f262d0c7491e573e0d9d6935859e73f7639c6914fcc6837a688c9bd",
+        "triangles": 5602,
+        "draws": 5,
+        "images": 0
+      }
+    ],
+    "changes": [
+      "Fitted cotton Mike shirt with continuous shoulder/upper-arm skin; removed bulky uniform decorations; original lower-body buffers preserved",
+      "Canonical anatomical FPS forearms with closed elbow caps; same rig, hand and weapon contracts",
+      "Clarence fitted cloth, embedded original normal/roughness maps, restrained face refinement and exact protected neck band",
+      "Lit, recessed Level 1 house windows and door; physical porch lantern, graded driveway",
+      "Original tethered dog with planted paws and sampled head/jaw/tail motion"
+    ],
+    "evidenceLimits": "CPU structure/pose checks and offline Blender studies only. Browser motion, listening and matched device performance remain unverified.",
+    "barkAudio": "Approved CC0 roadside-dog-bark.wav integrated on the shared bounded presentation cycle; exact bytes and license recorded in assets/audio/prologue/sources.json. Listening remains unverified.",
+    "newDependencies": [],
+    "newExternalAIProcessing": false,
+    "newSpendUSD": 0
+  }
+}

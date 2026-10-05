@@ -25,6 +25,7 @@ export function prologueFrame(seconds,{reduced=false,timeline,durations}={}){
     time,chapter:chapter.id,chapterTime:time-chapter.start,chapterProgress:clamp((time-chapter.start)/(chapter.end-chapter.start)),
     speaker:current?.speaker||'',spoken:subtitle?.text||'',line:current,nextLine:current?null:script.lines.find(line=>line.start>time)||null,
     red:smooth((time-crash)/(reduced?1.5:.8)),mist:smooth((time-(crash+2))/Math.max(1,rupture.end-crash-4)),
+    radioOffAt:script.cues.find(([id])=>id==='entertainment_off')[1]-script.chapters.find(c=>c.id==='car').start,
     reduced,returning:false,returnTime:0,
   };
   frame.wake=samplePrologueWake(frame);frame.transfer=sampleRoomTransition(frame);

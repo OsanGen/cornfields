@@ -1,3 +1,6 @@
+import {cabinRadioEnvelope} from './prologue-clearance.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {createTexturedPrologueActor} from './prologue-model-actor.js';
 import {ease as prologueEase} from './prologue-performance.js';
 import {applyHandGrip,HAND_GRIP_CONTACT} from './hand-grip.js';
 import {createPrologueRadio,PROLOGUE_RADIO} from './prologue-radio.js';
@@ -11,13 +14,13 @@ import {actorPosition} from './hiding.js';
 import {GAME_CONFIG} from './game-config.js';
 import {interactionLocked} from './grapple.js';
 import {createWeatherView} from './weather-view.js';
-import {installHands} from './hands.js';
+import {installHands,createStoryForearmFit} from './hands.js';
 import {strugglePose,nightmareState} from './horror-presentation.js';
 import {createCornView} from './corn-view.js';
 import {createSurvivalView} from './corn-survival-view.js';
 import {createCorridorFieldView} from './corridor-view.js';
 import {createRenderQuality} from './render-quality.js';
-import {viewmodelPose,flashlightPose,createActorHeading,renderFirstPersonLayers} from './viewmodel-pose.js';
+import {viewmodelPose,flashlightPose,createActorHeading,renderFirstPersonLayers,samplePrologueBodyReach} from './viewmodel-pose.js';
 import {createMuzzleBurst} from './shot-effects.js';
 import {createGroundDetails} from './ground-details.js';
 import {clone as cloneSkeleton} from 'three/addons/utils/SkeletonUtils.js';
@@ -30,19 +33,81 @@ function seeded(seed=719){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>
 const material=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
 const up=new THREE.Vector3(0,1,0);
 
+/** Clothed, headless first-person rig derived from the cleared existing cast.
+ * Its three mesh primitives share the cabin depth buffer; no inside-head mask.
+ */
+export function createPrologueBody({loader=new GLTFLoader(),deadlineMs=8000,onMaterial=()=>{}}={}){
+  const root=new THREE.Group();root.name='Mike body anchor';
+  const stats={status:'loading',error:null,triangles:0,draws:0,mode:null};
+  let actor=null,asset=null,disposed=false,expired=false,timer,cancel;
+  const disposeAsset=gltf=>{const owned=new Set();gltf?.scene?.traverse(o=>{if(o.geometry)owned.add(o.geometry);if(o.isSkinnedMesh)owned.add(o.skeleton);for(const m of [o.material].flat().filter(Boolean)){owned.add(m);for(const t of Object.values(m))if(t?.isTexture)owned.add(t);}});for(const r of owned)r.dispose();};
+  const loading=Promise.resolve().then(()=>loader.loadAsync(new URL('../assets/intro/mike-body.glb',import.meta.url).href)).then(gltf=>{
+    if(disposed||expired){disposeAsset(gltf);return null;}
+    let triangles=0,draws=0;gltf.scene.traverse(o=>{if(!o.isMesh)return;triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;draws+=o.geometry.groups.length||1;});
+    if(triangles>6000||draws>3||draws<1||!gltf.animations.some(a=>a.name==='Seated')){disposeAsset(gltf);throw new Error('Mike body asset does not meet the approved rig/budget contract');}
+    asset=gltf;actor=createTexturedPrologueActor({name:'Mike',police:true,gltf,sourceHeight:3.374371126294136,uniformDetails:false,onMaterial});
+    actor.root.name='Mike fitted undershirt, skin and preserved lower body';root.add(actor.root);Object.assign(stats,{status:'ready',triangles,draws,error:null});return actor;
+  });
+  const ready=Promise.race([loading,new Promise((_,reject)=>{cancel=reject;timer=setTimeout(()=>{expired=true;reject(new Error('Mike body asset deadline'));},deadlineMs);})]).catch(e=>{expired=true;if(!disposed)Object.assign(stats,{status:'failed',error:e.message});return null;}).finally(()=>clearTimeout(timer));
+  const arms={},lengths={};
+  function updateWorld(){root.updateMatrixWorld(true);root.traverse(o=>{if(o.isSkinnedMesh)o.skeleton.update();});}
+  return {root,stats,ready,connectArm(side,wrist){
+    if(!actor)return null;updateWorld();
+    const upper=root.getObjectByName('armup'+side),lower=root.getObjectByName('armlo'+side),hand=root.getObjectByName('hand'+side);
+    if(!upper||!lower||!hand)return null;
+    const a=upper.getWorldPosition(new THREE.Vector3()),b=lower.getWorldPosition(new THREE.Vector3()),c=hand.getWorldPosition(new THREE.Vector3());
+    const [lengthA,lengthB]=lengths[side]||[a.distanceTo(b),b.distanceTo(c)];
+    const direction=wrist.clone().sub(a),requested=direction.length(),reach=THREE.MathUtils.clamp(requested,Math.abs(lengthA-lengthB)+.0001,lengthA+lengthB-.0001);direction.normalize();
+    const destination=a.clone().addScaledVector(direction,reach),pole=root.localToWorld(new THREE.Vector3(side==='R'?-.43:.43,1.05,.26)).sub(a);pole.addScaledVector(direction,-pole.dot(direction)).normalize();
+    const along=(lengthA*lengthA-lengthB*lengthB+reach*reach)/(2*reach),elbow=a.clone().addScaledVector(direction,along).addScaledVector(pole,Math.sqrt(Math.max(0,lengthA*lengthA-along*along)));
+    const rotate=(bone,from,to)=>{const q=new THREE.Quaternion().setFromUnitVectors(from.normalize(),to.normalize()).multiply(bone.getWorldQuaternion(new THREE.Quaternion()));bone.quaternion.copy(bone.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(q));bone.updateWorldMatrix(false,true);};
+    const handFromLower=lower.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(hand.getWorldQuaternion(new THREE.Quaternion()));
+    const lowerAxis=c.clone().sub(b).applyQuaternion(lower.getWorldQuaternion(new THREE.Quaternion()).invert());
+    rotate(upper,b.clone().sub(a),elbow.clone().sub(a));
+    // The source has non-uniform animated joint scales. Correct the child pivot
+    // after the rotation, preserving the measured physical bone length exactly.
+    lower.position.copy(lower.parent.worldToLocal(elbow.clone()));lower.updateWorldMatrix(false,true);
+    rotate(lower,lowerAxis.applyQuaternion(lower.getWorldQuaternion(new THREE.Quaternion())),destination.clone().sub(elbow));
+    hand.position.copy(hand.parent.worldToLocal(destination));
+    const rotation=lower.getWorldQuaternion(new THREE.Quaternion()).multiply(handFromLower);
+    hand.quaternion.copy(hand.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(rotation));updateWorld();
+    const contact=hand.getWorldPosition(new THREE.Vector3()),error=contact.distanceTo(wrist);
+    arms[side]={error,wrist:contact.toArray(),target:wrist.toArray()};stats.armContacts={...arms};
+    return {elbow:lower.getWorldPosition(new THREE.Vector3()),wrist:contact,error};
+  },pose(frame={}){
+    if(!actor)return;const exiting=frame.chapter==='exit'&&frame.exitPose&&!frame.exitPose.finished;
+    const seated=frame.motion?.blocking?.inCar??['car','dispatch','emergence','bang','cabin'].includes(frame.chapter);
+    const mode=exiting?'exit':seated?'seated':frame.player?.moving?'walk':'standing';
+    const motion=frame.motion?.actors?.mike,phase=motion?.phase??(frame.player?.distance||0)/.35*Math.PI;
+    actor.pose({mode,time:frame.elapsed??frame.time??0,phase,gait:mode==='walk'?1:0,reduced:frame.reduced,exitPose:frame.exitPose,support:motion?.support});
+    updateWorld();for(const side of ['R','L']){const at=n=>root.getObjectByName(n+side).getWorldPosition(new THREE.Vector3());lengths[side]=[at('armup').distanceTo(at('armlo')),at('armlo').distanceTo(at('hand'))];}
+    const lean=samplePrologueBodyReach(frame.chapter==='car'?frame.radioHandReach:0);
+    if(lean.weight){
+      updateWorld();const waist=root.getObjectByName('waist'),pivot=waist.getWorldPosition(new THREE.Vector3()),before=waist.getWorldQuaternion(new THREE.Quaternion());
+      const hands=['R','L'].map(side=>{const hand=root.getObjectByName('hand'+side);return {hand,position:hand.getWorldPosition(new THREE.Vector3()),rotation:hand.getWorldQuaternion(new THREE.Quaternion())};});
+      waist.rotateX(lean.waistTilt);waist.updateWorldMatrix(false,true);
+      const delta=waist.getWorldQuaternion(new THREE.Quaternion()).multiply(before.invert());
+      for(const {hand,position,rotation}of hands){hand.position.copy(hand.parent.worldToLocal(position.sub(pivot).applyQuaternion(delta).add(pivot)));hand.quaternion.copy(hand.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(delta.clone().multiply(rotation)));}
+    }
+    updateWorld();stats.mode=mode;stats.pose=actor.diagnostics();
+  },dispose(){if(disposed)return;disposed=expired=true;clearTimeout(timer);cancel(new Error('Mike body disposed'));actor?.dispose();disposeAsset(asset);actor=null;asset=null;root.clear();root.removeFromParent();stats.status='disposed';}};
+}
+
 /** Story-only clones retain the player's skin/gun assets without touching gameplay. */
-export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAssetVersion=()=>gun.children.length,radioLoader,radioDeadlineMs}={}){
+export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAssetVersion=()=>gun.children.length+':'+(torch?.children.length||0),radioLoader,radioDeadlineMs,bodyLoader,bodyDeadlineMs}={}){
   const overlay=new THREE.Scene(),camera=new THREE.PerspectiveCamera();overlay.add(camera);
   const fill=new THREE.HemisphereLight(0xb4bdad,0x514234,.68),key=new THREE.DirectionalLight(0xe7e9d8,1.15);
   key.position.set(-.5,.6,.25);overlay.add(fill,key);key.target.position.set(0,-.2,-.6);overlay.add(key.target);
-  const materials=new Set(),geometries=new Set(),skeletons=new Set(),treatments=[],radioViews=[];
-  let pistol=null,radio=null,doorHand=null,handheld=null,version=null,disposed=false;
+  const materials=new Set(),geometries=new Set(),skeletons=new Set(),treatments=[],radioViews=[],storyArms=new Map();
+  let pistol=null,radio=null,doorHand=null,handheld=null,body=null,version=null,disposed=false;const restingArms=[];
   const stats={active:false,kind:null,source:'existing player gun and hands; locally modeled dispatch radio',liquid:0,opacity:0,meshes:0};
   function clear(){
+    for(const item of restingArms)item.root.removeFromParent();restingArms.length=0;
+    body?.dispose();body=null;
     pistol?.removeFromParent();radio?.removeFromParent();doorHand?.removeFromParent();handheld?.removeFromParent();pistol=radio=doorHand=handheld=null;
     for(const resource of [...materials,...geometries,...skeletons])resource.dispose();
     for(const view of radioViews)view.dispose();radioViews.length=0;
-    materials.clear();geometries.clear();skeletons.clear();treatments.length=0;
+    materials.clear();geometries.clear();skeletons.clear();treatments.length=0;storyArms.clear();
   }
   function ownMaterial(source){
     const material=source.clone();material.fog=false;materials.add(material);
@@ -70,7 +135,7 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
     });
     if(!right)fallbackHand(root);
     if(radioOnly){
-      if(right)applyHandGrip(right,withRadio?'radio':'flashlight');
+      if(right)applyHandGrip(right,withRadio?'radio':'pistol');
       const view=withRadio?createPrologueRadio({loader:radioLoader,deadlineMs:radioDeadlineMs,prepareMaterial:material=>{
         treatments.push({material,uniforms:attachPrologueLiquid(material),opacity:material.opacity,transparent:material.transparent});
       }}):null;
@@ -79,18 +144,30 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
       const grip=right?.parent?.parent;
       if(grip){prop.position.fromArray(PROLOGUE_RADIO.position);grip.add(prop);}else{prop.position.set(.20,-.16,-.31);root.add(prop);}
     }
-    camera.add(root);return root;
+    camera.add(root);
+    if(right){const fit=createStoryForearmFit(right,{ownGeometry:g=>geometries.add(g)});storyArms.set(root,{arm:right,...fit});}
+    return root;
+  }
+  function addRestingArm(side){
+    const source=side==='R'?gun.getObjectByName('RightArm'):torch?.getObjectByName('LeftArm');if(!source)return;
+    const root=new THREE.Group(),arm=cloneSkeleton(source);root.name='Mike resting '+side+' anatomical hand and forearm';root.add(arm);overlay.add(root);
+    arm.traverse(o=>{o.layers.set(0);if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.isMesh)o.material=Array.isArray(o.material)?o.material.map(ownMaterial):ownMaterial(o.material);});
+    const fit=createStoryForearmFit(arm,{side,ownGeometry:g=>geometries.add(g)});restingArms.push({root,arm,side,fit});
   }
   function ensure(){
     const next=getAssetVersion();if(pistol&&version===next)return;
-    clear();version=next;pistol=cloneGun(false);radio=cloneGun(true);doorHand=cloneGun(true,false);doorHand.name='Story hand on passenger door';doorHand.getObjectByName('Handheld dispatch radio').visible=false;
+    clear();version=next;body=createPrologueBody({loader:bodyLoader,deadlineMs:bodyDeadlineMs,onMaterial:mat=>{mat.fog=false;treatments.push({material:mat,uniforms:attachPrologueLiquid(mat),opacity:mat.opacity,transparent:mat.transparent});}});overlay.add(body.root);stats.body=body.stats;pistol=cloneGun(false);radio=cloneGun(true);doorHand=cloneGun(true,false);doorHand.name='Story hand on passenger door';doorHand.getObjectByName('Handheld dispatch radio').visible=false;
     if(torch?.children.length){
       handheld=cloneSkeleton(torch);handheld.name='Story hand and flashlight';camera.add(handheld);
       handheld.traverse(o=>{o.layers.set(0);if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.isMesh)o.material=Array.isArray(o.material)?o.material.map(ownMaterial):ownMaterial(o.material);});
+      const left=handheld.getObjectByName('LeftArm');if(left)storyArms.set(handheld,{arm:left,side:'L',...createStoryForearmFit(left,{side:'L',ownGeometry:g=>geometries.add(g)})});
     }
-    stats.meshes=0;for(const root of [pistol,radio,doorHand,handheld].filter(Boolean))root.traverse(o=>{if(o.isMesh)stats.meshes++;});
+    addRestingArm('R');addRestingArm('L');
+    stats.meshes=0;for(const root of [pistol,radio,doorHand,handheld,...restingArms.map(a=>a.root)].filter(Boolean))root.traverse(o=>{if(o.isMesh)stats.meshes++;});
   }
   function reset(){
+    for(const item of restingArms)item.root.visible=false;
+    if(body)body.root.visible=false;
     if(pistol)pistol.visible=false;if(radio)radio.visible=false;if(doorHand)doorHand.visible=false;if(handheld)handheld.visible=false;
     for(const t of treatments){t.uniforms.amount.value=0;t.material.opacity=t.opacity;if(t.material.transparent!==t.transparent){t.material.transparent=t.transparent;t.material.needsUpdate=true;}}
     Object.assign(stats,{active:false,kind:null,liquid:0,opacity:0});
@@ -99,13 +176,45 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
     if(disposed)return;
     const chapter=frame.chapter,radioReach=chapter==='car'&&(frame.radioHandReach||0)>.001,dispatch=chapter==='dispatch',exiting=chapter==='exit'&&frame.exitPose&&!frame.exitPose.finished;
     const outside=['flashlight','walk','undead','history','redroom','return_walk','disappearance','liquid','arrival','rupture'].includes(chapter);
-    if(!dispatch&&!outside&&!exiting&&!radioReach){reset();return;}
+    const bodyVisible=!!chapter&&!frame.returning;
+    if(!dispatch&&!outside&&!exiting&&!radioReach&&!bodyVisible){reset();return;}
     ensure();const vision=prologueVisionState(frame),fade=outside?(1-vision.mist)*(1-vision.roomCover):1;
     if(fade<=.001){reset();return;}
     pistol.visible=outside;radio.visible=dispatch;doorHand.visible=!!exiting||radioReach;
+    body.root.visible=bodyVisible;
     pistol.position.set(-.035-(storyCamera.aspect<1.3?.045:0),-.035,-.20);pistol.rotation.set(-.09,0,0);
     const raise=prologueEase(Number(frame.chapterTime)||0,0,.42)*(1-prologueEase(Number(frame.chapterProgress)||0,.93,1));
     radio.position.set(-.025,.045-.34*(1-raise),-.10+.08*(1-raise));radio.rotation.set(-.05+.28*(1-raise),-.10,.10);
+    storyCamera.updateWorldMatrix(true,false);
+    const view=storyCamera.matrixWorld.clone().invert(),cabin=new THREE.Matrix4().fromArray(frame.cabinMatrix||new THREE.Matrix4().elements),location=new THREE.Matrix4().fromArray(frame.locationMatrix||new THREE.Matrix4().elements);
+    const inCar=frame.motion?.blocking?.inCar??['car','dispatch','emergence','bang','cabin'].includes(chapter),player=frame.player||{};
+    const transform=(object,matrix)=>{matrix.decompose(object.position,object.quaternion,object.scale);};
+    if(frame.cabinMatrix&&dispatch){
+      // The radio/forearm retains a physical passenger-shoulder frame when the
+      // head turns. Inherited camera parenting remains projection-only.
+      radio.updateMatrix();const local=radio.matrix.clone();
+      const passengerEye=new THREE.Matrix4().makeTranslation(.5,1.13,.35);
+      transform(radio,view.clone().multiply(cabin).multiply(passengerEye).multiply(local));
+      stats.radioAnchor='cabin-relative passenger shoulder';
+      radio.updateWorldMatrix(true,true);
+      stats.radioClearance=cabinRadioEnvelope(radio.getObjectByName('Handheld dispatch radio'),view.clone().multiply(cabin));
+    }
+    if(bodyVisible){
+      const transfer=exiting?(frame.exitPose.transfer||0):inCar?0:1;
+      const heading=player.yaw||0,bodyBack=.15+.08*(1-transfer);
+      const x=exiting?frame.exitPose.position[0]+Math.sin(heading)*.15*transfer:inCar?.5:(player.x||0)+Math.sin(heading)*.15,z=exiting?frame.exitPose.position[2]+bodyBack:inCar?.58:(player.z||0)+Math.cos(heading)*.15;
+      const y=exiting?-.38*(1-transfer):inCar?-.38:Math.max(0,(player.y||1.58)-1.58);
+      const yaw=inCar&&!exiting?Math.PI:(player.yaw||0)+Math.PI;
+      const lean=samplePrologueBodyReach(chapter==='car'?frame.radioHandReach:0);
+      const local=new THREE.Matrix4().compose(new THREE.Vector3(x+lean.hipOffset[0],y,z+lean.hipOffset[2]),new THREE.Quaternion().setFromAxisAngle(up,yaw),new THREE.Vector3(1,1,1));
+      // Ground-contact history belongs to the physical scene. Pose there before
+      // converting to the camera-relative coordinates used by this depth pass.
+      const physical=(inCar&&!exiting?cabin:location).clone().multiply(local);
+      transform(body.root,physical);body.pose(frame);
+      transform(body.root,view.clone().multiply(physical));
+    }
+    const actionRight=doorHand.getObjectByName('RightArm'),actionGrip=radioReach?'pistol':'flashlight';
+    if(actionRight&&doorHand.userData.actionGrip!==actionGrip){applyHandGrip(actionRight,actionGrip);doorHand.userData.actionGrip=actionGrip;}
     if(exiting&&frame.exitHandTarget){
       storyCamera.updateWorldMatrix(true,false);doorHand.position.set(0,0,0);
       const doorRotation=new THREE.Quaternion().fromArray(frame.exitHandQuaternion||[0,0,0,1]);
@@ -117,11 +226,16 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
       doorHand.position.copy(desired.sub(contact));
     }
     if(radioReach&&frame.radioHandTarget){
-      storyCamera.updateWorldMatrix(true,false);doorHand.position.set(0,0,0);doorHand.rotation.set(-.25,0,-.25-(frame.radioHandTurn||0)*.45);
+      storyCamera.updateWorldMatrix(true,false);doorHand.position.set(0,0,0);
+      const cabinRotation=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().extractRotation(cabin));
+      doorHand.quaternion.copy(storyCamera.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(cabinRotation));
+      doorHand.rotateZ(-.25-(frame.radioHandTurn||0)*.55);doorHand.rotateX(-.25);
       const desired=storyCamera.worldToLocal(new THREE.Vector3().fromArray(frame.radioHandTarget));
-      desired.lerp(new THREE.Vector3(.33,-.38,-.24),1-frame.radioHandReach);
+      const home=frame.cabinMatrix?new THREE.Vector3(.78,.62,.10).applyMatrix4(cabin).applyMatrix4(view):new THREE.Vector3(.33,-.38,-.24);
+      desired.lerp(home,1-frame.radioHandReach);
       doorHand.updateMatrixWorld(true);const right=doorHand.getObjectByName('RightArm');
-      const contact=right?.parent?right.parent.localToWorld(new THREE.Vector3(...HAND_GRIP_CONTACT.flashlight)):new THREE.Vector3(.2,-.2,-.3);
+      const toward=new THREE.Vector3(0,0,-1).transformDirection(view.clone().multiply(cabin));
+      const contact=right?.parent?storyArms.get(doorHand)?.supportContact(toward)||right.parent.localToWorld(new THREE.Vector3(...HAND_GRIP_CONTACT.flashlight)):new THREE.Vector3(.2,-.2,-.3);
       doorHand.position.copy(desired.sub(contact));
     }
     if(handheld){
@@ -129,11 +243,27 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
       const pose=flashlightPose({time:frame.elapsed??frame.time,steps:frame.player?.distance||0,moving:frame.player?.moving,reduced:frame.reduced,aspect:storyCamera.aspect});
       handheld.position.fromArray(pose.position);handheld.rotation.set(...pose.rotation);
     }
+    overlay.updateMatrixWorld(true);
+    for(const [owner,fit]of storyArms)if(owner.visible&&bodyVisible){
+      const wrist=fit.arm.parent.localToWorld(new THREE.Vector3()),contact=body.connectArm(fit.side||'R',wrist);
+      if(contact)fit.fit(contact.elbow);
+    }
+    // Inactive story hands still belong to the complete visible body. Fit each
+    // actual anatomical forearm to its own existing elbow/wrist pose, rather
+    // than leaving a cropped upper arm when no radio/weapon is being held.
+    body.root.updateMatrixWorld(true);
+    for(const item of restingArms){
+      item.root.visible=bodyVisible&&(item.side==='R'?!(pistol.visible||radio.visible||doorHand.visible):!handheld?.visible);
+      if(!item.root.visible)continue;
+      const hand=body.root.getObjectByName('hand'+item.side),elbow=body.root.getObjectByName('armlo'+item.side);if(!hand||!elbow){item.root.visible=false;continue;}
+      const wrist=hand.getWorldPosition(new THREE.Vector3()),end=elbow.getWorldPosition(new THREE.Vector3());item.root.position.copy(wrist);item.root.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),end.clone().sub(wrist).normalize());item.root.rotateZ(item.side==='R'?.35:-.35);item.root.updateMatrixWorld(true);item.fit.fit(end);
+    }
+    stats.restingHands=restingArms.filter(a=>a.root.visible).map(a=>a.side);
     stats.flashlight=!!handheld?.visible;
     for(const t of treatments){t.uniforms.amount.value=vision.liquid;t.uniforms.time.value=Number(frame.time)||0;t.material.opacity=t.opacity*fade;const transparent=t.transparent||fade<.999;if(t.material.transparent!==transparent){t.material.transparent=transparent;t.material.needsUpdate=true;}}
     camera.projectionMatrix.copy(storyCamera.projectionMatrix);camera.projectionMatrixInverse.copy(storyCamera.projectionMatrixInverse);camera.near=storyCamera.near;camera.far=storyCamera.far;
     const clear=renderer.autoClear,resetInfo=renderer.info.autoReset;
-    try{renderer.autoClear=false;renderer.info.autoReset=false;renderer.render(overlay,camera);Object.assign(stats,{active:true,kind:radioReach?'radio knob hand':exiting?'door hand':dispatch?'radio':'gun',liquid:vision.liquid,opacity:fade});}
+    try{renderer.autoClear=false;renderer.info.autoReset=false;renderer.render(overlay,camera);Object.assign(stats,{active:true,kind:radioReach?'radio knob hand':exiting?'door hand':dispatch?'radio':outside?'gun':'body',liquid:vision.liquid,opacity:fade});}
     finally{renderer.autoClear=clear;renderer.info.autoReset=resetInfo;}
   },release(){clear();reset();stats.meshes=0;},dispose(){if(disposed)return;disposed=true;clear();reset();}};
 }

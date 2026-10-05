@@ -98,3 +98,42 @@ certify actual game lighting, continuous playtesting or measured performance.
 
 ## Local liquid-cinematic candidate additions, 4 October 2026
 Original local presentation code and geometry: unbranded POLICE markings, entertainment radio, sedan trim, projector reel/stand details, anonymous analytic face, connected liquid ribbons and transition veil. Created by RKNIGHT at the project owner's direction. Existing Car Concept, cast, Poly Haven and Pixelhouse credits remain applicable and unchanged. No new external artwork or services were introduced. The Pixelhouse zombie is reused under its existing CC BY 3.0 record in assets/field/LICENSES.md.
+
+## Human motion and roadside v2 local candidate, 5 October 2026
+
+`roadside-set.glb` is original Cornfields geometry: a small weathered rural house
+exterior, dark porch/windows, short driveway, fictional unnumbered mailbox and
+streetlight shell. It contains no interior, household identity or dog. The embedded
+512px timber color map is a downsample of the already shipped Wood Planks Dirt
+map by Rob Tuytel / Poly Haven, CC0: https://polyhaven.com/a/wood_planks_dirt.
+All other roadside materials are original. Existing cleared-map credits remain
+unchanged; the asset's mesh permission does not replace texture attribution.
+
+`projector.glb` is original Cornfields geometry and a locally authored 512px atlas:
+housing, stand with grounded feet, reel supports, feed/take-up reels, guide rollers,
+threaded perforated film, film gate, vents, focus ring and lens. It imports no
+external model or texture. The two reels and film use the existing story clock.
+
+`mike-body.glb` derives only body, trouser, shoe topology and the existing skeleton
+from NPC male Steve by supersteve, CC0-1.0, via the pinned Clarence source. Original
+midnight-blue fictional police-uniform pockets, shoulder details, buttons and duty
+belt are added locally. No real police insignia, head or duplicate visible arms is
+included. Source: https://opengameart.org/content/npc-male-steve and
+https://creativecommons.org/publicdomain/zero/1.0/.
+
+The fitted dashboard receiver, wheel refinement, slow restrained cruiser lamps and
+bounded driveway light are original runtime work. Existing Car Concept CC BY 4.0
+credits above still apply. No audio files, voices, external services or paid assets
+are added by this props work.
+
+Editable original parts, matching cabin authoring geometry and the imported Mike
+body are in `art/working/human-roadside-v2.blend`. The modular repeatable producer
+is `scripts/export-human-roadside-v2.py`; exact runtime hashes and separate texture
+provenance are in `human-roadside-v2-source.json`. Asset inventory and CPU studio
+stills are separate from browser QA, measured performance and owner acceptance.
+
+## Visual overhaul v3 local candidate 2026-10-05
+
+The revised Mike and Clarence assets reuse the existing NPC male Steve by supersteve, CC0-1.0, source https://opengameart.org/content/npc-male-steve . New cotton/skin fitting, navy uniform panels, fictional insignia and restrained face/material refinements are original project adaptations. Stanley is unchanged. The Level 1 house keeps the already-cleared Rob Tuytel / Poly Haven weathered timber maps under CC0 and adds original recessed apertures, porch lantern and graded drive geometry.
+
+roadside-dog-v1.glb is original locally authored Blender geometry and vertex colors, with no external dog mesh or texture source. The collar/tether and sampled idle/bark mouth movement are original. A bark sound is not included pending approval. No new asset service, model installation, external AI or spending was used. Current hashes and historical provenance are recorded separately in human-roadside-v2-source.json and art/visual-overhaul-v3-sources.json.

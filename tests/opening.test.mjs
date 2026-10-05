@@ -80,3 +80,37 @@ test('finished prologue yields touch visibility back to gameplay and QTE',async(
   assert.equal(h.node('touch-fire').hidden,true);assert.equal(h.node('touch-light').hidden,true);assert.equal(h.node('touch-stab').hidden,false);
   h.app.pause();h.click('replay-intro');await h.flush();assert.equal(h.node('look-zone').hidden,false);assert.equal(h.node('touch-stab').hidden,true);h.app.dispose();
 });
+
+test('title audio receives the rendered credits frame only while playing, with pause, mute and skip cleanup',async()=>{
+  const h=createHarness({prologue:true}),frames=[];
+  h.audio.syncIntro=frame=>frames.push({frame,name:h.node('intro-name').textContent,opacity:Number(h.node('intro-card').style.opacity),muted:h.audio.muted});
+  h.app.advance(0);assert.equal(frames.at(-1).frame,null,'preflight has no music frame');
+  await h.app.enter();h.app.advance(1000);assert.equal(frames.at(-1).frame,null,'story has no credits-music frame');
+  h.key('KeyJ');h.app.advance(17750);assert.equal(frames.at(-1).frame.opacity,0);
+  h.app.advance(100);let rendered=frames.at(-1);
+  assert.equal(rendered.name,'CORNFIELDS');assert.ok(rendered.opacity>0);assert.equal(rendered.frame.opacity,rendered.opacity);
+  const at=h.app.introSnapshot().credits.time;h.app.pause();assert.equal(frames.at(-1).frame,null);
+  h.click('intro-mute');assert.equal(frames.at(-1).muted,true);
+  h.click('intro-continue');await h.flush();assert.equal(frames.at(-1).frame.time,at,'continue preserves the title offset');
+  assert.equal(frames.at(-1).muted,true);h.app.pause();h.click('intro-mute');h.click('intro-continue');await h.flush();
+  assert.equal(frames.at(-1).muted,false);assert.equal(frames.at(-1).frame.time,at);
+  h.key('KeyK');assert.equal(frames.at(-1).frame,null);assert.equal(h.app.snapshot().mode,'playing');
+  assert.equal(h.app.snapshot().elapsed,0);assert.equal(h.audio.ticks,0);h.app.dispose();
+});
+
+test('a skipped render window never sends a late title-music frame and replay uses the new credits offset',async()=>{
+  const h=createHarness({prologue:true}),frames=[];h.audio.syncIntro=frame=>frames.push(frame);
+  await h.app.enter();h.key('KeyJ');frames.length=0;h.app.advance(20000);
+  assert.ok(frames.every(frame=>frame===null),'catch-up cues cannot substitute for a rendered title');
+  assert.equal(h.app.snapshot().mode,'playing');h.app.pause();h.click('replay-intro');await h.flush();h.key('KeyJ');h.app.advance(18000);
+  assert.ok(Math.abs(frames.at(-1).time-18)<1e-8);assert.ok(frames.at(-1).opacity>0);
+  h.document.hidden=true;h.document.dispatch('visibilitychange');assert.equal(frames.at(-1),null);
+  h.app.dispose();
+});
+
+test('title-only fallback also syncs visible frames and silences music at its ready screen',async()=>{
+  const h=createHarness({intro:true}),frames=[];h.audio.syncIntro=frame=>frames.push(frame);
+  await h.app.enter();await h.flush();h.app.advance(18100);
+  assert.equal(frames.at(-1).shot,'title');assert.ok(frames.at(-1).opacity>0);
+  h.click('intro-skip');assert.equal(h.app.introSnapshot().phase,'ready');assert.equal(frames.at(-1),null);h.app.dispose();
+});

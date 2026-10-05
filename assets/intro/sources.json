@@ -567,5 +567,46 @@
       "src/prologue-liquid-transition.js": "f99071bd8850c751e3676d46cdf0379acace5ff6da8fc2c6ccb7a0d98d9b8327",
       "src/liquid-material.js": "00869a9f5fc38c30bde65af5857bf2563cc2394da25977dfcd08092e9e76f7cd"
     }
+  },
+  "humanRoadsideV2": "human-roadside-v2-source.json",
+  "visualOverhaulV3": {
+    "date": "2026-10-05",
+    "revision": "visual-upgrade-v3-clarence-v1",
+    "releaseMode": "Local candidate only; not deployed",
+    "sourceCheckpoint": "f5216ccb1f2dca7624e91b88b687a0d3d0347143",
+    "baselineCommit": "3d8b872b987905f4726c4408d712e719369ce375",
+    "baselineLocalImportCommit": "c169100aa24e580b4b4a9f6cc907faadf5a2102d",
+    "historicalRecords": "runtime.cast-clarence.glb and facesRadioV1.faces.clarence retain their original revision hashes and provenance; current candidate identity is recorded below.",
+    "currentAssets": {
+      "cast-clarence.glb": {
+        "file": "assets/intro/cast-clarence.glb",
+        "sha256": "0202b3dbb978bd97546a6d9ac3a6971644aca28ff9000a0219ed3c6ef4fecc1c",
+        "bytes": 3018452,
+        "triangles": 16556,
+        "draws": 14,
+        "images": 10,
+        "joints": 56,
+        "runtimeLidTriangles": 384,
+        "wholeActorTriangles": 17012,
+        "sourceSha256": "d1c31bb31b1a012d5e16ff32b4e6f484d9f2699c009bd553827973d238f0547e",
+        "sourceRecord": "facesRadioV1.faces.clarence",
+        "authoredUniformV3": true,
+        "appendedClothingNodes": 4,
+        "appendedClothingTriangles": 1237,
+        "clothMapSize": [
+          1024,
+          1024
+        ],
+        "clothMapFormat": "Embedded PNG color, tangent normal and packed roughness/metalness maps",
+        "authoring": "art/working/visual-overhaul-v3.blend",
+        "method": "scripts/export-visual-overhaul-v3.py: refine_clarence",
+        "license": "CC0-1.0 source NPC male Steve by supersteve; original locally authored Cornfields uniform details and cloth maps",
+        "changes": "Fitted matte navy cloth; four appended skinned meshes for panels, seams, dark buttons and a fictional badge with anonymous nameplate. Restrained lip, cheek, ear and shirt refinement. Original nodes and hierarchy retained with only the four clothing children appended to the existing root; 56-joint rig, bind matrices, animation samples, hand/finger data, protected neck band, shoes and pants retained. No new downloaded assets or external image processing."
+      }
+    },
+    "newExternalAssets": false,
+    "newExternalAIProcessing": false,
+    "newSpendingUSD": 0,
+    "evidenceLimits": "Asset hashes and structural measurements only; browser motion, owner QA, listening and device performance remain separate acceptance requirements."
   }
 }

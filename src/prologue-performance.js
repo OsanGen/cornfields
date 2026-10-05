@@ -45,12 +45,18 @@ export function performanceFor(frame,actor,actorPosition,listener){
     nod:frame.reduced?0:-.018*emphasis*Math.sin(offset*3.2),lineId:line?.id||null,lineOffset:offset};
 }
 
-export const WAKE_SECONDS=6;
+// First-pass timing is provisional until uninterrupted owner listening review.
+export const PROLOGUE_OPENING=Object.freeze({musicLead:14,confession:'Clarence, I gotta tell you something.',lineGap:.18,subtitleWps:2.75,minimumLineSeconds:1.15,musicByteCap:512*1024,excerptSeconds:20});
+export const WAKE_SECONDS=PROLOGUE_OPENING.musicLead;
+export function prologueRadioOffTime(frame={}){
+ if(Number.isFinite(frame.radioOffAt))return frame.radioOffAt;
+ return PROLOGUE_OPENING.musicLead+Math.max(PROLOGUE_OPENING.minimumLineSeconds,PROLOGUE_OPENING.confession.split(/\s+/).length/PROLOGUE_OPENING.subtitleWps)+PROLOGUE_OPENING.lineGap;
+}
 /** Deterministic eyelids, hand reach and entertainment radio, without a timer. */
 export function samplePrologueWake(frame={}){
- const active=frame.chapter==='car',t=Number(frame.chapterTime)||0;
+ const active=frame.chapter==='car',t=Number(frame.chapterTime)||0,off=prologueRadioOffTime(frame);
  if(!active)return {blink:0,reach:0,turn:0,radioOn:false};
  const pulse=(a,b,c,d)=>ease(t,a,b)*(1-ease(t,c,d));
- const blink=Math.max(1-ease(t,.2,1.1),pulse(1.65,1.85,2.0,2.3),pulse(2.65,2.8,2.9,3.2));
- return {blink,reach:pulse(3.1,3.8,4.55,5.3),turn:ease(t,3.95,4.25),radioOn:t<4.15};
+ const blink=Math.max(1-ease(t,.8,1.8),pulse(2.05,2.18,2.26,2.48));
+ return {blink,reach:pulse(off-1.45,off-.35,off+.40,off+1.45),turn:ease(t,off-.20,off+.10),radioOn:t<off,radioOffAt:off};
 }

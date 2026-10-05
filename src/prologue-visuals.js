@@ -1,7 +1,10 @@
+import {samplePrologueBodyReach} from './viewmodel-pose.js';
 import {sampleRoomTransition,createLiquidVeil} from './prologue-liquid-transition.js';
 import {sampleHallucination,createPrologueHallucination} from './prologue-hallucination.js';
 import {samplePrologueWake} from './prologue-performance.js';
-import {applyEnvironmentSurface} from './environment-materials.js';
+import {applyEnvironmentSurface,wetGroundGeometry,wetGroundHeight,createGroundedPuddles} from './environment-materials.js';
+import {grassGeometry} from './ground-details.js';
+import {createRoadsideDog} from './roadside-dog.js';
 import {createCabinWheel,createEntertainmentRadio,steeringAngle} from './prologue-cabin.js';
 import {WEST_APPROACH,approachStageTransform} from './prologue-layout.js';
 import {cornClearsParkedCruiser,PARKED_CRUISER_CLEARANCE} from './prologue-clearance.js';
@@ -11,7 +14,7 @@ import * as THREE from 'three';
 import {createPrologueActor, PROLOGUE_CAST_PROVENANCE} from './prologue-actors.js';
 import {samplePrologueMotion} from './prologue-motion.js';
 import {createBloodRoom} from './blood-room.js';
-import {createPrologueAssets,prepareCruiser} from './prologue-assets.js';
+import {createPrologueAssets,prepareCruiser,sampleCruiserLampState} from './prologue-assets.js';
 import {createTexturedPrologueActor} from './prologue-model-actor.js';
 import {samplePrologueDriving} from './prologue-driving.js';
 import {createPrologueRain} from './prologue-rain.js';
@@ -101,8 +104,9 @@ function fallbackCorn() {
 export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld = () => null, renderEquipment=()=>{}, spawn = {x: 0, z: 0, yaw: 0}, touch = false} = {}) {
   let scene, location, camera, car, road, field, door, wheel, clarence, stanley, sky, haze, headlight, worldStage, worldFog, worldBackground,room,face,projectorLight,binary,flashlight,hemi,moon;
   let live = false, dead = false, size = '', borrowed = new Set(), ownedTextures = new Set();
-  let liquidUniforms=[],foliage=null,rain=null,entertainment=null,liquidVeil=null,hallucinations=null,ribbons=null,groundMaterial=null;
-  let assets=null,cruiser=null,roadMaterial=null,woodMaterial=null,roadMist=null;
+  let dog=null,porchLight=null,puddleMaterial=null;
+  let liquidUniforms=[],foliage=null,rain=null,entertainment=null,liquidVeil=null,hallucinations=null,ribbons=null,groundMaterial=null,groundContactUniforms=null;
+  let assets=null,cruiser=null,roadMaterial=null,woodMaterial=null,roadMist=null,roadsideSet=null,roadsideFallback=null,streetlight=null,policeSpill=[],fallbackLampMaterials=[],roomPresentation=null;
   const stats = {live:false, frames:0, draws:0, chapter:null, cast:PROLOGUE_CAST_PROVENANCE, corn:'uninitialized', passenger:'Mike', driver:'Clarence', error:null};
   const viewport = new THREE.Vector4(), scissor = new THREE.Vector4(), savedClear = new THREE.Color(), cameraWorld = new THREE.Vector3();
   const skyNormal = new THREE.Color(0x24313d), skyRed = new THREE.Color(0x501512), fogNormal = new THREE.Color(0x202b2b), fogRed = new THREE.Color(0x631f18);
@@ -113,10 +117,11 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
   function disposeSet() {
     rain?.dispose();rain=null;
     hallucinations?.dispose();hallucinations=null;clarence?.dispose?.();stanley?.dispose?.();
+    dog?.dispose();dog=null;porchLight=null;puddleMaterial=null;
     const geometries=new Set(), materials=new Set();
     scene?.traverse(item=>{ if(item.isInstancedMesh)item.dispose(); if(item.geometry&&!borrowed.has(item.geometry)&&!assets?.owns(item.geometry))geometries.add(item.geometry); for(const mat of Array.isArray(item.material)?item.material:item.material?[item.material]:[])if(!borrowed.has(mat)&&!assets?.owns(mat))materials.add(mat); });
     for(const geometry of geometries)geometry.dispose();for(const material of materials)material.dispose();for(const texture of ownedTextures)texture.dispose();
-    assets?.dispose();assets=null;cruiser=null;roadMaterial=roadMist=groundMaterial=null;entertainment=liquidVeil=ribbons=null;
+    assets?.dispose();assets=null;cruiser=null;roadsideSet=roadsideFallback=streetlight=roomPresentation=null;policeSpill=[];fallbackLampMaterials=[];roadMaterial=roadMist=groundMaterial=null;entertainment=liquidVeil=ribbons=null;
     scene=location=camera=car=road=field=door=wheel=clarence=stanley=sky=haze=headlight=worldStage=worldFog=worldBackground=room=face=projectorLight=binary=flashlight=hemi=moon=null;borrowed=new Set();ownedTextures=new Set();liquidUniforms=[];foliage=null;live=false;stats.live=false;size='';
   }
   function buildCar() {
@@ -152,15 +157,25 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     box(car,vinyl,.065,.42,1.13,-.85,.36,.02);box(car,trim,.09,.035,.33,-.78,.48,.04);
     box(car,body,1.80,.16,1.04,0,.63,-1.85);box(car,body,1.87,.24,.40,0,.42,1.40);
     const dome=new THREE.PointLight(0xe6c49d,.48,2.5,2);dome.position.set(0,1.36,.30);car.add(dome);
-    headlight=new THREE.SpotLight(0xffdfa8,6,31,.47,.65,1.3);headlight.position.set(.5,.57,-2.2);headlight.target.position.set(.5,0,-20);car.add(headlight,headlight.target);
+    headlight=new THREE.SpotLight(0xffdfa8,6,31,.47,.65,1.3);headlight.name='Cruiser forward headlight spill';headlight.position.set(0,.78,-2.39);headlight.target.position.set(0,0,-20);car.add(headlight,headlight.target);
+    const lampLens=standard(0xd9d6bc,{emissive:0xffe4b5,emissiveIntensity:1.8,roughness:.23});
+    for(const x of [-.65,.65]){const lens=box(car,lampLens,.28,.085,.023,x,.71,-2.385);lens.name='Fallback illuminated front lamp';}
+    box(car,trim,1.27,.055,.26,0,1.50,.85);
+    for(const side of [-1,1]){
+      const color=side<0?0xa01d26:0x205ba2,material=standard(color,{emissive:color,emissiveIntensity:.35,roughness:.25});fallbackLampMaterials.push(material);
+      const lens=box(car,material,.47,.085,.20,side*.34,1.565,.85);lens.name=side<0?'Fallback red lightbar lens':'Fallback blue lightbar lens';
+      const spill=new THREE.PointLight(color,0,5.3,2);spill.name=side<0?'Cruiser restrained red spill':'Cruiser restrained blue spill';spill.position.set(side*.48,1.62,.68);spill.castShadow=false;car.add(spill);policeSpill.push(spill);
+    }
   }
   function buildLandscape() {
     const groundMap=canvasTexture('earth'), roadMap=canvasTexture('road'),woodMap=canvasTexture('wood');ownedTextures.add(groundMap);ownedTextures.add(roadMap);ownedTextures.add(woodMap);
     const earth=standard(0x77715e,{map:groundMap}),asphalt=standard(0x646a6e,{map:roadMap}),wood=standard(0x8f8b74,{map:woodMap}),post=standard(0x4f5145);
-    groundMaterial=earth;earth.color.setHex(0xa6a18b);earth.normalScale.set(.62,.62);applyEnvironmentSurface(earth,{kind:'mud'});
+    groundMaterial=earth;earth.color.setHex(0xa6a18b);earth.normalScale.set(.62,.62);groundContactUniforms=applyEnvironmentSurface(earth,{kind:'mud',terrainProfile:true});
     woodMaterial=wood;wood.normalScale.set(.35,.35);
     roadMaterial=asphalt;asphalt.color.setHex(0xb0b3b5);asphalt.normalScale.set(.38,.38);applyEnvironmentSurface(asphalt,{kind:'mud'});
-    const ground=mesh(location,new THREE.PlaneGeometry(130,600,12,60),earth,0,-.027,120);ground.rotation.x=-Math.PI/2;
+    const ground=mesh(location,wetGroundGeometry(),earth);ground.name='Continuous graded mud, verge and shallow hollows';
+    puddleMaterial=standard(0x343d36,{roughness:.24,metalness:.30,transparent:true,opacity:.82,depthWrite:false});
+    location.add(createGroundedPuddles(puddleMaterial));
     road=group(location);road.position.x=-4.3;road.name='Continuous roadside';
     const roadPlane=mesh(road,new THREE.PlaneGeometry(6.7,600,2,60),asphalt,0,-.01,120);roadPlane.rotation.x=-Math.PI/2;
     const lane=standard(0x8e8762),edge=standard(0x8b9290),reflector=new THREE.MeshBasicMaterial({color:0xa5ae96});
@@ -186,14 +201,14 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
       for(let i=0;i<count;i++){
         const n=i*parts.length+part,side=n%2?1:-1,row=Math.floor(n/2),z=WEST_APPROACH.entranceX-(row%48)*1.08;
         const x=side*(2.10+Math.floor(row/48)*.95+(Math.sin(n*42.4)*.5+.5)*.35);
-        dummy.position.set(x,-.05,z);dummy.rotation.set(0,Math.sin(n*31.7)*Math.PI,Math.sin(n*7.3)*.018);dummy.scale.setScalar(.90+Math.sin(n*8.1)*.11);dummy.updateMatrix();
+        const contact=new THREE.Vector3(x,0,z).applyMatrix4(field.matrix);dummy.position.set(x,wetGroundHeight(contact.x,contact.z)-.018,z);dummy.rotation.set(0,Math.sin(n*31.7)*Math.PI,Math.sin(n*7.3)*.018);dummy.scale.setScalar(.90+Math.sin(n*8.1)*.11);dummy.updateMatrix();
         if(cornClearsParkedCruiser(source.geometry,dummy.matrix,field.matrix))plants.setMatrixAt(planted++,dummy.matrix);
       }plants.count=planted;plants.computeBoundingSphere();plants.boundingSphere.radius+=PARKED_CRUISER_CLEARANCE.sway;field.add(plants);
       const roadsideCount=Math.ceil((touch?180:300)/parts.length),roadside=new THREE.InstancedMesh(source.geometry,material,roadsideCount);
       let roadsidePlanted=0;
       for(let i=0;i<roadsideCount;i++){
         const n=i*parts.length+part,side=n%2?1:-1,row=Math.floor(n/2);
-        dummy.position.set(side*(5.4+Math.floor(row/150)*1.1),-.05,-105+(row%150)*3.5);dummy.rotation.set(0,Math.sin(n*7.31)*Math.PI,0);dummy.scale.setScalar(.9+Math.sin(n*4.17)*.1);dummy.updateMatrix();if(cornClearsParkedCruiser(source.geometry,dummy.matrix,road.matrix))roadside.setMatrixAt(roadsidePlanted++,dummy.matrix);
+        const behind=n>=(touch?120:210),px=behind?19.8+(n%5)*.94:side*(5.4+Math.floor(row/150)*1.1),pz=behind?2.1+Math.floor((n-(touch?120:210))/5)*.78:-105+(row%150)*3.5;const contact=new THREE.Vector3(px,0,pz).applyMatrix4(road.matrix);if(contact.x>-.5&&contact.x<14.7&&contact.z>-1&&contact.z<13)continue;dummy.position.set(px,wetGroundHeight(contact.x,contact.z)-.018,pz);dummy.rotation.set(0,Math.sin(n*7.31)*Math.PI,0);dummy.scale.setScalar(.9+Math.sin(n*4.17)*.1);dummy.updateMatrix();if(cornClearsParkedCruiser(source.geometry,dummy.matrix,road.matrix))roadside.setMatrixAt(roadsidePlanted++,dummy.matrix);
       }roadside.count=roadsidePlanted;roadside.name='Roadside corn with door and leaf clearance';roadside.computeBoundingSphere();roadside.boundingSphere.radius+=PARKED_CRUISER_CLEARANCE.sway;road.add(roadside);
     }
     // A restrained opening in the same wood-panel vocabulary as the live maze.
@@ -202,11 +217,28 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
       for(let z=-51;z>=-61;z-=2)box(field,post,.15,2.73,.16,side*1.40,1.365,z);
       for(const y of [.55,1.95])box(field,post,.16,.10,10,side*1.37,y,-56);
     }
+    roadsideSet=group(location);roadsideSet.name='Rural house driveway mailbox and streetlight';roadsideFallback=group(roadsideSet);roadsideFallback.name='Roadside load-failure silhouette';
+    const rural=standard(0x454b41),dark=standard(0x151e20),warm=standard(0xc59150,{emissive:0xd8a15c,emissiveIntensity:.4});
+    box(roadsideFallback,rural,5.9,4.65,6.4,10.2,2.355,7);
+    const roof=mesh(roadsideFallback,new THREE.ConeGeometry(4.6,1.8,4),dark,10.2,5.55,7);roof.rotation.y=Math.PI/4;
+    box(roadsideFallback,dark,.05,1.9,1,7.22,1.3,7);box(roadsideFallback,dark,1.6,.12,4.6,6.46,2.76,7);
+    box(roadsideFallback,rural,.12,1.09,.12,1.62,.545,4.14);box(roadsideFallback,dark,.48,.25,.30,1.57,1.23,4.14);
+    box(roadsideFallback,dark,.13,4.48,.13,3.02,2.24,3.75);box(roadsideFallback,warm,.34,.10,.52,3.02,4.44,4.61);
+    streetlight=new THREE.PointLight(0xe7b976,4.6,10.5,2);streetlight.name='Bounded warm driveway streetlight';streetlight.position.set(3.02,4.38,4.61);streetlight.castShadow=false;roadsideSet.add(streetlight);
+    porchLight=new THREE.PointLight(0xffcd8b,3.6,6.8,2);porchLight.name='Warm porch light on boards and ground';porchLight.position.set(6.95,2.38,7.75);porchLight.castShadow=false;roadsideSet.add(porchLight);
+    dog=createRoadsideDog(roadsideSet,{heightAt:wetGroundHeight});
+    const verge=new THREE.InstancedMesh(grassGeometry(),standard(0x66684b,{vertexColors:true,side:THREE.DoubleSide,roughness:.96}),100);verge.name='Graded verge grass and fallen husks';
+    for(let i=0;i<100;i++){const x=i<50?-.72+(i%10)*.66:-10.2-Math.floor(i/10)*1.9,z=i<50?3.5+Math.floor(i/10)*1.03:-8.1+(i%10)*.68;dummy.position.set(x,wetGroundHeight(x,z)+.002,z);dummy.rotation.set(0,i*2.399,0);dummy.scale.setScalar(.62+.3*Math.sin(i*8.1)**2);dummy.updateMatrix();verge.setMatrixAt(i,dummy.matrix);}verge.computeBoundingSphere();location.add(verge);
+    // A bounded, distant irregular tree line closes the field silhouette.
+    // Original opaque geometry, two draws, no colliders, textures or shadow maps.
+    const trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.12,.22,4,5),standard(0x26271d),12),crowns=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),standard(0x273329),36);
+    trunks.name='Distant tree line trunks';crowns.name='Distant irregular tree crowns';
+    for(let i=0;i<12;i++){const x=29+Math.sin(i*1.7)*4,z=-28+i*6.2,h=.8+Math.sin(i*2.9)**2*.5;dummy.position.set(x,2*h-.027,z);dummy.rotation.set(0,i*.71,.025*Math.sin(i));dummy.scale.set(1,h,1);dummy.updateMatrix();trunks.setMatrixAt(i,dummy.matrix);for(let j=0;j<3;j++){dummy.position.set(x+Math.sin(j*2.4+i)*1.6,(4.8+j*.7)*h,z+Math.cos(j*2.4+i)*1.3);dummy.scale.set(2.1+j*.24,2.6*h-j*.18,2.2);dummy.rotation.set(i*.16,j*1.3,i*.21);dummy.updateMatrix();crowns.setMatrixAt(i*3+j,dummy.matrix);}}trunks.computeBoundingSphere();crowns.computeBoundingSphere();location.add(trunks,crowns);
     const lamp=new THREE.PointLight(0xe7b976,.72,7,2);lamp.position.set(-1.3,2.0,-50.8);field.add(lamp);
     const lantern=standard(0xba9d6a,{emissive:0xc5883a,emissiveIntensity:.6});box(field,post,.19,.28,.16,-1.28,2.0,-50.7);box(field,lantern,.115,.15,.01,-1.28,2.0,-50.60);
   }
   function buildVisions(){
-    const sharedRoom=createBloodRoom({touch});({group:room,face,projectorLight}=sharedRoom);
+    const sharedRoom=createBloodRoom({touch});roomPresentation=sharedRoom;({group:room,face,projectorLight}=sharedRoom);
     room.name='Ten second red room';room.position.copy(location.position);room.quaternion.copy(location.quaternion);scene.add(room);room.visible=false;room.userData.roomUpdate=sharedRoom.update;
     liquidVeil=createLiquidVeil();scene.add(liquidVeil.mesh);
     hallucinations=createPrologueHallucination(location,{enabled:typeof document!=='undefined'});
@@ -247,11 +279,13 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
   function loadSetAssets(){
     const treat=object=>object.traverse(item=>{for(const mat of [item.material].flat().filter(Boolean))if(mat.isMeshStandardMaterial)liquidUniforms.push(attachPrologueLiquid(mat));});
     assets=createPrologueAssets({
+      onRoadside(gltf){gltf.scene.updateMatrixWorld(true);gltf.scene.traverse(o=>{if(!o.isMesh||!o.name.includes('gravel'))return;const p=o.geometry.attributes.position,inv=o.matrixWorld.clone().invert(),v=new THREE.Vector3();for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).applyMatrix4(o.matrixWorld);v.y=wetGroundHeight(v.x,v.z)+.002;v.applyMatrix4(inv);p.setXYZ(i,v.x,v.y,v.z);}p.needsUpdate=true;o.geometry.computeVertexNormals();o.geometry.computeBoundingSphere();});roadsideFallback.visible=false;gltf.scene.name='Original roadside exterior shell';roadsideSet.add(gltf.scene);treat(gltf.scene);},
+      onProjector(gltf){roomPresentation.setProjector(gltf);},
       onCar(gltf){
         const prepared=prepareCruiser(gltf.scene);
         prepared.model.traverse(o=>{for(const m of [o.material].flat().filter(Boolean))for(const value of Object.values(m))if(value?.isTexture&&!assets?.owns(value))ownedTextures.add(value);});
         for(const child of car.children)if(!child.isLight&&child!==headlight.target&&child!==entertainment.group)child.visible=false;
-        cruiser=prepared;car.add(cruiser.model);treat(cruiser.model);
+        cruiser=prepared;car.add(cruiser.model);treat(cruiser.model);headlight.position.set(0,.81,-1.49);
         rain.attachWindshield(cruiser.model.getObjectByName('BodyWindshield'));
       },
       onCast(role,gltf){
@@ -268,7 +302,8 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
         stats.castRoles[role]=`cast-${role}.glb`;
       },
       onGround(key,map){groundMaterial[key]=map;groundMaterial.needsUpdate=true;},
-      onSky(map){sky.material.uniforms.skyMap.value=map;sky.material.uniforms.hasMap.value=1;},
+      onDog(gltf){dog.accept(gltf);},
+      onSky(map){if(puddleMaterial){puddleMaterial.envMap=map;puddleMaterial.envMap.mapping=THREE.EquirectangularReflectionMapping;puddleMaterial.envMapIntensity=.30;puddleMaterial.needsUpdate=true;}sky.material.uniforms.skyMap.value=map;sky.material.uniforms.hasMap.value=1;},
       onRoad(key,map){roadMaterial[key]=map;roadMaterial.needsUpdate=true;},
       onWood(key,map){woodMaterial[key]=map;if(key==='map')woodMaterial.color.setHex(0xffffff);woodMaterial.needsUpdate=true;},
       onMist(map){
@@ -302,6 +337,7 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
   function render(frame = {}) {
     if(dead)return;if(!live)start();
     const world=getWorld(),locomotion=frame.motion||samplePrologueMotion(frame,{worldAvailable:!!world?.scene?.isScene}),b=locomotion.blocking,transition=locomotion,vision=prologueVisionState(frame);
+    location.updateWorldMatrix(true,false);groundContactUniforms?.terrainFromWorld.value.copy(location.matrixWorld).invert();
     const time=locomotion.time,p=b.progress,reduced=!!frame.reduced,chapter=b.chapter;
     foliage.update(time,null,reduced);
     const width=Math.max(1,renderer.domElement.clientWidth||renderer.domElement.width),height=Math.max(1,renderer.domElement.clientHeight||renderer.domElement.height),key=`${width}:${height}`,fov=transition.world?(world.camera?.fov??70):65;
@@ -310,25 +346,31 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     applyPrologueCamera(camera,locomotion,frame.player);
     const motion=reduced?0:1;
     location.visible=!vision.room;room.visible=vision.room;
-    room.userData.roomUpdate?.(Math.max(0,vision.time-1.2),reduced);liquidVeil.update(frame);
+    room.userData.roomUpdate?.(Math.max(0,vision.time-1.2),reduced,vision.room&&!frame.returning);liquidVeil.update(frame);
     // Directional moon shape carries the exterior; restrained ambient fill keeps
     // corn and people readable without flattening their surfaces. No extra lights.
     hemi.intensity=vision.room?0:1.12+vision.lightning*1.8;moon.intensity=vision.room?0:1.85+vision.lightning*4;
     flashlight.intensity=frame.player?.flashlightOn?18:0;
     for(const uniforms of liquidUniforms){uniforms.amount.value=vision.liquid;uniforms.time.value=time;}
-    const drive=frame.driving||samplePrologueDriving(frame);
-    const moving=chapter==='car'||chapter==='dispatch';
+    const drive=frame.driving||samplePrologueDriving(frame),wake=samplePrologueWake(frame);
+    const bodyReach=samplePrologueBodyReach(wake.reach);
     car.position.fromArray(drive.position);car.rotation.set(drive.bodyPitch,drive.yaw,drive.bodyRoll,'YXZ');car.updateMatrix();
-    if(b.inCar&&!vision.room){camera.position.applyMatrix4(car.matrix);camera.quaternion.premultiply(car.quaternion);}
+    if(b.inCar&&!vision.room){camera.position.add(new THREE.Vector3().fromArray(bodyReach.eyeOffset));camera.position.applyMatrix4(car.matrix);camera.quaternion.premultiply(car.quaternion);}
     const confrontation=sampleRoadsideConfrontation(frame)||{bang:0,impact:0};
     if(b.inCar&&!reduced&&confrontation.impact){camera.position.x+=confrontation.impact*.012;camera.rotation.z+=confrontation.impact*.008;}
     sky.position.copy(camera.position);
     rain.update(time,camera.position,drive,reduced,!vision.room&&!transition.world&&!frame.returning,!frame.returning);
     road.visible=!frame.returning;
     field.visible=chapter!=='car'&&(chapter!=='dispatch'||p>.8);car.visible=!frame.returning;
-    const exitPose=frame.exitPose||samplePrologueExit((frame.exitProgress??b.exit)*EXIT_SECONDS);door.rotation.y=exitPose.door*1.05;wheel.rotation.z=steeringAngle(drive.steer);headlight.intensity=moving?6:3;cruiser?.update(drive,exitPose.door);
-    const wake=samplePrologueWake(frame);entertainment.update(wake);car.updateWorldMatrix(true,true);
-    frame.radioHandTarget=entertainment.knob.getWorldPosition(new THREE.Vector3()).toArray();frame.radioHandReach=wake.reach;frame.radioHandTurn=wake.turn;
+    const exitPose=frame.exitPose||samplePrologueExit((frame.exitProgress??b.exit)*EXIT_SECONDS);door.rotation.y=exitPose.door*1.05;wheel.rotation.z=steeringAngle(drive.steer);const lampState=sampleCruiserLampState(time,{reduced,active:!vision.room&&!frame.returning&&!transition.world});
+    headlight.intensity=lampState.headlights?6:0;cruiser?.setLampState(lampState);cruiser?.update(drive,exitPose.door);
+    for(const [i,light] of policeSpill.entries()){light.intensity=i?lampState.blueSpill:lampState.redSpill;fallbackLampMaterials[i].emissiveIntensity=i?lampState.blue:lampState.red;}
+    roadsideSet.visible=!vision.room&&!frame.returning&&!transition.world;streetlight.intensity=roadsideSet.visible?4.6:0;
+    porchLight.intensity=roadsideSet.visible?3.6:0;dog.update(frame,roadsideSet.visible);
+    stats.roadside={house:[10.2,0,7],streetlight:streetlight.intensity>0,porchLight:porchLight.intensity>0,dogVisible:dog.stats.visible,dogAudio:false,dog:{...dog.stats},source:roadsideFallback.visible?'procedural fallback':'roadside-set.glb'};stats.lamps={...lampState,parked:drive.parked,speed:drive.speed};stats.projector={...roomPresentation.stats};
+    entertainment.update(wake);car.updateWorldMatrix(true,true);
+    frame.cabinMatrix=car.matrixWorld.toArray();frame.locationMatrix=location.matrixWorld.toArray();
+    frame.radioKnobQuaternion=entertainment.knob.getWorldQuaternion(new THREE.Quaternion()).toArray();frame.radioHandTarget=entertainment.contact.getWorldPosition(new THREE.Vector3()).toArray();frame.radioHandReach=wake.reach;frame.radioHandTurn=wake.turn;
     const doorWorld=(cruiser?.door||door).localToWorld(new THREE.Vector3(-.055,.035,.48));
     frame.exitHandTarget=doorWorld.toArray();frame.exitHandQuaternion=(cruiser?.door||door).getWorldQuaternion(new THREE.Quaternion()).toArray();
     if(roadMist){roadMist.visible=!vision.room&&!frame.returning;for(const sheet of roadMist.children){const i=sheet.userData.index;sheet.position.set(-4.3+(reduced?0:Math.sin(time*.07+i)*1.2),.65,camera.position.z-12-i*16);}}

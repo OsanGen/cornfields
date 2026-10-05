@@ -191,9 +191,9 @@ test('equipment overlay shows a held radio and liquid gun/skin without touching 
   skin.name='Test skin';weapon.name='PistolBody';right.add(skin);grip.add(weapon);
   const muzzle=new THREE.Group();muzzle.name='Muzzle burst';const burstLight=new THREE.PointLight(0xff0000,9);muzzle.add(burstLight);gun.add(muzzle);
   let clears=0,draws=0,lastScene;const renderer={autoClear:true,info:{autoReset:true},clearDepth(){clears++;},render(scene,camera){assert.equal(this.autoClear,false);assert.equal(this.info.autoReset,false);lastScene=scene;draws++;}};
-  const storyCamera=new THREE.PerspectiveCamera(65,1.7,.035,175);storyCamera.position.set(90,1.58,-4);storyCamera.rotation.set(.2,.7,0);const matrix=storyCamera.matrix.clone();
+  const storyCamera=new THREE.PerspectiveCamera(65,1.7,.035,175);storyCamera.position.set(90,1.58,-4);storyCamera.rotation.set(.2,.7,0);storyCamera.updateMatrix();const matrix=storyCamera.matrix.clone();
   const equipment=createPrologueEquipment(renderer,{gun,skinMaterial:skin.material});
-  const frame={chapter:'car',time:1,chapterTime:1,chapterProgress:.5};equipment.render(storyCamera,frame);assert.equal(draws,0);
+  const frame={chapter:'car',time:1,chapterTime:1,chapterProgress:.5};equipment.render(storyCamera,frame);assert.equal(draws,1);assert.equal(equipment.stats.kind,'body'); // v2: Mike's approved seated body is present before the radio reach.
   equipment.render(storyCamera,{...frame,chapter:'dispatch'});assert.equal(equipment.stats.kind,'radio');assert.ok(lastScene.getObjectByName('Handheld dispatch radio'));
   assert.equal(lastScene.getObjectByName('Muzzle burst'),undefined);
   const heldRadio=lastScene.getObjectByName('Story hand and radio');assert.equal(heldRadio.visible,true);assert.equal(heldRadio.getObjectByName('PistolBody').visible,false);assert.equal(heldRadio.getObjectByName('Test skin').visible,true);
@@ -272,4 +272,41 @@ test('independent role arrival preserves transforms and swaps rain onto only the
     assert.equal(mapped.parent.geometry.attributes.uv,undefined);let sourceDisposed=0,overlayDisposed=0;mapped.parent.geometry.addEventListener('dispose',()=>sourceDisposed++);mapped.geometry.addEventListener('dispose',()=>overlayDisposed++);
     view.render(frame);view.release();assert.equal(sourceDisposed,1);assert.equal(overlayDisposed,1);assert.equal(view.diagnostics().rain,null);assert.equal(view.diagnostics().assets,null);
   }finally{view?.dispose();story?.dispose();GLTFLoader.prototype.loadAsync=originalGltfLoad;THREE.TextureLoader.prototype.loadAsync=originalTextureLoad;if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;}
+});
+
+test('roadside lighting keeps parked headlights and owns only three added nonshadow local lights',()=>{
+ let scene;const view=createPrologueVisuals(rendererStub(s=>scene=s));
+ view.render({chapter:'emergence',chapterTime:6,time:45,chapterProgress:1});
+ assert.equal(view.diagnostics().lamps.headlights,true);assert.equal(view.diagnostics().lamps.parked,true);assert.equal(view.diagnostics().roadside.dogVisible,false);assert.equal(view.diagnostics().roadside.dogAudio,false);
+ const additions=[];scene.traverse(o=>{if(o.isLight&&/Cruiser restrained|Bounded warm driveway/.test(o.name))additions.push(o);});assert.equal(additions.length,3);assert(additions.every(o=>o.isPointLight&&!o.castShadow));
+ const head=scene.getObjectByName('Cruiser forward headlight spill');assert.equal(head.intensity,6);assert.equal(head.parent.name,'Cruiser interior, passenger on right');assert.equal(head.target.parent,head.parent);
+ view.render({chapter:'emergence',chapterTime:6,time:45,chapterProgress:1,reduced:true});assert.equal(view.diagnostics().lamps.red,.32);assert.equal(view.diagnostics().lamps.blue,.32);assert(additions.filter(o=>/Cruiser/.test(o.name)).every(o=>o.intensity===0));
+ view.render({chapter:'redroom',chapterTime:2,time:80});assert.equal(head.intensity,0);assert.equal(view.diagnostics().lamps.headlights,false);assert.equal(view.diagnostics().roadside.streetlight,false);assert.equal(scene.getObjectByName('Rural house driveway mailbox and streetlight').visible,false);
+ view.render({chapter:'walk',chapterTime:1,time:48});assert.equal(head.intensity,6);assert.equal(view.diagnostics().roadside.streetlight,true);
+ view.release();assert.equal(view.diagnostics().live,false);view.dispose();
+});
+
+test('police lens and spill envelope is bounded, smooth and steady when reduced',async()=>{
+ const {sampleCruiserLampState}=await import('../src/prologue-assets.js');let previous=sampleCruiserLampState(0);
+ for(let i=1;i<1200;i++){
+  const state=sampleCruiserLampState(i/60);assert(state.red>=.18&&state.red<=.88);assert(state.blue>=.18&&state.blue<=.88);assert(Math.abs(state.red-previous.red)<.009);assert(Math.abs(state.redSpill-previous.redSpill)<.007);assert(Math.abs(state.red+state.blue-1.06)<1e-8);previous=state;
+ }
+ assert.deepEqual(sampleCruiserLampState(0,{reduced:true}),sampleCruiserLampState(99,{reduced:true}));assert.deepEqual(sampleCruiserLampState(9,{active:false}),{red:0,blue:0,redSpill:0,blueSpill:0,headlights:false});
+});
+
+test('projector turning reels, film path and beam use the same stoppable room clock',async()=>{
+ const {createBloodRoom,PROJECTOR_LENS,PROJECTOR_WALL_TARGET}=await import('../src/blood-room.js');const r=createBloodRoom(),gltf=await loadCpuGltf(new URL('../assets/intro/projector.glb',import.meta.url));r.setProjector(gltf);r.update(2,false,true);
+ const feed=gltf.scene.getObjectByName('Feed_reel'),takeup=gltf.scene.getObjectByName('Takeup_reel'),a=feed.quaternion.clone(),b=takeup.quaternion.clone();assert.equal(r.stats.source,'projector.glb');assert.equal(r.stats.reels,2);
+ r.update(2,false,true);assert(feed.quaternion.equals(a));assert(takeup.quaternion.equals(b));r.update(3,false,true);assert(!feed.quaternion.equals(a));assert(!takeup.quaternion.equals(b));assert.equal(r.stats.film,.36);
+ const frozen=feed.quaternion.clone();r.update(100,false,false);assert(feed.quaternion.equals(frozen));assert.equal(r.stats.time,3);assert.equal(r.projectorLight.intensity,0);assert.equal(r.face.visible,false);
+ r.update(3,true,true);assert(feed.quaternion.equals(frozen));assert.equal(r.projectorLight.intensity,6);assert.equal(r.face.visible,true);
+ assert.deepEqual(r.projectorLight.position.toArray(),PROJECTOR_LENS);assert.deepEqual(r.projectorLight.target.position.toArray(),PROJECTOR_WALL_TARGET);
+ const haze=r.group.getObjectByName('Bounded projector haze'),end=new THREE.Vector3(0,-haze.geometry.parameters.height,0).applyQuaternion(haze.quaternion).add(haze.position);assert(end.distanceTo(new THREE.Vector3().fromArray(PROJECTOR_WALL_TARGET))<1e-6);
+ const material=gltf.scene.getObjectByName('Projector_housing_and_threaded_film').material,shader={uniforms:{},fragmentShader:'#include <common>\n#include <map_fragment>'};material.onBeforeCompile(shader);assert.equal(shader.uniforms.projectorFilmClock.value,3);assert.match(shader.fragmentShader,/filmUv.x>.75 && filmUv.y<.25/);
+});
+
+test('fitted entertainment receiver reports a real front-cap contact with unchanged anchor',async()=>{
+ const {createEntertainmentRadio}=await import('../src/prologue-cabin.js');const radio=createEntertainmentRadio();radio.group.updateMatrixWorld(true);
+ assert.deepEqual(radio.group.position.toArray(),[.08,.83,-.705]);const target=radio.contact.getWorldPosition(new THREE.Vector3());assert(Math.abs(target.z-(-.636))<1e-8);assert.equal(radio.group.children.filter(o=>o.isMesh).length,3);
+ const view=createPrologueVisuals(rendererStub(()=>{})),frame={chapter:'car',time:3,chapterTime:3,chapterProgress:.1};view.render(frame);assert.equal(frame.cabinMatrix.length,16);assert.equal(frame.locationMatrix.length,16);assert.equal(frame.radioKnobQuaternion.length,4);assert.equal(frame.radioHandTarget.length,3);view.dispose();
 });

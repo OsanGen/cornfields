@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from 'three';
-import {samplePrologueWake} from '../src/prologue-performance.js';
+import {samplePrologueWake,prologueRadioOffTime,PROLOGUE_OPENING} from '../src/prologue-performance.js';
 import {sampleRoomTransition,createLiquidVeil,ROOM_TRANSITION} from '../src/prologue-liquid-transition.js';
 import {sampleHallucination,createPrologueHallucination} from '../src/prologue-hallucination.js';
 import {prologueVisionState,createPrologueVisuals} from '../src/prologue-visuals.js';
@@ -13,16 +13,16 @@ import {load} from '../scripts/load-glb-cpu.mjs';
 import {rendererStub} from './helpers/foliage-motion-cpu.mjs';
 
 test('waking lids and radio contact follow a single sampled clock, with exact off boundary',()=>{
- const sample=t=>samplePrologueWake({chapter:'car',chapterTime:t});
- assert.equal(sample(0).blink,1);assert.equal(sample(1.3).blink,0);assert(sample(1.9).blink>.95);assert(sample(2.86).blink>.95);
- assert.equal(sample(4.14).radioOn,true);assert.equal(sample(4.15).radioOn,false);assert.equal(sample(4.15).reach,1);assert(sample(4.15).turn>0);assert.equal(sample(6).reach,0);
- const r=createEntertainmentRadio();r.update(sample(3));const lit=r.display.material.color.clone();r.update(sample(5));assert(!r.display.material.color.equals(lit));assert(r.knob.rotation.y<0);
- const s=createPrologue();s.begin();s.tick(1.9);const held=s.frame().wake;s.pause();s.tick(9);assert.deepEqual(s.frame().wake,held);s.resume();s.tick(3.5);assert.equal(s.frame().wake.radioOn,false);s.skip();assert.equal(s.frame().wake.blink,0);s.begin();assert.equal(s.frame().wake.blink,1);s.dispose();
+ const off=prologueRadioOffTime(),sample=t=>samplePrologueWake({chapter:'car',chapterTime:t,radioOffAt:off});
+ assert.equal(sample(0).blink,1);assert.equal(sample(.8).blink,1);assert.equal(sample(1.9).blink,0);assert(sample(2.2).blink>.95);assert.equal(sample(2.65).blink,0); // v2: closed-eye lead followed by one natural blink.
+ assert.equal(sample(off-.01).radioOn,true);assert.equal(sample(off).radioOn,false);assert.equal(sample(off).reach,1);assert(sample(off).turn>0);assert.equal(sample(off+1.5).reach,0);
+ const r=createEntertainmentRadio();r.update(sample(off-.5));const lit=r.display.material.color.clone();r.update(sample(off+.5));assert(!r.display.material.color.equals(lit));assert(r.knob.rotation.y<0);
+ const s=createPrologue();s.begin();s.tick(1.9);const held=s.frame().wake;s.pause();s.tick(9);assert.deepEqual(s.frame().wake,held);s.resume();s.tick(off);assert.equal(s.frame().wake.radioOn,false);s.skip();assert.equal(s.frame().wake.blink,0);s.begin();assert.equal(s.frame().wake.blink,1);s.dispose();
 });
 test('only two exact new lines are added and the three pleas retain a full ten-second room hold',()=>{
  const timeline=createPrologueTimeline(),get=id=>timeline.lines.find(l=>l.id===id),room=timeline.chapters.find(c=>c.id==='redroom');
- assert.equal(get('CAR-00').text,'Clarence, I need to get something off my chest.');assert.equal(get('UND-01').text,'What the fuck.');assert.equal(get('CAR-01').text,'That standoff in 2002. I lost my partner that day.');
- assert.equal(get('CAR-00').start,6);assert(get('CAR-01').start>get('CAR-00').end);assert.equal(ROOM_TRANSITION.hold,10);
+ assert.equal(get('CAR-00').text,'Clarence, I gotta tell you something.');assert.equal(get('UND-01').text,'What the fuck.');assert.equal(get('CAR-01').text,'That standoff in 2002. I lost my partner that day.');
+ assert.equal(get('CAR-00').start,PROLOGUE_OPENING.musicLead);assert(get('CAR-01').start>get('CAR-00').end);assert.equal(ROOM_TRANSITION.hold,10);
  assert(Math.abs(room.end-room.start-12.4)<1e-8);for(const id of ['RED-01','RED-02','RED-03'])assert(get(id).start>=room.start+1.2&&get(id).end<=room.start+11.2);
  for(const id of ['entertainment_off','zombie_scream_1','zombie_scream_2'])assert.equal(timeline.cues.filter(([cue])=>cue===id).length,1);
 });
@@ -67,7 +67,7 @@ test('the specific voice deferral affects only the two new cues and preserves re
  for(const id of PROLOGUE_SUBTITLE_ONLY_IDS){assert(!PROLOGUE_AUDIO_LINES.some(l=>l.id===id));assert(!runtimeAssets.includes(`assets/audio/prologue/${id}.mp3`));assert(PROLOGUE_LINES.some(l=>l.id===id&&l.text));}
  for(const line of PROLOGUE_AUDIO_LINES){assert.equal(line.audioMode,'recorded');assert(runtimeAssets.includes(`assets/audio/prologue/${line.id}.mp3`));}
  const {readFile,readdir}=await import('node:fs/promises'),{createHash}=await import('node:crypto');let aggregate='';
- const names=(await readdir('assets/audio/prologue')).filter(n=>n.endsWith('.mp3')).sort();assert.equal(names.length,78,'no fake replacement audio');
+ const names=(await readdir('assets/audio/prologue')).filter(n=>n.endsWith('.mp3')&&!['entertainment-music.mp3','title-music.mp3'].includes(n)).sort();assert.equal(names.length,78,'all78 inherited voice files remain byte-identical; the two explicitly approved music excerpts are separate');
  for(const name of names)aggregate+=`${name}\0${createHash('sha256').update(await readFile(`assets/audio/prologue/${name}`)).digest('hex')}\n`;
  assert.equal(createHash('sha256').update(aggregate).digest('hex'),'e0afed33ffcf237189deea22a64ddd1520c01544095d4daac4970d491098a6bc');
 });

@@ -35,8 +35,14 @@
       "sha256": "009df6c833794c86f3206a11fd092d244e78ef7e04383095d340e7cf196298eb"
     },
     "player-arms.glb": {
-      "bytes": 352948,
-      "sha256": "ef42a6fb1aee866bec852bbe722acd9a5cea36a291baba939691c7ecf9690e54"
+      "bytes": 545004,
+      "sha256": "ab7a5d6dd71d27423ae130ecd86dd18f2eeef7b1e07131083efc5e778cfe302e"
     }
+  },
+  "visualOverhaulV3": {
+    "baselineArmsSha256": "ef42a6fb1aee866bec852bbe722acd9a5cea36a291baba939691c7ecf9690e54",
+    "changes": "Reverse inherited 8x export extension using exact skin matrices, close both cropped elbow rims, retain finger/wrist positions and rig/weights; canonical skin attribute supports independent game/story presentation without applying recovery twice.",
+    "exporter": "scripts/export-visual-overhaul-v3.py",
+    "pistol": "unchanged"
   }
 }

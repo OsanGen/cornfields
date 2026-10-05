@@ -1,6 +1,6 @@
 import {createPrologueTimeline} from './prologue-script.js';
 
-const ROAD_X=-4.3,CRUISE_SPEED=6,WHEEL_RADIUS=.31,WHEELBASE=2.55,SEGMENTS=192;
+const ROAD_X=-2.3,CRUISE_SPEED=6,WHEEL_RADIUS=.31,WHEELBASE=2.55,SEGMENTS=1024;
 const clamp=(value,min=0,max=1)=>Math.max(min,Math.min(max,value));
 const smooth=t=>t*t*(3-2*t);
 const smoother=t=>t*t*t*(t*(t*6-15)+10);
@@ -19,18 +19,18 @@ function arcTable(length){
 }
 function planFor(timeline){
   if(plans.has(timeline))return plans.get(timeline);
-  const car=timeline.chapters.find(c=>c.id==='car'),dispatch=timeline.chapters.find(c=>c.id==='dispatch');
-  const duration=Math.max(.001,dispatch.end-dispatch.start),decelerate=duration*.20,stop=duration*.90,braking=stop-decelerate;
+  const car=timeline.chapters.find(c=>c.id==='car'),dispatch=timeline.chapters.find(c=>c.id==='dispatch'),encounter=timeline.chapters.find(c=>c.id==='emergence');
+  const duration=Math.max(2.6,encounter.end-encounter.start),decelerate=.5,stop=2.3,braking=stop-decelerate;
   // Integrating smooth braking yields exactly half its cruise-speed distance.
   // Author the shoulder path to that distance instead of changing road offsets.
-  const speedWindow=decelerate+braking/2,targetLength=Math.max(12,CRUISE_SPEED*speedWindow);
+  const speedWindow=decelerate+braking/2,targetLength=CRUISE_SPEED*braking/2;
   let lo=0,hi=targetLength;
   for(let i=0;i<24;i++){
     const mid=(lo+hi)/2;
     if(arcTable(mid).at(-1)<targetLength)lo=mid;else hi=mid;
   }
-  const length=(lo+hi)/2,table=arcTable(length),distance=table.at(-1),speed=distance/speedWindow;
-  const plan={car,dispatch,duration,decelerate,stop,braking,length,table,distance,speed,approachDistance:(car.end-car.start)*speed};
+  const length=(lo+hi)/2,table=arcTable(length),distance=table.at(-1)+CRUISE_SPEED*decelerate,speed=CRUISE_SPEED;
+  const plan={car,dispatch,encounter,duration,decelerate,stop,braking,length,table,distance,speed,approachDistance:(dispatch.end-car.start)*speed};
   plans.set(timeline,plan);return plan;
 }
 function parameterAtDistance(table,distance){
@@ -52,23 +52,23 @@ function chapterSeconds(frame,chapter){
  * The parked transform is the existing outdoor origin, including after skips.
  */
 export function samplePrologueDriving(frame={}, {timeline=defaultTimeline}={}){
-  const plan=planFor(timeline),{car,dispatch,speed:cruise}=plan;
-  const chapter=frame.chapter||'car',approach=chapter==='car',maneuver=chapter==='dispatch';
-  const seconds=approach?chapterSeconds(frame,car):maneuver?chapterSeconds(frame,dispatch):plan.duration;
+  const plan=planFor(timeline),{car,dispatch,encounter,speed:cruise}=plan;
+  const chapter=frame.chapter||'car',approach=chapter==='car'||chapter==='dispatch',maneuver=chapter==='emergence';
+  const seconds=approach?(chapter==='car'?chapterSeconds(frame,car):car.end-car.start+chapterSeconds(frame,dispatch)):maneuver?chapterSeconds(frame,encounter):plan.duration;
   let distance=0,speed=0,acceleration=0,u=0,position=[0,0,0],yaw=0,curvature=0;
   if(approach){
     distance=seconds*cruise;speed=cruise;
-    position=[ROAD_X,0,plan.length+(car.end-car.start-seconds)*cruise];
+    position=[ROAD_X,0,plan.length+plan.decelerate*cruise+(dispatch.end-car.start-seconds)*cruise];
   }else{
     const brake=clamp((seconds-plan.decelerate)/plan.braking);
     speed=maneuver?cruise*(1-smooth(brake)):0;
     acceleration=maneuver&&brake>0&&brake<1?-cruise*6*brake*(1-brake)/plan.braking:0;
     const travelled=seconds<=plan.decelerate?seconds*cruise:cruise*(plan.decelerate+plan.braking*(brake-brake**3+.5*brake**4));
     const pathDistance=maneuver&&seconds<plan.stop?clamp(travelled,0,plan.distance):plan.distance;
-    u=parameterAtDistance(plan.table,pathDistance);
+    u=parameterAtDistance(plan.table,Math.max(0,pathDistance-plan.decelerate*cruise));
     const sample=curve(u,plan.length),norm=Math.hypot(sample.dx,sample.dz);
     distance=plan.approachDistance+pathDistance;
-    position=u>=1?[0,0,0]:[sample.x,0,sample.z];
+    position=u>=1?[0,0,0]:[sample.x,0,sample.z+Math.max(0,plan.decelerate*cruise-pathDistance)];
     yaw=u>=1?0:Math.atan2(-sample.dx,-sample.dz);
     curvature=plan.length*sample.ddx/norm**3;
   }
@@ -78,6 +78,6 @@ export function samplePrologueDriving(frame={}, {timeline=defaultTimeline}={}){
   return {
     position,yaw,speed,steer:Math.atan(-WHEELBASE*curvature),wheelRoll:distance/WHEEL_RADIUS,
     bodyPitch:acceleration*.004+roadBounce+settle,bodyRoll:clamp(-speed*speed*curvature*.002,-.02,.02),
-    distance,parked:!approach&&(!maneuver||seconds>=plan.stop),
+    distance,encounterTime:maneuver?seconds:null,honk:maneuver&&seconds>=.5&&seconds<.82,parked:!approach&&(!maneuver||seconds>=plan.stop),
   };
 }

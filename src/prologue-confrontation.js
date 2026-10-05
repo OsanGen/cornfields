@@ -5,13 +5,14 @@ export const BANG_TIMES = Object.freeze([.60, 1.30]);
 const clamp = value => Math.max(0, Math.min(1, Number(value) || 0));
 const smooth = value => {const t = clamp(value); return t * t * (3 - 2 * t);};
 const mix = (a,b,t) => t<=0?[...a]:t>=1?[...b]:a.map((value,index) => value + (b[index] - value) * t);
-const START = [4.5,0,-7.5], FRONT = [0,0,-3.25], CORNER = [1.75,0,-2.7], WINDOW = [1.42,0,.30], BACK = [2.1,0,-2.25];
+export const ROADSIDE_ENCOUNTER=Object.freeze({reaction:.5,stop:2.3,approach:2.6,arrival:5.2});
+const START = [-.2,0,-7.5], FRONT = [-2.3,0,-7.5], HOOD=[0,0,-3.25], WINDOW = [1.42,0,.30], BACK = [2.1,0,-2.25];
 export const BANG_WINDOW_TARGET=Object.freeze([1.025,1.08,.30]);
 const length=(a,b)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
-const hood=p=>{const q=1-p;return [q*q*q*FRONT[0]+3*q*q*p*2.3+3*q*p*p*1.68+p*p*p*WINDOW[0],0,q*q*q*FRONT[2]+3*q*q*p*(-3.0)+3*q*p*p*(-1.2)+p*p*p*WINDOW[2]];};
+const hood=p=>{const q=1-p;return [q*q*q*HOOD[0]+3*q*q*p*2.3+3*q*p*p*1.95+p*p*p*WINDOW[0],0,q*q*q*HOOD[2]+3*q*q*p*(-3.0)+3*q*p*p*(-1.2)+p*p*p*WINDOW[2]];};
 const ARC=[0];for(let i=1;i<=128;i++)ARC.push(ARC.at(-1)+length(hood((i-1)/128),hood(i/128)));
 const hoodDistance=p=>{const u=clamp(p)*128,i=Math.min(127,Math.floor(u));return ARC[i]+(ARC[i+1]-ARC[i])*(u-i);};
-const LEGS=[length(START,FRONT),ARC.at(-1)];
+const LEGS=[length(START,FRONT),length(FRONT,HOOD),ARC.at(-1)];
 export const RETREAT_START=.85,RETREAT_SECONDS=2.2;
 export const ROADSIDE_RUN_DISTANCE=LEGS.reduce((sum,value)=>sum+value,0);
 export const ROADSIDE_DISTANCE=ROADSIDE_RUN_DISTANCE+length(WINDOW,BACK);
@@ -20,16 +21,18 @@ export function sampleRoadsideConfrontation(frame = {}) {
   const chapter = frame.chapter, t = Math.max(0, Number(frame.chapterTime) || 0), p = clamp(frame.chapterProgress);
   let position = [...WINDOW], yaw = -Math.PI / 2, mode = 'standing', moving = false, bang = 0, impact = 0, travel=ROADSIDE_RUN_DISTANCE;
   if (chapter === 'emergence') {
-    if (p < .48) position = mix(START, FRONT, smooth(p / .48));
-    else if (p < .58) position = [...FRONT];
-    else position = hood(smooth((p-.58)/.42));
-    const u=smooth((p-.58)/.42),before=hood(Math.max(0,u-.002)),after=hood(Math.min(1,u+.002));
-    const tangent=p<.48?[FRONT[0]-START[0],FRONT[2]-START[2]]:[after[0]-before[0],after[2]-before[2]];
-    const travelYaw = Math.atan2(...tangent);
-    yaw=angle(p>=.58?angle(0,travelYaw,ease(p,.58,.66)):travelYaw,-Math.PI/2,ease(p,.83,1));
-    if(p>=.48&&p<=.58)yaw=angle(Math.atan2(FRONT[0]-START[0],FRONT[2]-START[2]),0,ease(p,.48,.58));
-    moving = p > 0 && p < .995 && !(p >= .48 && p <= .58); mode = moving ? 'run' : 'standing';
-    travel=p<.48?LEGS[0]*smooth(p/.48):p<.58?LEGS[0]:LEGS[0]+hoodDistance(u);
+    // Entry is in the headlights while the car still moves. Stanley holds
+    // ahead of the bumper during reaction/braking, then circles the parked car.
+    const seconds=Number.isFinite(frame.chapterTime)?t:p*ROADSIDE_ENCOUNTER.arrival;
+    if(seconds<.65){const u=smooth(seconds/.65);position=mix(START,FRONT,u);position[1]=Math.sin(Math.PI*u)*.12;travel=LEGS[0]*u;yaw=-Math.PI/2;moving=seconds>0;}
+    else if(seconds<ROADSIDE_ENCOUNTER.approach){position=[...FRONT];travel=LEGS[0];yaw=0;}
+    else{
+      const u=smooth((seconds-ROADSIDE_ENCOUNTER.approach)/(ROADSIDE_ENCOUNTER.arrival-ROADSIDE_ENCOUNTER.approach)),total=LEGS[1]+LEGS[2],d=u*total;
+      if(d<LEGS[1]){position=mix(FRONT,HOOD,d/LEGS[1]);yaw=Math.atan2(HOOD[0]-FRONT[0],HOOD[2]-FRONT[2]);}
+      else{const hd=d-LEGS[1];let lo=0,hi=1;for(let i=0;i<18;i++){const q=(lo+hi)/2;if(hoodDistance(q)<hd)lo=q;else hi=q;}const v=(lo+hi)/2;position=u>=1?[...WINDOW]:hood(v);const before=hood(Math.max(0,v-.002)),after=hood(Math.min(1,v+.002));yaw=angle(Math.atan2(after[0]-before[0],after[2]-before[2]),-Math.PI/2,ease(u,.78,1));}
+      travel=u>=1?ROADSIDE_RUN_DISTANCE:LEGS[0]+d;moving=u>0&&u<1;
+    }
+    mode=moving?'run':'standing';
   } else if (chapter === 'bang') {
     mode = 'bang';
     for (const contact of BANG_TIMES) {
@@ -44,8 +47,9 @@ export function sampleRoadsideConfrontation(frame = {}) {
     yaw=angle(-Math.PI/2,heading,smooth(progress/.25));
     yaw=angle(yaw,-.13,smooth((progress-.72)/.28));
     travel+=length(WINDOW,BACK)*retreat;
-  } else return null;
-  const crouch=chapter==='emergence'?ease(p,.85,1):chapter==='bang'?1:chapter==='cabin'?1-ease(t,0,.45):0;
+  } else if(chapter==='car'||chapter==='dispatch'){position=[...START];yaw=-Math.PI/2;travel=0;}
+  else return null;
+  const crouch=chapter==='emergence'?ease(Number.isFinite(frame.chapterTime)?t:p*ROADSIDE_ENCOUNTER.arrival,4.65,5.2):chapter==='bang'?1:chapter==='cabin'?1-ease(t,0,.45):0;
   return {position,yaw,mode,moving,bang,impact,travel,crouch};
 }
 
@@ -81,19 +85,19 @@ export function reachPrologueArm(root, upper, lower, hand, target, pole, indepen
 }
 
 // Run and retreat use their calibrated step lengths without resetting phase.
-export function roadsideSteps(distance){return Math.min(distance,ROADSIDE_RUN_DISTANCE)/.85+Math.max(0,distance-ROADSIDE_RUN_DISTANCE)/.48;}
+export function roadsideSteps(distance){return Math.min(distance,ROADSIDE_RUN_DISTANCE)/.85+Math.max(0,distance-ROADSIDE_RUN_DISTANCE)/.35;}
 export function roadsideFootAnchors(sample,offset=.73){
   const phaseSteps=roadsideSteps(sample.travel)+offset,anchors={};
   for(const [side,shift,x]of [['L',0,.129],['R',1,-.132]]){
     const plantSteps=Math.floor((phaseSteps+shift)/2)*2-shift-offset;
     if(plantSteps<0)continue;
-    const runSteps=ROADSIDE_RUN_DISTANCE/.85,travel=plantSteps<=runSteps?plantSteps*.85:ROADSIDE_RUN_DISTANCE+(plantSteps-runSteps)*.48;
+    const runSteps=ROADSIDE_RUN_DISTANCE/.85,travel=plantSteps<=runSteps?plantSteps*.85:ROADSIDE_RUN_DISTANCE+(plantSteps-runSteps)*.35;
     if(travel>ROADSIDE_DISTANCE)continue;
     let lo=0,hi=1,pose;
     const emergence=travel<=ROADSIDE_RUN_DISTANCE;
     for(let n=0;n<22;n++){const p=(lo+hi)/2;pose=sampleRoadsideConfrontation(emergence?{chapter:'emergence',chapterProgress:p}:{chapter:'cabin',chapterTime:RETREAT_START+p*RETREAT_SECONDS});if(pose.travel<travel)lo=p;else hi=p;}
     const p=(lo+hi)/2;pose=sampleRoadsideConfrontation(emergence?{chapter:'emergence',chapterProgress:p}:{chapter:'cabin',chapterTime:RETREAT_START+p*RETREAT_SECONDS});
-    const stride=emergence?.85:.48,front=stride*(emergence?.38:.62),sin=Math.sin(pose.yaw),cos=Math.cos(pose.yaw);
+    const stride=emergence?.85:.35,front=stride*(emergence?.38:.56),sin=Math.sin(pose.yaw),cos=Math.cos(pose.yaw);
     anchors[side]=[pose.position[0]+x*cos+front*sin,.045,pose.position[2]-x*sin+front*cos];
   }
   return anchors;

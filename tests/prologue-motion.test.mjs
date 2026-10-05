@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {samplePrologueMotion,createPrologueContactTracker,samplePrologueSoleGait} from '../src/prologue-motion.js';
+import {samplePrologueMotion,createPrologueContactTracker,samplePrologueSoleGait,PROLOGUE_WALK_STRIDE} from '../src/prologue-motion.js';
 import {createPrologueActor} from '../src/prologue-actors.js';
 
 const durations={car:60,dispatch:23,emergence:6,bang:2,cabin:12,exit:8,walk:68,history:60,disappearance:50,arrival:16,rupture:24};
@@ -22,16 +22,18 @@ test('guided paths and cumulative distances join without invented travel',()=>{
   for(const id of actors)for(let axis=0;axis<3;axis++)assert.ok(Math.abs(roadside.actors[id].position[axis]-walk.actors[id].position[axis])<1e-10);
 });
 
-test('Stanley keeps running until his translation ends and then stops contacts',()=>{
-  const running=samplePrologueMotion(frame('emergence',.32)),stopped=samplePrologueMotion(frame('emergence',1)),later=samplePrologueMotion(frame('bang',0));
+// 2026-10-05 approved v2 introduces a visible hold while the car brakes.
+test('Stanley runs on entry and approach, holds during braking, then stops contacts',()=>{
+  const running=samplePrologueMotion(frame('emergence',.06)),hold=samplePrologueMotion(frame('emergence',.32)),approach=samplePrologueMotion(frame('emergence',.60)),stopped=samplePrologueMotion(frame('emergence',1)),later=samplePrologueMotion(frame('bang',0));
+  assert.equal(hold.actors.stanley.mode,'standing');assert.equal(hold.actors.stanley.moving,false);assert.equal(approach.actors.stanley.mode,'run');
   assert.equal(running.actors.stanley.mode,'run');assert.equal(stopped.actors.stanley.mode,'standing');
   assert.deepEqual(stopped.actors.stanley.position,later.actors.stanley.position);assert.equal(stopped.actors.stanley.phase,later.actors.stanley.phase);
 });
 
 test('Clarence steps out onto a planted foot and remains planted before the walk',()=>{
   const a=samplePrologueMotion(frame('exit',.91)).actors.clarence;
-  assert.equal(a.stepOut,true);assert.equal(a.grounded,true);assert(Math.abs(a.phase-(1.75/.45+.37)*Math.PI)<1e-8);
-  assert(Math.abs(samplePrologueMotion(frame('exit',1)).actors.clarence.phase-(1.75/.45+.37)*Math.PI)<1e-8);
+  assert.equal(a.stepOut,true);assert.equal(a.grounded,true);assert(Math.abs(a.phase-(1.75/PROLOGUE_WALK_STRIDE.clarence+.37)*Math.PI)<1e-8);
+  assert(Math.abs(samplePrologueMotion(frame('exit',1)).actors.clarence.phase-(1.75/PROLOGUE_WALK_STRIDE.clarence+.37)*Math.PI)<1e-8);
 });
 
 function collect(fps){
@@ -104,4 +106,17 @@ test('heel, sole and toe support share the unchanged alternating contact phase',
       assert(Math.abs(a.lift-b.lift)<.00001,'continuous sole clearance');
     }
   }
+});
+
+
+test('upright walk strides and independent urgent run preserve their different support mechanics',()=>{
+  assert.equal(PROLOGUE_WALK_STRIDE.clarence,.35);assert.equal(PROLOGUE_WALK_STRIDE.stanley,.35);
+  const walk=samplePrologueSoleGait(0),run=samplePrologueSoleGait(0,0,{running:true});
+  assert(walk.stance>.5,'walking has double support');assert(run.stance<.5,'running has a flight interval');
+  let flight=0,walkFlight=0;
+  for(let i=0;i<100;i++){const phase=i/100*Math.PI*2;for(const running of [false,true]){const pair=[0,1].map(j=>samplePrologueSoleGait(phase,j,{running}));if(pair.every(f=>!f.planted)){if(running)flight++;else walkFlight++;}}}
+  assert(flight>15);assert.equal(walkFlight,0);
+  const phase=(run.stance+(1-run.stance)*.5)*Math.PI*2;
+  const left=samplePrologueSoleGait(phase,0,{running:true}),right=samplePrologueSoleGait(phase-Math.PI,1,{running:true});
+  assert(right.lift>left.lift+.01,'authored urgency includes modest left/right asymmetry');
 });

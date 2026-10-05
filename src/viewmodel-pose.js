@@ -55,3 +55,13 @@ export function createActorHeading(){
     run=runId;actor=state;zone=state.zone;x=state.x;z=state.z;return yaw;
   }};
 }
+
+/** One physical, cabin-relative reach shared by Mike's body and eye camera.
+ * The head remains free to look; only its eye origin follows the upper body.
+ * Neutral waist→head vector is measured from the shipped seated Mike skin rig.
+ */
+export function samplePrologueBodyReach(reach=0){
+  const weight=Math.max(0,Math.min(1,Number(reach)||0)),waistTilt=.72*weight;
+  const hipOffset=[-.10*weight,0,-.22*weight],dy=.582238,forward=.0556;
+  return {weight,hipOffset,waistTilt,eyeOffset:[hipOffset[0],dy*(Math.cos(waistTilt)-1)-forward*Math.sin(waistTilt),hipOffset[2]-dy*Math.sin(waistTilt)-forward*(Math.cos(waistTilt)-1)]};
+}

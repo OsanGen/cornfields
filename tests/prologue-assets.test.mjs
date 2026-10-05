@@ -58,3 +58,27 @@ test('distinct role deadlines reject only expired role and dispose its late geom
  await new Promise(resolve=>setTimeout(resolve,25));assert.deepEqual(owner.stats.castRoles,{clarence:'ready',stanley:'fallback'});
  const late=asset();late.scene.children[0].geometry.addEventListener('dispose',()=>disposed++);resolveStanley(late);await turn();assert.deepEqual(accepted,['clarence']);assert.equal(disposed,1);owner.dispose();
 });
+
+test('approved roadside and projector assets are optional, owned and rejected after release',async()=>{
+ const pending=new Map(),accepted=[],disposed=[];
+ const owner=createPrologueAssets({onRoadside:g=>accepted.push(g),onProjector:g=>accepted.push(g),gltfLoader:{loadAsync:url=>/roadside-set|projector/.test(url)?new Promise(resolve=>pending.set(url.split('/').at(-1),resolve)):Promise.resolve(asset())},textureLoader:{loadAsync:async()=>new THREE.Texture()}});
+ assert.equal(pending.size,2);const roadside=asset();roadside.scene.children[0].geometry.addEventListener('dispose',()=>disposed.push('roadside'));
+ pending.get('roadside-set.glb')(roadside);await turn();assert.equal(owner.stats.roadside,'ready');assert(owner.owns(roadside.scene.children[0].geometry));owner.dispose();
+ const projector=asset();projector.scene.children[0].geometry.addEventListener('dispose',()=>disposed.push('projector'));pending.get('projector.glb')(projector);await turn();
+ assert.deepEqual(accepted,[roadside]);assert.deepEqual(disposed,['roadside','projector']);
+});
+
+test('original v2 props validate actual GLB topology, packaging and bounded geometry',async()=>{
+ const {readFile}=await import('node:fs/promises'),{load}=await import('../scripts/load-glb-cpu.mjs');
+ for(const [name,maxTriangles,maxDraws,maxBytes] of [['roadside-set',12000,8,6*1024*1024],['projector',5000,3,1024*1024]]){
+  const data=await readFile(new URL(`../assets/intro/${name}.glb`,import.meta.url));assert.equal(data.readUInt32LE(0),0x46546c67);assert.equal(data.readUInt32LE(8),data.length);
+  const json=JSON.parse(data.subarray(20,20+data.readUInt32LE(12)));let triangles=0,draws=0;
+  for(const mesh of json.meshes)for(const primitive of mesh.primitives){assert.equal(primitive.mode??4,4);triangles+=json.accessors[primitive.indices].count/3;draws++;}
+  assert(triangles<=maxTriangles);assert(draws<=maxDraws);assert(data.length<=maxBytes);assert.equal(json.extensionsUsed?.includes('KHR_lights_punctual')||false,false);
+  const model=await load(new URL(`../assets/intro/${name}.glb`,import.meta.url));model.scene.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(model.scene);
+  if(name==='projector'){
+   assert(Math.abs(bounds.min.y+.98)<=.005);assert(model.scene.getObjectByName('Feed_reel'));assert(model.scene.getObjectByName('Takeup_reel'));
+   const uv=model.scene.getObjectByName('Projector_housing_and_threaded_film').geometry.attributes.uv;let filmVertices=0;for(let i=0;i<uv.count;i++)if(uv.getX(i)>.75&&uv.getY(i)<.25)filmVertices++;assert.equal(filmVertices,16,'all four threaded film faces retain the scrolling atlas region after GLB export');
+  }else{assert(bounds.min.x>=-.95);assert(bounds.min.z>3);assert(bounds.min.y>=-.045,'v3 graded driveway is intentionally recessed less than 4.5cm; the house foundation is unchanged');assert(bounds.max.x<14);}
+ }
+});

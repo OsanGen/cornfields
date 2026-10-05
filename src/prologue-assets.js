@@ -3,7 +3,7 @@ import {createCabinWheel,steeringAngle} from './prologue-cabin.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 /** Owned optional assets. A released set rejects late arrivals without leaking. */
-export function createPrologueAssets({onCar,onCast,onRoad,onMist,onWood,onGround,onSky,deadlineMs=8000,gltfLoader=new GLTFLoader(),textureLoader=new THREE.TextureLoader()}={}){
+export function createPrologueAssets({onCar,onCast,onRoad,onMist,onWood,onGround,onSky,onRoadside,onProjector,onDog,deadlineMs=8000,gltfLoader=new GLTFLoader(),textureLoader=new THREE.TextureLoader()}={}){
   const resources=new Set(),timers=new Set();let closed=false;
   const stats={car:'loading',cast:'loading',castRoles:{clarence:'loading',stanley:'loading'},road:'loading',roadComponents:{map:'loading',normalMap:'loading',roughnessMap:'loading'},mist:'loading',errors:[]};
   function status(name,value){
@@ -43,6 +43,9 @@ export function createPrologueAssets({onCar,onCast,onRoad,onMist,onWood,onGround
   // Each role owns an independently authored face. A failed role keeps only its
   // own fallback; neither late arrival nor timeout may replace the other actor.
   load('car',gltf.loadAsync(url('cruiser.glb')),onCar);
+  if(onDog)load('dog',gltf.loadAsync(url('roadside-dog-v1.glb')),onDog);
+  if(onRoadside)load('roadside',gltf.loadAsync(url('roadside-set.glb')),onRoadside);
+  if(onProjector)load('projector',gltf.loadAsync(url('projector.glb')),onProjector);
   for(const role of ['clarence','stanley'])
     load(`cast:${role}`,gltf.loadAsync(url(`cast-${role}.glb`)),gltf=>onCast?.(role,gltf));
   let mapsReady=0;
@@ -136,8 +139,10 @@ export function prepareCruiser(model){
     addBox('Squared municipal wheel arch top',.036,.038,.70,side*1.10,.925,axle);
     for(const end of [-1,1])addBox('Squared municipal wheel arch upright',.036,.26,.038,side*1.10,.79,axle+end*.35);
   }
-  const bar=addBox('Unlit police lightbar mount',1.27,.055,.26,0,1.50,.85);
-  for(const side of [-1,1])addBox('Unlit police lightbar lens',.47,.085,.20,side*.34,1.565,.85,new THREE.MeshStandardMaterial({color:side<0?0x5b1920:0x183b5c,roughness:.25,metalness:.1}));
+  const bar=addBox('Police lightbar mount',1.27,.055,.26,0,1.50,.85);
+  const lampMaterials=[];
+  for(const side of [-1,1]){const color=side<0?0xa01d26:0x205ba2,material=new THREE.MeshStandardMaterial({name:side<0?'Cruiser red lamp':'Cruiser blue lamp',color,emissive:color,emissiveIntensity:.35,roughness:.25,metalness:.1});lampMaterials.push(material);addBox(side<0?'Police red lightbar lens':'Police blue lightbar lens',.47,.085,.20,side*.34,1.565,.85,material);}
+  const frontLamps=[];model.traverse(o=>{if(o.isMesh&&o.name==='BodyHeadlights'){o.material=o.material.clone();o.material.color.setHex(0xd9d6bc);o.material.emissive.setHex(0xffe4b5);o.material.emissiveIntensity=1.8;frontLamps.push(o.material);}});
   if(typeof document!=='undefined'){
     const canvas=document.createElement('canvas');canvas.width=512;canvas.height=128;const ctx=canvas.getContext('2d');ctx.fillStyle='#d9ddd6';ctx.fillRect(0,0,512,128);ctx.fillStyle='#111b24';ctx.font='bold 84px sans-serif';ctx.textAlign='center';ctx.fillText?.('POLICE',256,94);
     const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;
@@ -145,5 +150,14 @@ export function prepareCruiser(model){
   }
   // Both panels extend rearward (+Z) from their front hinges: opposite Y signs
   // move them outward on their own side, rather than through the cabin.
-  return {model,steering,tires,door,driverDoor,update(drive,exit=0){door.rotation.y=exit*1.05;driverDoor.rotation.y=-exit*1.05;steering.rotation.z=steeringAngle(drive.steer);for(const {hub,front}of tires){hub.rotation.set(0,front?drive.steer:0,0);hub.rotateX(drive.wheelRoll);}}};
+  return {model,steering,tires,door,driverDoor,setLampState(state){lampMaterials[0].emissiveIntensity=state.red;lampMaterials[1].emissiveIntensity=state.blue;for(const mat of frontLamps)mat.emissiveIntensity=state.headlights?1.8:0;},update(drive,exit=0){door.rotation.y=exit*1.05;driverDoor.rotation.y=-exit*1.05;steering.rotation.z=steeringAngle(drive.steer);for(const {hub,front}of tires){hub.rotation.set(0,front?drive.steer:0,0);hub.rotateX(drive.wheelRoll);}}};
+}
+
+/** One absolute story-clock envelope shared by physical lenses and local spill.
+ * Slow 4.4-second smooth cycles have no strobe edges. Reduced mode is steady. */
+export function sampleCruiserLampState(time=0,{reduced=false,active=true}={}){
+ if(!active)return {red:0,blue:0,redSpill:0,blueSpill:0,headlights:false};
+ if(reduced)return {red:.32,blue:.32,redSpill:0,blueSpill:0,headlights:true};
+ const phase=.5+.5*Math.sin(Math.max(0,Number(time)||0)*Math.PI*2/4.4);
+ return {red:.18+phase*.7,blue:.18+(1-phase)*.7,redSpill:.12+phase*.52,blueSpill:.12+(1-phase)*.52,headlights:true};
 }

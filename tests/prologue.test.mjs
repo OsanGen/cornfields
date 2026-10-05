@@ -25,7 +25,16 @@ function verifyTimeline(timeline){
 test('fast opening keeps one contiguous, complete script and independent follow/end cues',()=>{
   verifyTimeline({chapters:PROLOGUE_CHAPTERS,lines:PROLOGUE_LINES,duration:PROLOGUE.duration});
   assert.equal(new Set(PROLOGUE_AUDIO_LINES.map(line=>line.id)).size,42);
-  assert(PROLOGUE.duration+20+4<223,'baseline has room for tutorial reactions');
+  // c169100 baseline: 6-second lead and 9-word CAR-00. The approved opening
+  // adds an 8-second lead and removes 3 caption words at the same 2.75 words/s.
+  const openingDelta=(14-6)+(6-9)/2.75;
+  const baselineChapterEnds=[38.65272727272726,45.6181818181818,50.818181818181806,55.73090909090908,
+    67.27,75.35181818181819,83.91090909090912,102.8372727272728,108.0372727272728,130.25181818181827,
+    142.65181818181827,146.5081818181819,175.85818181818198,180.85818181818198,182.85818181818198,194.85818181818198];
+  assert.equal(PROLOGUE_LINES[0].start,14);
+  assert(Math.abs(PROLOGUE_LINES[0].end-PROLOGUE_LINES[0].start-6/2.75)<1e-9,'approved caption keeps natural reading time');
+  PROLOGUE_CHAPTERS.forEach((chapter,i)=>assert(Math.abs(chapter.end-baselineChapterEnds[i]-openingDelta)<1e-9,chapter.id+' shifts only by the approved opening delta'));
+  assert(PROLOGUE.duration+20+4<223+openingDelta,'original tutorial-reaction budget plus only the approved opening delta');
   assert.deepEqual(PROLOGUE_FOLLOW_LINES.map(line=>line.id),['FOL-01','FOL-02','FOL-03']);
   assert.equal(PROLOGUE_END_LINE.text,'Where did they go? Am I going crazy?');
   assert.equal(PROLOGUE_END_LINE.basis,'U');

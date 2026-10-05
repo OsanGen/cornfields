@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {samplePrologueExit,EXIT_SECONDS,performanceFor} from '../src/prologue-performance.js';
+import {samplePrologueExit,EXIT_SECONDS,performanceFor,PROLOGUE_OPENING} from '../src/prologue-performance.js';
 import {sampleSpeech,SPEECH_ENVELOPES} from '../src/prologue-speech.js';
 import {sampleRoadsideConfrontation,RETREAT_START,RETREAT_SECONDS} from '../src/prologue-confrontation.js';
 import {sampleInteractivePrologueMotion,samplePrologueMotion} from '../src/prologue-motion.js';
@@ -11,8 +11,12 @@ import {createPrologue} from '../src/prologue.js';
 test('approved exit adds only 0.75 seconds, stages clearance then support, and lands exactly',()=>{
   assert.equal(EXIT_SECONDS,1.6);
   const timeline=createPrologueTimeline({durations:PROLOGUE_VOICE_TIMING});// 2026-10-04: v1 adds waking, bridge speech and the approved vision edges. Exit duration itself stays locked.
-  const bridge=timeline.lines.find(l=>l.id==='CAR-00');
-  assert(Math.abs(timeline.duration-(163.33829354838724+5.55+(bridge.end-bridge.start)+.18+3.2+2.4))<1e-8,'only the approved waking, bridge and vision durations extend the baseline');
+  const bridge=timeline.lines.find(l=>l.id==='CAR-00'),reply=timeline.lines.find(l=>l.id==='RAD-02');
+  // 2026-10-05 v2 moves the reply to emergence and the plea after the knocks.
+  // 5.2s encounter +1.52s knock lead replace .65s emergence lead +2s bang
+  // and the old .18s interline gap; the unchanged reply duration is subtracted.
+  const encounterExtension=5.2+1.52-.65-2-.18-(reply.end-reply.start);
+  assert(Math.abs(timeline.duration-(163.33829354838724+5.55+(PROLOGUE_OPENING.musicLead-6)+(bridge.end-bridge.start)+.18+3.2+2.4+encounterExtension))<1e-8,'only the approved waking, bridge, vision and moving-car encounter durations extend the baseline');
   assert(Math.abs(timeline.chapters.find(c=>c.id==='exit').end-timeline.chapters.find(c=>c.id==='exit').start-7.467448387096773)<1e-8);
   assert(Math.abs(timeline.lines.find(l=>l.id==='ARR-01').start-timeline.chapters.find(c=>c.id==='exit').start-EXIT_SECONDS)<1e-8);
   assert.deepEqual(samplePrologueExit(0).position,[.5,1.13,.35]);assert.deepEqual(samplePrologueExit(1.6).position,[1.85,1.58,-.35]);

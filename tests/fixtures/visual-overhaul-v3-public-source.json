@@ -1,0 +1,4076 @@
+{
+  "protectedFiles": [
+    {
+      "path": ".gitignore",
+      "bytes": 67,
+      "sha256": "8716c18f0a92da27ef44ae73a3b506c76fddaf1908330cdcf7237d6e65ea9be5"
+    },
+    {
+      "path": "assets/audio/LICENSES.md",
+      "bytes": 2534,
+      "sha256": "7525ed9b963bc441e88a32db6d2918a6a3ff2c9d1b27bde9ceb0415a15d2f8d6"
+    },
+    {
+      "path": "assets/audio/creature-growl.mp3",
+      "bytes": 16971,
+      "sha256": "226eed74ac865531f0f3e474e111cd73c4e851c8b3d179a6e2036fe17f96789b"
+    },
+    {
+      "path": "assets/audio/creature-roar-alt.mp3",
+      "bytes": 22613,
+      "sha256": "b9fcd1751b328deeb2f125350dd5d00f7dd87714cfab596a74c257b81afbf0ac"
+    },
+    {
+      "path": "assets/audio/creature-roar.mp3",
+      "bytes": 15404,
+      "sha256": "271ec5a4ce0d91e5c18068e2defba87d8a40009383f0e083311f0ae42cf048e9"
+    },
+    {
+      "path": "assets/audio/creature-sources.json",
+      "bytes": 1849,
+      "sha256": "78af87402e23b304de7e17b05f5fb5baba9f868ac028e9724a5757957921a959"
+    },
+    {
+      "path": "assets/audio/distress.wav",
+      "bytes": 210492,
+      "sha256": "2b1984e3485715642a1195393fd35227eadc27b8f7eeb968956e18f4e8cb9400"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-1.mp3",
+      "bytes": 5079,
+      "sha256": "1e2712a74a800c3c2988594dc9da0e07a9dc469a2ffbc77fbfb578a279a302af"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-2.mp3",
+      "bytes": 5079,
+      "sha256": "499e0a86593232d3ff4d4f70be8a854a8bf197f8725be5dfc027458d2e968125"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-3.mp3",
+      "bytes": 4452,
+      "sha256": "dfcb95b4ced7d09f3fb10ab830b9583c919540d54b83f7c670a2913e6c713f52"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-4.mp3",
+      "bytes": 4452,
+      "sha256": "e3915d42592f2295911e798549862ee04d72897507b6ae0924798b9241d1f891"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-5.mp3",
+      "bytes": 4766,
+      "sha256": "2e16f1de5228d412588574e650c5433e70363f5312f238f46e67e731901fa47b"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-6.mp3",
+      "bytes": 4766,
+      "sha256": "977ca0cfd517547def33d5afd5bda1f63d2757cc3553dd45c0db198b47093ccc"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-1.mp3",
+      "bytes": 5706,
+      "sha256": "cdcaaa42decfdc506d783adfa850e0a3e0068e94555153db5605a5a7aff22832"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-2.mp3",
+      "bytes": 5393,
+      "sha256": "f837a05c02ba2b91ff6b981c02d49152a83ab15f2480193fcc8d1c52e9026677"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-3.mp3",
+      "bytes": 4766,
+      "sha256": "94023571746429c6fb350c8c62417e6f603317290f691937a82899284ff2c760"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-4.mp3",
+      "bytes": 4766,
+      "sha256": "ea448466b36fa83f1db8e9653e49bda409d42da623486f654873485fd50706ff"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-5.mp3",
+      "bytes": 4766,
+      "sha256": "5d2b727a8724c630e54dda7c03a8741b73ad64d3b843eecfd1419783f094f6c3"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-6.mp3",
+      "bytes": 4766,
+      "sha256": "57db9d6746e0188a39b485fc9b53f45f3db14be8a7105e24134e8af3f1d17d26"
+    },
+    {
+      "path": "assets/audio/footsteps/sources.json",
+      "bytes": 7443,
+      "sha256": "9ba200dcc63446da6d8d653a5df05bb46b6658b2f22f37ea24d3eb29ac15b691"
+    },
+    {
+      "path": "assets/audio/pistol-shot.wav",
+      "bytes": 79458,
+      "sha256": "7b785383f934ee984708fcbb9e925f2b25c15bcfadbadab5c4c6307eeeee929e"
+    },
+    {
+      "path": "assets/audio/prologue/ARR-00.mp3",
+      "bytes": 17372,
+      "sha256": "4453e41528dc89ec882adbb51a1b4477c0e5a4baddacb775f5307d0f39c6f9ca"
+    },
+    {
+      "path": "assets/audio/prologue/ARR-01.mp3",
+      "bytes": 28796,
+      "sha256": "27d5ac8a867db91ab779d49756e5ab0a00eef8e9a223f72d33ce2eb5d1f8d03f"
+    },
+    {
+      "path": "assets/audio/prologue/ARR-02.mp3",
+      "bytes": 9476,
+      "sha256": "84edf1f5da8ca811712ddb1b62d8dccb940cc1e7bbdbf9de3103f8ae1b3070b8"
+    },
+    {
+      "path": "assets/audio/prologue/CAB-01.mp3",
+      "bytes": 16028,
+      "sha256": "0feda9d9f059d6559b0b4458c4e6b94ab0ba6000e9ab5f1089b6717bde5192fa"
+    },
+    {
+      "path": "assets/audio/prologue/CAB-02.mp3",
+      "bytes": 9476,
+      "sha256": "705aa2aa4512aafd244394097c14016a3422af3bab6b1b8fc8802e67227ad171"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-01.mp3",
+      "bytes": 21404,
+      "sha256": "b67cb726d650d65073459d1ea41bcee9f698360d09b83ef1e440c23940a270a6"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-02.mp3",
+      "bytes": 11828,
+      "sha256": "81891dc31e0d43ae1fc17e6c5d140613a01900ceb3e43a9775fbba7c43c95ae6"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-03.mp3",
+      "bytes": 30308,
+      "sha256": "cd67dfdc8856fe33cf43764c3b5615f1dd59fc7a6a45c4e79ad0115e8f19ec8e"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-04.mp3",
+      "bytes": 22244,
+      "sha256": "67508935fb071908ffed19c8f792767d2024d2b624d84ce7ceab125e7027314e"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-05.mp3",
+      "bytes": 9308,
+      "sha256": "da93054318a1928b15c31d2c99de85f45dd406e90b5e7d2dc9c35b3f93f45abc"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-06.mp3",
+      "bytes": 9476,
+      "sha256": "8a3f2ff7d943e30869392738157b5f23d0b4cff89e0fbfd010c23ee54964befb"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-07.mp3",
+      "bytes": 24932,
+      "sha256": "5181c3afc152831b8548d3a86f7d0f26d362c5d5bc8be022494ed07ae4e56166"
+    },
+    {
+      "path": "assets/audio/prologue/END-01.mp3",
+      "bytes": 14012,
+      "sha256": "e28eebd99e4e28dd1f814da3fd0fa524353ccfe23e2faeb6a09e1fcbb5436072"
+    },
+    {
+      "path": "assets/audio/prologue/FLA-01.mp3",
+      "bytes": 5948,
+      "sha256": "5252da7edb0685cc05330fb60aa43228c45604f8bf421d920f0011964e601593"
+    },
+    {
+      "path": "assets/audio/prologue/FLA-02.mp3",
+      "bytes": 32156,
+      "sha256": "4bb6ed664d01c84850bc9c7805b017248542a3ad8241bbf2266353374f2e9bbf"
+    },
+    {
+      "path": "assets/audio/prologue/FLA-03.mp3",
+      "bytes": 23420,
+      "sha256": "99dadfab412e610b938c2111dcdb232646f9ec357578a2a85fe465c07025d984"
+    },
+    {
+      "path": "assets/audio/prologue/FOL-01.mp3",
+      "bytes": 11492,
+      "sha256": "ed0161dc3e737f3dde391759f10fcd681c30e2bb4a144d510c64b9902faefbd8"
+    },
+    {
+      "path": "assets/audio/prologue/FOL-02.mp3",
+      "bytes": 22916,
+      "sha256": "723a1408d1e4dc3feb4831c48acd0a38d2765cbaa6b9103b01df7bd23ecc4636"
+    },
+    {
+      "path": "assets/audio/prologue/FOL-03.mp3",
+      "bytes": 11996,
+      "sha256": "a0bc6060366a5b986003300c7be79704e75ccc6fcfcbc47ee0c9e4bfc56da34d"
+    },
+    {
+      "path": "assets/audio/prologue/LIQ-01.mp3",
+      "bytes": 5948,
+      "sha256": "e16a521da5a5929f28f91a7eb70a5ada64d092ba24a8857db69099a40862f5e9"
+    },
+    {
+      "path": "assets/audio/prologue/RAD-01.mp3",
+      "bytes": 40892,
+      "sha256": "10867cc25ce2d23a37485ca38187416b7ac648c70c70eb82060554e41daf72e1"
+    },
+    {
+      "path": "assets/audio/prologue/RAD-02.mp3",
+      "bytes": 10484,
+      "sha256": "a60593109857c7873838816674fed89567c4ad28cebda340cc96631ed81de053"
+    },
+    {
+      "path": "assets/audio/prologue/RED-01.mp3",
+      "bytes": 4604,
+      "sha256": "252ceee57a59400fe7eb055f3dba22e3f126136427eedfc456c5548c94b42cec"
+    },
+    {
+      "path": "assets/audio/prologue/RED-02.mp3",
+      "bytes": 6452,
+      "sha256": "8c0b589360d6e3214f36363361f7abe56d1130dd0b8f6a37c627905b58adae1a"
+    },
+    {
+      "path": "assets/audio/prologue/RED-03.mp3",
+      "bytes": 4772,
+      "sha256": "62054762b16c289167e25af65c643faec8d5de583eed40bfac600e3dd058c7ce"
+    },
+    {
+      "path": "assets/audio/prologue/RET-01.mp3",
+      "bytes": 20060,
+      "sha256": "0dd7c68c38c69798aca988bf47420ac0ea14d0a2612deeda06ca7e0d91c92061"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-01.mp3",
+      "bytes": 40724,
+      "sha256": "7f698114e5c6ae0972e604bb46b180d5e367ea84a68059d9e89bdc697ce92133"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-02.mp3",
+      "bytes": 6956,
+      "sha256": "b0bf0470bd033d34d24393275ade8f299f6600e0ed071c89878207492b0294f6"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-03.mp3",
+      "bytes": 13676,
+      "sha256": "f24c479876a9c85c2040e06d31ec0fa8d3c46d44350a8ac6f8aa0a9913ab3a30"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-04.mp3",
+      "bytes": 6452,
+      "sha256": "6c489ce32144280c8887b0744e070db882283a38bcb3ce4a98d19f374c4b1cca"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-05.mp3",
+      "bytes": 29804,
+      "sha256": "db49ff7340a921ed1f6d11509669a1a58e5cd6e04755a142a3f275f09989058e"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-06.mp3",
+      "bytes": 34844,
+      "sha256": "9f72527f095b93d470f33ae5dfce6633d9ee70a5d3551928af1698061177c43f"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-07.mp3",
+      "bytes": 20900,
+      "sha256": "feb36a981ba49c0579ec1d3f0384286c058414ba55ea0b9bab44b699c6205e14"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-08.mp3",
+      "bytes": 48116,
+      "sha256": "e07eb685f74d359cb14f8311f14b3dac549aaeaea4f944b5d7fd802188d6ba08"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-09.mp3",
+      "bytes": 14012,
+      "sha256": "27b808f5a037b12671ded872abdc8907bcf292476e2d167960d0e9fb03b7d087"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-10.mp3",
+      "bytes": 11156,
+      "sha256": "857c617649c406520fd5ef327b7ac0ceaa051c8e1be9ff132a5190ec06bb92ea"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-11.mp3",
+      "bytes": 20732,
+      "sha256": "221efdf4ab8116b7de1ef251425eae478eceb67558861bee683dccd377847c4f"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-12.mp3",
+      "bytes": 11156,
+      "sha256": "b380d65dbc6ad8ced9aad1904fb48af8480926b8cc7b0a53eb3ff86f2fd7161c"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-13.mp3",
+      "bytes": 40388,
+      "sha256": "3d66b599c1a023edea628fa77835cff0b2d8ac8e3b782033a6dc2ca887ba9fab"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-14.mp3",
+      "bytes": 19052,
+      "sha256": "f55b1b8262387fcb4c5eed331e4e4b450138cf5fcba508ebe0bedbf6f7e93f2d"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-15.mp3",
+      "bytes": 15188,
+      "sha256": "a8a4fc3bd205c90bfa057875151f5c7f1d0269978415157f07323b6f65d6a547"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-16.mp3",
+      "bytes": 27452,
+      "sha256": "c0211e72981a3cfa4f72a0a16f300a33f9d3025019a41efb10d49dbae4e07b41"
+    },
+    {
+      "path": "assets/audio/prologue/arrival_clarence_here.mp3",
+      "bytes": 7292,
+      "sha256": "e43291617486493d401e4f37754db75683c0550eb96f73750ebd96d286bcf161"
+    },
+    {
+      "path": "assets/audio/prologue/arrival_stanley_yes.mp3",
+      "bytes": 3428,
+      "sha256": "8e988e44c775a570fee5a4a2a31936840312f7eabfbf6e0f64d738af22028f26"
+    },
+    {
+      "path": "assets/audio/prologue/car_clarence_nervous.mp3",
+      "bytes": 8972,
+      "sha256": "44ba19e84b8004d7eaae133598c6dd8cf516a3d763518e0a0c3c773691f1946a"
+    },
+    {
+      "path": "assets/audio/prologue/car_mike_2002.mp3",
+      "bytes": 14516,
+      "sha256": "b1c15c52412175a6e18e243bec4105ef2ad2936f656e93815357067ecd2d4596"
+    },
+    {
+      "path": "assets/audio/prologue/car_mike_memory.mp3",
+      "bytes": 110948,
+      "sha256": "74b62702e5091c9099c82b54e35f548947ca2d60b08c49b837876f71b0f34653"
+    },
+    {
+      "path": "assets/audio/prologue/car_mike_ready.mp3",
+      "bytes": 34844,
+      "sha256": "0dc85316d031ecf17c6fe5999c9ece764678c52927c61a50b0d4af0852ed89db"
+    },
+    {
+      "path": "assets/audio/prologue/car_mike_story.mp3",
+      "bytes": 24596,
+      "sha256": "a26f511af5f9abfa9dc7f1855013f4e88e02e6a0293b5f87eb6fe3a3d4dc904a"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_clarence_footsteps.mp3",
+      "bytes": 15692,
+      "sha256": "53bf9108ce4a5a6c1febd6422049a58dcc9f1083068759042d373a9b69815f0c"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_mike_when.mp3",
+      "bytes": 10988,
+      "sha256": "43308879bfe9776e17db08bf554ca6c365b12253d12e9f1e8ed166b00bd8526a"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_stanley_barking.mp3",
+      "bytes": 51644,
+      "sha256": "4711b9355b7d1cb8d57181d15a48aeab9e272698f2697e92a69d287385dbf2f4"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_stanley_dog.mp3",
+      "bytes": 28124,
+      "sha256": "8b05e026f81ebf4473a97bf2205ac65077eb25b7784f39084de6e7ffbeaec5b2"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_stanley_gone.mp3",
+      "bytes": 22748,
+      "sha256": "add181a34d7f49e0aae950436b7282b959306c88b268a39a38d877b1e7089475"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_stanley_vanished.mp3",
+      "bytes": 28292,
+      "sha256": "6e2a9413f8611427bfd1edc66ecf0f0cca990b97ef5818d7923988b14c7c5612"
+    },
+    {
+      "path": "assets/audio/prologue/dispatch_clarence_close.mp3",
+      "bytes": 7124,
+      "sha256": "04b20a55c44ce8514c112cf43d1d6e326b016e6dee541a73109e86fc594a7deb"
+    },
+    {
+      "path": "assets/audio/prologue/dispatch_missing.mp3",
+      "bytes": 47108,
+      "sha256": "895870aeb99552379a772f7f1a038bd7d6e3f87a86071e4131076ca01d40e9c0"
+    },
+    {
+      "path": "assets/audio/prologue/dispatch_property.mp3",
+      "bytes": 22748,
+      "sha256": "32f4580f7ae077f55c43ee7ee31f45597039e936f563ac7a0b59b9c5c5f1359f"
+    },
+    {
+      "path": "assets/audio/prologue/emergence_stanley_follow.mp3",
+      "bytes": 9644,
+      "sha256": "9904c16269260a105af3ba9b87640755b7266c638f9a2adc972acb91f41ad517"
+    },
+    {
+      "path": "assets/audio/prologue/emergence_stanley_missing.mp3",
+      "bytes": 29972,
+      "sha256": "ec2a75d9ba88af3a0dc2f9b0f0c0939f79d353233b1da67da2f1da11a57f211c"
+    },
+    {
+      "path": "assets/audio/prologue/history_clarence_through.mp3",
+      "bytes": 8300,
+      "sha256": "004f4836c1e4da5f4fc7d498ce4d4f5845f4f32a4a2531afaf5366ff99243e10"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_acres.mp3",
+      "bytes": 37700,
+      "sha256": "a31e2fea6a6bdc1a23f1317e7216db9ef5592745e2a46b39fcf24deda20bc1cb"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_compass.mp3",
+      "bytes": 37532,
+      "sha256": "03e038ff24efe0ee292217399afe5d95b020642923be3ad0538297168e3b4a85"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_direction.mp3",
+      "bytes": 50300,
+      "sha256": "8fa392504c0bb619790dd18929e65bb923728ddf4a9fe8499db6a006184db15a"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_knew.mp3",
+      "bytes": 14180,
+      "sha256": "704992567a3d0cfb9a34b49c5937bedecbed76ba0ca765ac92bd965efcd26085"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_miles.mp3",
+      "bytes": 21236,
+      "sha256": "800c6328f4897f08476a327d01fe41ed7c38baff90215aabc98e3b1a803886ef"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_rule.mp3",
+      "bytes": 47780,
+      "sha256": "15f43a34fcfd7ca4b6812b5e143a8893da160f08cb6efc454a4e552a4ebed6dd"
+    },
+    {
+      "path": "assets/audio/prologue/rupture_clarence_mike.mp3",
+      "bytes": 3932,
+      "sha256": "3a2ccbc592593338fee795229a464dd315c6f9a9715bc245fbfd525900db0f3d"
+    },
+    {
+      "path": "assets/audio/prologue/title-music.mp3",
+      "bytes": 27315,
+      "sha256": "2689f129cd95b016e1e5eb23879b3af8879222eeaedc4f5134a8c96e7c6b2dc0"
+    },
+    {
+      "path": "assets/audio/prologue/walk_clarence_known.mp3",
+      "bytes": 7124,
+      "sha256": "ac4f25d1bf8b58127affbc7e809365796cca531cf2bdec9db39c9c0e6bd1c787"
+    },
+    {
+      "path": "assets/audio/prologue/walk_clarence_lives.mp3",
+      "bytes": 5780,
+      "sha256": "7783f204a0abffa14be1be6fe13889fd5467db4d872e13ec9b77b66df2a3de52"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_asked.mp3",
+      "bytes": 13172,
+      "sha256": "ffbfc3ab8f158b6ce062197db1824b8b83bb89cf5ae46738a3bbad4c398cbb7d"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_curious.mp3",
+      "bytes": 11492,
+      "sha256": "34fa898e198b2c8fed7bf84901d3100e4f0123f6f017357b378440f80bebc41d"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_dinner.mp3",
+      "bytes": 43076,
+      "sha256": "d3285615f9e7d586f3b145d582c45f34644672904bbede3df7d21ddb29fe51e2"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_man.mp3",
+      "bytes": 28964,
+      "sha256": "bb9c4ba4f4bf879b0f4a817d44f324b09999b5907d914a5e666b3b88f8ebab49"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_nobody.mp3",
+      "bytes": 38708,
+      "sha256": "4b1587926a4f062b5fdf4da545e506758429930974259383bbfff3fe338522c3"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_protective.mp3",
+      "bytes": 23420,
+      "sha256": "defa36116aa567d34e940bd292bccb741d47e9ff9b101addbf3d4aa20d4aab93"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_stranger.mp3",
+      "bytes": 18884,
+      "sha256": "4d541ef14f8982cb5c1e2de3a0b892eaead148c482f914d602a3ac35c344194e"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_weeks.mp3",
+      "bytes": 35348,
+      "sha256": "7476f3d446c92fd42cdf702c4e695c2ea0a62adda818f917e3ae75d4c9961766"
+    },
+    {
+      "path": "assets/audio/rain.mp3",
+      "bytes": 625684,
+      "sha256": "5c67d3f347a990446e0027a1ceb990f0fbb4cf82f4cedca2b528c64a96ddab50"
+    },
+    {
+      "path": "assets/audio/scream.wav",
+      "bytes": 420242,
+      "sha256": "c954b6173399ed574c1c1350b8da4a5b465e0454cc810d6e49779fe121fafa34"
+    },
+    {
+      "path": "assets/audio/sources.json",
+      "bytes": 567,
+      "sha256": "45bccb9ca81f7bbde63d0153990d43c985cd51648d971f6be7a09af64b89b06e"
+    },
+    {
+      "path": "assets/audio/splash-1.mp3",
+      "bytes": 5059,
+      "sha256": "1be09a1792f0b04ed07d2407899786dbb18e2329ed6e947586e91a3e9b63209a"
+    },
+    {
+      "path": "assets/audio/splash-2.mp3",
+      "bytes": 4746,
+      "sha256": "1ea7e1ae1ad3884ba050305a7f4b241dd54ca326c93e2fc3f053616fac8e9f27"
+    },
+    {
+      "path": "assets/audio/survival/GATE-01.mp3",
+      "bytes": 11660,
+      "sha256": "55e48c289c3a4c27037a1d2a3306d0374ad0ce672ef4c1d5a2f621439713e361"
+    },
+    {
+      "path": "assets/audio/survival/GATE-02.mp3",
+      "bytes": 15860,
+      "sha256": "b7f168997efedca08869a281ca8233ded184f9930a574430eb3ca22a07955cf6"
+    },
+    {
+      "path": "assets/audio/survival/GATE-03.mp3",
+      "bytes": 17036,
+      "sha256": "88b805f6310c2a947f080de33db35ed7be8c83f6fe14b67f94fd02fec7ca0b0a"
+    },
+    {
+      "path": "assets/audio/survival/GATE-04.mp3",
+      "bytes": 13172,
+      "sha256": "3c09d828e4ee83a19b1f24d6af3cfbf3418bc760313d6002c851dea4b607dd98"
+    },
+    {
+      "path": "assets/audio/survival/GATE-05.mp3",
+      "bytes": 16700,
+      "sha256": "4de3c3017a7631e35873dbeb9e0ae1061d7d23205f7a8dbd0f581e9177df7d8e"
+    },
+    {
+      "path": "assets/audio/survival/GATE-06.mp3",
+      "bytes": 19388,
+      "sha256": "14804a8dd0376bedb077d9cdc7707ad12c83221072fe4dc6af003dc1497597db"
+    },
+    {
+      "path": "assets/audio/survival/GATE-07.mp3",
+      "bytes": 15692,
+      "sha256": "5be46d7ba0f9347704bd0e5e39dad1ba02f4375f058ec1cabbee8dc7f668d874"
+    },
+    {
+      "path": "assets/audio/survival/GATE-08.mp3",
+      "bytes": 4100,
+      "sha256": "926869478673917a83273a5c81d4b4eb895d35231b4966626c9ed3eb85188424"
+    },
+    {
+      "path": "assets/audio/survival/GATE-HEAL.mp3",
+      "bytes": 30140,
+      "sha256": "8ba349fe3ead9d5362e7d38ee11745928576a9f1bda34237f40b53844d488a8f"
+    },
+    {
+      "path": "assets/audio/survival/LICENSES.md",
+      "bytes": 1707,
+      "sha256": "c06caa00870da65147badbb5955b9f5b16e6928c61c67c734c370c76ccff53cd"
+    },
+    {
+      "path": "assets/audio/survival/PIT-01.mp3",
+      "bytes": 15188,
+      "sha256": "4b0ff7b6779941d3e7391ece8ded3e585130c1650babfcf188d7b1eec0bb46ee"
+    },
+    {
+      "path": "assets/audio/survival/PIT-02.mp3",
+      "bytes": 3428,
+      "sha256": "64efada89a73ce82e5e86234d6c3e7f45d3e5fa42053b57f7d3956cce5ad223f"
+    },
+    {
+      "path": "assets/audio/survival/PIT-03.mp3",
+      "bytes": 9644,
+      "sha256": "36ae577f786b2090d7cf322fb0ed1e13e7ed4617181c01a797c22ef7aa57a22c"
+    },
+    {
+      "path": "assets/audio/survival/sources.json",
+      "bytes": 3110,
+      "sha256": "c8b6f27dc712f708cf2cb9e7902bba10c28efd9d2d175e53da3cb08a8a950145"
+    },
+    {
+      "path": "assets/audio/thunder.mp3",
+      "bytes": 63991,
+      "sha256": "62c8395dd1b725ae46dc85fae48ca9b700e41a9f1b86aa0d7fe6f53b02ecc989"
+    },
+    {
+      "path": "assets/audio/weapon-source.json",
+      "bytes": 829,
+      "sha256": "0b5ed1648fbd319768f450fdb848df5bbba7627c38ebcd8e745a7d8f1ed2b862"
+    },
+    {
+      "path": "assets/audio/weather-sources.json",
+      "bytes": 1723,
+      "sha256": "2ede1c152541126f0a74529dca4edc662531c90dbf84fd6e69492307e1a00d90"
+    },
+    {
+      "path": "assets/field/beacon-mist.png",
+      "bytes": 58796,
+      "sha256": "810f3959b1beea2fe2ad077c8dd01caf48e04bf4422743fe680676948ed253ee"
+    },
+    {
+      "path": "assets/field/beacon-source.json",
+      "bytes": 722,
+      "sha256": "25d735dfbd5ceaaae7c1b35708f050466fb14b0f817aa2a9683fd6c5d22468d4"
+    },
+    {
+      "path": "assets/field/blue_metal_plate_diff_1k.jpg",
+      "bytes": 395923,
+      "sha256": "a0162bffce47d4a35613a12af22571b28c18412dc5805cbb69eac343554ef750"
+    },
+    {
+      "path": "assets/field/blue_metal_plate_rough_1k.jpg",
+      "bytes": 402450,
+      "sha256": "37168cf57144db28dd0743dab47fbebc09147fac919d5e2b5610b069c0b13a46"
+    },
+    {
+      "path": "assets/field/brown_mud_diff_1k.jpg",
+      "bytes": 501955,
+      "sha256": "df3f135c899f10a3b018738343b222cbc67d13e7c76c5d8da834a3d34c984417"
+    },
+    {
+      "path": "assets/field/brown_mud_nor_gl_1k.jpg",
+      "bytes": 1011780,
+      "sha256": "ac517ca39eb507ae0f27e2b3db431c60888f9b5c3c52bec49d2c0775da0920cb"
+    },
+    {
+      "path": "assets/field/brown_mud_rough_1k.jpg",
+      "bytes": 340815,
+      "sha256": "ae9fb57c1173ccb4579f40edf8321a30bdca815042ffd72015a2a707c7e2e7ba"
+    },
+    {
+      "path": "assets/field/corn_color.png",
+      "bytes": 1567406,
+      "sha256": "8106cf5d37be804d1eba585373988c47c6e9a8b9895a76c00e3c401005853272"
+    },
+    {
+      "path": "assets/field/corn_normal.png",
+      "bytes": 183807,
+      "sha256": "908c0f86b287ad9457f31cd468f81ffa06f03c0549b29dbd0e0f1696eeeaa7ce"
+    },
+    {
+      "path": "assets/field/cornfield-kit.glb",
+      "bytes": 1889360,
+      "sha256": "fca415a19b3406ff82b77275837890ec5054c1236c1723a2688bc1938e3a5904"
+    },
+    {
+      "path": "assets/field/geometry.json",
+      "bytes": 859,
+      "sha256": "e522698cc2c0ab48a049c3ab653a7b53cf9a8e386e54dc72b9c03e1c03f8723c"
+    },
+    {
+      "path": "assets/field/handheld-flashlight.glb",
+      "bytes": 687100,
+      "sha256": "cbb713cea1fc114abf4df4fffb8770b58a66c2171525e246de2598f906d764f3"
+    },
+    {
+      "path": "assets/field/hands-color.png",
+      "bytes": 1214993,
+      "sha256": "e57f6e253e9c7c116798ae488fbbca6fe9a7b5606869fd7dd7f2d68049d0f8b2"
+    },
+    {
+      "path": "assets/field/hands-source.json",
+      "bytes": 384,
+      "sha256": "cf0918319fdadeabdbe7a4da0e3d25340420d8130cf1baed92695ad644de49b4"
+    },
+    {
+      "path": "assets/field/hands.glb",
+      "bytes": 1376104,
+      "sha256": "66b3e6e4bb587905aad8c682d823d9b4120cecfc0a9ccaf88ba98cae1a0c564b"
+    },
+    {
+      "path": "assets/field/hessian_380_diff_1k.jpg",
+      "bytes": 944914,
+      "sha256": "5727302df3a9c845e6320ff186ac13fc7d0f1ffcd6fda71667e808e09379fe6f"
+    },
+    {
+      "path": "assets/field/hessian_380_nor_gl_1k.jpg",
+      "bytes": 1076074,
+      "sha256": "3994fd74148cb413892edd08155976497b3e7e15a403a182f07325a6b1e7be1a"
+    },
+    {
+      "path": "assets/field/night-sky.jpg",
+      "bytes": 76936,
+      "sha256": "b1a9c3b603e0519fad0db6ae9fe292f53d7a2ceb3c4ae93a0f6f61a465c99c3a"
+    },
+    {
+      "path": "assets/field/prop-sources.json",
+      "bytes": 1722,
+      "sha256": "c390abc2335ea46e743f66ae6356ba17ef66cf9111b729d9fed749ae36689e2d"
+    },
+    {
+      "path": "assets/field/rusty_metal_02_diff_1k.jpg",
+      "bytes": 564932,
+      "sha256": "adaf094391518b6afe787a123942110aa88ef521c844f970b124420f5ed5d3d9"
+    },
+    {
+      "path": "assets/field/rusty_metal_02_nor_gl_1k.jpg",
+      "bytes": 403156,
+      "sha256": "995197a62cac6fbb000e6e6591a3330a3b77ef069c4ac58f505b586b9bdbd97b"
+    },
+    {
+      "path": "assets/field/rusty_metal_02_rough_1k.jpg",
+      "bytes": 135023,
+      "sha256": "178deb5896232f0498555676e55a3be1d6d197e2211d8d17cb8386a868bfd54a"
+    },
+    {
+      "path": "assets/field/scarecrow-source.json",
+      "bytes": 1126,
+      "sha256": "5b16e9a60787ce2750a2c2d0097e312c57e618206d2cfc84488bf6070e528859"
+    },
+    {
+      "path": "assets/field/scarecrow.glb",
+      "bytes": 51656,
+      "sha256": "9a1911746ad4ed5d9b915964fcd20fc9b6b2c5d109842352350d9210ea6261be"
+    },
+    {
+      "path": "assets/field/service-pistol.glb",
+      "bytes": 2550148,
+      "sha256": "009df6c833794c86f3206a11fd092d244e78ef7e04383095d340e7cf196298eb"
+    },
+    {
+      "path": "assets/field/sky-source.json",
+      "bytes": 1085,
+      "sha256": "78e97d38864841c6f8c0e16fac7dc199160952cc5fb9055b374b396951bf3429"
+    },
+    {
+      "path": "assets/field/sources.json",
+      "bytes": 4738,
+      "sha256": "2b8fec1443a38c9f2da3759190edd4fc6651fa310cc495a2fad4bcb202eff06d"
+    },
+    {
+      "path": "assets/field/wood_planks_diff_1k.jpg",
+      "bytes": 609525,
+      "sha256": "3b0669f683e4bf10f5a55a381cfa9669a7b8dfd921901829daa3b35acc2bbdec"
+    },
+    {
+      "path": "assets/field/wood_planks_dirt_diff_1k.jpg",
+      "bytes": 918123,
+      "sha256": "230bb4aabaebde24ead3ae593a48f8f45e93705aaf3cfdc438589bb49c2a7af3"
+    },
+    {
+      "path": "assets/field/wood_planks_dirt_nor_gl_1k.jpg",
+      "bytes": 515002,
+      "sha256": "877bf561c0bc83a583238c5133c221026ff25052f8f567174c6b285af4b74f0e"
+    },
+    {
+      "path": "assets/field/wood_planks_dirt_rough_1k.jpg",
+      "bytes": 523014,
+      "sha256": "f9b706729bb727d3eeab4794f18d3c4df43760d580342bf28fe8f3f09a68c5e9"
+    },
+    {
+      "path": "assets/field/wood_planks_nor_gl_1k.jpg",
+      "bytes": 652441,
+      "sha256": "d02abf113e17a8abe97e1be3e9d6d88add242e8c2291e2200d37aa8c68909f25"
+    },
+    {
+      "path": "assets/field/wood_planks_rough_1k.jpg",
+      "bytes": 299757,
+      "sha256": "1b7f115bfa25619b0a2db554eb1ab88a6fc5ef0b74ba4890611eae04d00b9829"
+    },
+    {
+      "path": "assets/field/zombie-clips.json",
+      "bytes": 238970,
+      "sha256": "d1aeaa4e66960c331e05ae02c103a6cee42b649a335d18e32ee0c1ec90945706"
+    },
+    {
+      "path": "assets/field/zombie-color.jpg",
+      "bytes": 830029,
+      "sha256": "c4629d70509f78fde0fc9d9dc8fbecfb985140f133e489094c52d028537b4d95"
+    },
+    {
+      "path": "assets/field/zombie-normal.jpg",
+      "bytes": 181646,
+      "sha256": "6e649199ef2a45028eb0d5f0172414f98ec4f2b5347a34a61bdaf4b0120a2b5a"
+    },
+    {
+      "path": "assets/field/zombie-roughness.jpg",
+      "bytes": 162531,
+      "sha256": "263f0734ec17313d48546b082c9e55c9c8c18b211689190cbc9322e9767b16ec"
+    },
+    {
+      "path": "assets/field/zombie-source.json",
+      "bytes": 3495,
+      "sha256": "d6a99614d62a8c9173e5c27e7bbbbe7cf6fd7b6fb0f4627ff9e1d9e3c5a58d5a"
+    },
+    {
+      "path": "assets/field/zombie.glb",
+      "bytes": 1389552,
+      "sha256": "e0266f171f1709717eebd9421d1ce295c1ec93e0e2e1f81ad97d52e22f45f89e"
+    },
+    {
+      "path": "assets/fonts/LICENSES.md",
+      "bytes": 622,
+      "sha256": "d86c498feff344f84a5ac1216b35baf31feaf7f951ad7e9accbd265fc236d041"
+    },
+    {
+      "path": "assets/fonts/barlow-condensed.ttf",
+      "bytes": 109428,
+      "sha256": "7b619d14bc2327509a9ef32b0890f709626f7ecc9ff61191c2a4314c5499d2d9"
+    },
+    {
+      "path": "assets/fonts/barlowcondensed-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "assets/fonts/rubik-glitch.ttf",
+      "bytes": 407304,
+      "sha256": "260245012483d56956269100ebece747aa95b4b67e5a9411a81a36e91f55e653"
+    },
+    {
+      "path": "assets/fonts/rubikglitch-OFL.txt",
+      "bytes": 4406,
+      "sha256": "f9e2d4498ea80d38bac7b8841d68af68c132fa67e1552e7c05717e6987de1d74"
+    },
+    {
+      "path": "assets/fonts/sources.json",
+      "bytes": 2174,
+      "sha256": "e29036533f4be7e53947c64a2c0f6c7d21115ed10014553197b37ba6021f051d"
+    },
+    {
+      "path": "assets/intro/asphalt_diff.jpg",
+      "bytes": 788840,
+      "sha256": "95ad02e2631c41cf9fdd6a37596cf75adb4fb8a8b6880567cc78ed1c41dc5681"
+    },
+    {
+      "path": "assets/intro/asphalt_nor_gl.jpg",
+      "bytes": 974676,
+      "sha256": "978de8349ce2e9989325099a6fd1f5ea6b2826528e1264606a5c51296b1e2888"
+    },
+    {
+      "path": "assets/intro/asphalt_rough.jpg",
+      "bytes": 590105,
+      "sha256": "069b6ea342aaad04fd1582f59c16fbbe5c7a6f0f3a87bc9d57648ed53336fb3a"
+    },
+    {
+      "path": "assets/intro/cast-stanley.glb",
+      "bytes": 2957068,
+      "sha256": "412378dae8059494615c82717a634db7c9a14b0bf4d024a4a6aa34f578a54da6"
+    },
+    {
+      "path": "assets/intro/cast.glb",
+      "bytes": 714324,
+      "sha256": "739d9b6604511712ddab6c4bff76b12ea65b2b57b5ef18e6cc15b9519c27c096"
+    },
+    {
+      "path": "assets/intro/cruiser.glb",
+      "bytes": 5093584,
+      "sha256": "167060a8d6668424a9bf47a0972e9d9f3185d1e5552c3a41daca2acd9cb3a1f4"
+    },
+    {
+      "path": "assets/intro/dispatch-radio.glb",
+      "bytes": 264232,
+      "sha256": "8f854a30f58d90f5f3c7c32ad95f195def460297f18cd03b1c85dad72d666d9e"
+    },
+    {
+      "path": "assets/intro/projector.glb",
+      "bytes": 444552,
+      "sha256": "335e906ac0f691df561d77d72a8f52f165c7a38454ab2ea14cb13769394c9346"
+    },
+    {
+      "path": "index.html",
+      "bytes": 11559,
+      "sha256": "46d993d19837f86b49d0c6bbc0c4db8ec177ea71a6fe3aaef0ba6e40e9a55d82"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 519,
+      "sha256": "6e23b735bec4fb071d5391e512d052ffd167967132628b5efc434b5e585fd6bd"
+    },
+    {
+      "path": "package.json",
+      "bytes": 1857,
+      "sha256": "34c67866c6cc30252a4ace59fd4e2e00af9733a10534c25747141f1a19a0ddff"
+    },
+    {
+      "path": "scripts/benchmark-intro-pose.mjs",
+      "bytes": 2423,
+      "sha256": "c1b84923d2939f7a50b9a116a86734e72ea2ef1f786cfc3aa363a5187fa4dfee"
+    },
+    {
+      "path": "scripts/browser-runtime.mjs",
+      "bytes": 1152,
+      "sha256": "7af6f39e78984de659168043a2cc67bba3dcedb71e6521f01d7eccc1bed56ec5"
+    },
+    {
+      "path": "scripts/build-field-assets.py",
+      "bytes": 11744,
+      "sha256": "8ee012732cdcd6f398a19c9ac1ad22bfd6777afafe05ce1615e8a1acb6330c2d"
+    },
+    {
+      "path": "scripts/build-hands.py",
+      "bytes": 5744,
+      "sha256": "08bb7cd256d5e4048e16664af26ef6a1dae23dc5ab777c3e23a6261d2626e623"
+    },
+    {
+      "path": "scripts/build-intro-assets.py",
+      "bytes": 7212,
+      "sha256": "0a8300410d0d8daa534a9a5c46499fa713f739e34ad89748b8d8acdff8a2b405"
+    },
+    {
+      "path": "scripts/build-night-sky.py",
+      "bytes": 5248,
+      "sha256": "f0df060265af79e11ab0e270d0681d0a383118f079f9a4435302c5f2e0cff400"
+    },
+    {
+      "path": "scripts/build-player-viewmodel.py",
+      "bytes": 7464,
+      "sha256": "dcf15a163f768f5dfe1441778a242fff124b3586707daef6733a9f73f91da213"
+    },
+    {
+      "path": "scripts/build-prologue-envelopes.py",
+      "bytes": 1534,
+      "sha256": "e6858229747aa34f8e88e8c636667924be051a385cfdce285a8af348a8c950b3"
+    },
+    {
+      "path": "scripts/build-prologue-voices.py",
+      "bytes": 4925,
+      "sha256": "793845b7156843127c85ca9ae232014cc4c8f6925523e4f156e4f0ad4ad59a93"
+    },
+    {
+      "path": "scripts/build-renderer-trial.mjs",
+      "bytes": 2440,
+      "sha256": "0453fa1a60c9169f7913a67a114b7ed6ddf5581fbbd5db12174fdf4592db444f"
+    },
+    {
+      "path": "scripts/build-visual-check-site.mjs",
+      "bytes": 587,
+      "sha256": "7f032a2f82c4f05add3fc314109f8542117803c15c996aabb68ab065486b3c40"
+    },
+    {
+      "path": "scripts/build-zombie-clips.mjs",
+      "bytes": 2902,
+      "sha256": "c327f6da5426ab07980e79495d4d41a9faaf746a0acb4727367fd359fb4506cb"
+    },
+    {
+      "path": "scripts/build-zombie.py",
+      "bytes": 3502,
+      "sha256": "c6436f372f0917058935fd9074fed3f5daa5062d4d09380bf46cd12b127e03e4"
+    },
+    {
+      "path": "scripts/check.mjs",
+      "bytes": 1089,
+      "sha256": "26041121daddf556be6f14ec27a0a257a1c74be8b2d89f063d70e36817e494a7"
+    },
+    {
+      "path": "scripts/export-approach-wind-study.mjs",
+      "bytes": 3073,
+      "sha256": "37d84e11a0460512121c16427b15e06834b1e80c3fc82143945894d0eddbb623"
+    },
+    {
+      "path": "scripts/export-cabin-geometry.mjs",
+      "bytes": 1737,
+      "sha256": "9d45f023dd2c6d206f5b42977ccc552025e71d6986bfed9d6f17ff0e09955cf8"
+    },
+    {
+      "path": "scripts/export-cinematic-characters.py",
+      "bytes": 23658,
+      "sha256": "8c2f8a4746ba55779c48a0725469a3034a0146d55177b9e3a5c2f69a5755ed09"
+    },
+    {
+      "path": "scripts/export-corn-art-study.mjs",
+      "bytes": 910,
+      "sha256": "171d5c80181a06abe4c56909024e5e719b0bfe7e2e08425a8f64d4be020a881f"
+    },
+    {
+      "path": "scripts/export-human-roadside-v2.py",
+      "bytes": 25261,
+      "sha256": "46d0ff3f6ffbf0f233bf1b8ab271381ca4ca22554773d5e9cbac3fa84bca9bc1"
+    },
+    {
+      "path": "scripts/export-prologue-faces-v3.py",
+      "bytes": 28472,
+      "sha256": "0ed8c6e8d7bf0f472c7e1c207a5688dc8325045e81d0ca65581af65a80f5f11b"
+    },
+    {
+      "path": "scripts/export-prologue-radio-v1.py",
+      "bytes": 16740,
+      "sha256": "4e54b14d662869ca2d78496ea1b3c0eea898bc43b2a67ede9cb920b374b2496c"
+    },
+    {
+      "path": "scripts/export-zombie-clips.py",
+      "bytes": 1236,
+      "sha256": "83e1d0dd638855f83382392de54e02d4d375f40fa82bcbf75584e91b7ab7fa9a"
+    },
+    {
+      "path": "scripts/fetch-field-textures.mjs",
+      "bytes": 1632,
+      "sha256": "f28c38a9ce35a4721a12ada78f39960d63366295f40f7e446c9be113ab309c0c"
+    },
+    {
+      "path": "scripts/fetch-intro-assets.mjs",
+      "bytes": 2211,
+      "sha256": "24257b3efc25796f8ef9577d32b8ae4e7fefabd73a7b0ce3ec9cacab3457604a"
+    },
+    {
+      "path": "scripts/fetch-prop-textures.mjs",
+      "bytes": 1611,
+      "sha256": "81f724c9528182acddc678aec8b16ff2645ed7a1a6cc072f4944f0b1e2ebdf1b"
+    },
+    {
+      "path": "scripts/inspect-cast.mjs",
+      "bytes": 1959,
+      "sha256": "cc637391e658ea4cafff519c7812d2e3a04ef9cb2b76d6f7dca53583dc8d0161"
+    },
+    {
+      "path": "scripts/inspect-driver-exit.mjs",
+      "bytes": 1956,
+      "sha256": "87b53d1b3e7c43b3386a581a8b7a9cf0172bf9d46ad5d3fbd7d71f521263e8c7"
+    },
+    {
+      "path": "scripts/inspect-gait.mjs",
+      "bytes": 1705,
+      "sha256": "c1624855ac8db6a9df235e124f99d55494fabe0feb3909e6e2616dc62a0d33ad"
+    },
+    {
+      "path": "scripts/inspect-scene-fit.mjs",
+      "bytes": 1050,
+      "sha256": "66933e74547821fcad98c9e5bbfddef3acca1ee0c72cf70b901d1ca6cd4e47dc"
+    },
+    {
+      "path": "scripts/inspect-window-sightline.mjs",
+      "bytes": 2513,
+      "sha256": "3474f7834b071c7f7c538432027217e6fe54d856aaf67971e115dbe333197834"
+    },
+    {
+      "path": "scripts/inspect-window-skin.mjs",
+      "bytes": 2371,
+      "sha256": "3e9aed835a1dbb9fd2b4cd165d884196714a75688e6bfb95b224841645486a3c"
+    },
+    {
+      "path": "scripts/load-glb-cpu.mjs",
+      "bytes": 1033,
+      "sha256": "47e86eed917fac3c2155c48610eb31c579ca472c8df382ad1ee47f62495b1314"
+    },
+    {
+      "path": "scripts/preview-dist.mjs",
+      "bytes": 3418,
+      "sha256": "4ad072317377b45dae450a42b36441a5c4b47a70eb14945092ccdae63ed47c47"
+    },
+    {
+      "path": "scripts/preview-zombie-poses.mjs",
+      "bytes": 2670,
+      "sha256": "364a79c938a654f662aea3282ca257a6e4a6742f7443eb0bb45ca420834b33f9"
+    },
+    {
+      "path": "scripts/probe-wheel-grip.mjs",
+      "bytes": 2811,
+      "sha256": "f02c7c41ed3eeeb5ff70e13bda1fdb66b4151d0024ba04a3a631fa9a44b15c6f"
+    },
+    {
+      "path": "scripts/render-approach-wind-study.py",
+      "bytes": 4904,
+      "sha256": "12a37d2eb12b3f707ec65ef496c53322131d0b24a39c05020d178fdec6f6ff47"
+    },
+    {
+      "path": "scripts/render-cabin-geometry.py",
+      "bytes": 2995,
+      "sha256": "9404792655506459ea6aef6733d75db07b2e75ac7020e9ed0a6d842ea2a8250a"
+    },
+    {
+      "path": "scripts/render-corn-art-study.py",
+      "bytes": 5122,
+      "sha256": "d23e88e9fd2b4095695d627fcdc16f12104f9714e342a9a42294951160647b92"
+    },
+    {
+      "path": "scripts/render-zombie-poses.py",
+      "bytes": 2285,
+      "sha256": "cc7c8540319ae609d06aca45cd0652c5127dbbead4ef19bab936f3e1033c2794"
+    },
+    {
+      "path": "scripts/repair-cast-face.py",
+      "bytes": 3261,
+      "sha256": "fc3ee7be11e0a9423a20cd1099aeb214a09592b053ac62eb4686e131d85c0e58"
+    },
+    {
+      "path": "scripts/serve.mjs",
+      "bytes": 1649,
+      "sha256": "e86293ff54ac96f7c04d1a9ec7bfb34fb5321d8bab88ba1708a8793b28873859"
+    },
+    {
+      "path": "scripts/server-path.mjs",
+      "bytes": 1052,
+      "sha256": "2039baee9b4a518d8ee27f75ef4f8331acac1c6b0629e009091937440aeaae27"
+    },
+    {
+      "path": "scripts/verification/web-game-client.mjs",
+      "bytes": 10057,
+      "sha256": "b137df4a8e7397faac37acde0f3039ed044c22554b64c413dddc166f958e8afe"
+    },
+    {
+      "path": "scripts/visual-check-probe.mjs",
+      "bytes": 4303,
+      "sha256": "4c384095f139e843f0342b0f595e33fea0e07aea6a0925da9bbb3252850d459d"
+    },
+    {
+      "path": "scripts/visual-check-stage.mjs",
+      "bytes": 2912,
+      "sha256": "87cc5bc7a820b463ce7ebdde528eba6849d231f5aa17a39164798c6526365901"
+    },
+    {
+      "path": "scripts/visual-check-stamp.mjs",
+      "bytes": 1343,
+      "sha256": "9146da4251e9b88f892d9a479a5d9214983ef88fdcd808681d50b358a4478b19"
+    },
+    {
+      "path": "src/app.js",
+      "bytes": 35954,
+      "sha256": "51a645cc02fc2ac6afba2f32444e17ddc07890af6cec02ed7fe0568c358e546f"
+    },
+    {
+      "path": "src/asset-safety.js",
+      "bytes": 763,
+      "sha256": "3512b4ebf1a17be3d5646e9807c27ea27ae20176ffd8d2600222eab2404394eb"
+    },
+    {
+      "path": "src/audio-lifecycle.js",
+      "bytes": 1313,
+      "sha256": "38c0c65e6952b422247b958caa3632321a85b226a00756724ec1c53b4fc11e84"
+    },
+    {
+      "path": "src/audio.js",
+      "bytes": 24297,
+      "sha256": "b17c92df6ba37805b4f316880cd9eaff961a5b2b883e70b2f1180e36a030e403"
+    },
+    {
+      "path": "src/blood-room.js",
+      "bytes": 9254,
+      "sha256": "179181801092b88e1e136d4f292603bc53e839cda49bb46989e13b2fb737a25f"
+    },
+    {
+      "path": "src/checkpoint-vision.js",
+      "bytes": 2095,
+      "sha256": "59e0745c585ae9b8f3c3f7d9b2be723b5d29a91bdf67cf4ff2c0617007f1d5bc"
+    },
+    {
+      "path": "src/combat.js",
+      "bytes": 3366,
+      "sha256": "0ab557ffbc436ffd4e05f9d810511c6b25046940a2fe0f726d2fc8e2877b92d5"
+    },
+    {
+      "path": "src/control-mode.js",
+      "bytes": 502,
+      "sha256": "ec29efad184a051fce7ba966ca7989124de29855b9eb5add3da73f0c870135cb"
+    },
+    {
+      "path": "src/corn-layout.js",
+      "bytes": 10775,
+      "sha256": "87a136310f871e128a9871736d7c59a19c3435594921f5616c8cf2dafc5906ce"
+    },
+    {
+      "path": "src/corn-survival-view.js",
+      "bytes": 2545,
+      "sha256": "db1bd993cfacfd6efd274a84a5e08f4bb7604b24ebbd5d83d1cb9c453da4a3cd"
+    },
+    {
+      "path": "src/corn-survival.js",
+      "bytes": 5314,
+      "sha256": "08b9624edc87aeb1e95207e3ee2774d16fa4e64c6d06860f06a8b7902161dc8b"
+    },
+    {
+      "path": "src/corn-view.js",
+      "bytes": 3271,
+      "sha256": "1ecfc212bea7fc0c9d5203175a52df857203537b56e8f1c76439f6f2abdcf972"
+    },
+    {
+      "path": "src/corn-world.js",
+      "bytes": 14382,
+      "sha256": "a36c08e7b7d69df9815a549853dabea6a0006554aa12bb4908c894846481af56"
+    },
+    {
+      "path": "src/corridor-layout.js",
+      "bytes": 7190,
+      "sha256": "8ed80a36b6d8b1a1cf3fe6e84ea8acb3783d4c886b34bae23d4ca41594cc179d"
+    },
+    {
+      "path": "src/corridor-run.js",
+      "bytes": 10204,
+      "sha256": "ca42ea0e9c96fcd445ed44b5eea3f31bcd5e5f466c9eec4dc7ce9f5286e48663"
+    },
+    {
+      "path": "src/corridor-view.js",
+      "bytes": 5921,
+      "sha256": "cc92b631c55358b364107d5c2e08c4d1fc98d75b47300dc71f7cd88fbed18ab2"
+    },
+    {
+      "path": "src/debug.js",
+      "bytes": 2895,
+      "sha256": "aa3fc3dc8ddc4a21b147736450b701bbfc2027b362dff3cfca52e9882003eca2"
+    },
+    {
+      "path": "src/enemy-state.js",
+      "bytes": 1970,
+      "sha256": "d5255dba4dcac6bb3f07c250bde0029aad90e56075f556b586986074817ec475"
+    },
+    {
+      "path": "src/field-portal.js",
+      "bytes": 957,
+      "sha256": "b24325a4f7346c396eb2b99d94c775eaa27f047d4560fa02c6e9416e9e9f3a95"
+    },
+    {
+      "path": "src/foliage-motion.js",
+      "bytes": 2678,
+      "sha256": "3b7bd7b9b2a3177a39f163197414d9fe4920306cd913312190866471d46afe8b"
+    },
+    {
+      "path": "src/footsteps.js",
+      "bytes": 3888,
+      "sha256": "63722b174c86c4f756fd04ad5fe9a6b6209d6f97136eea6633c8a049a99518d3"
+    },
+    {
+      "path": "src/game-config.js",
+      "bytes": 3289,
+      "sha256": "3d6770ada66cae84a0427a7aa19def7787183856d066cc064bcdd1bfcdf590a8"
+    },
+    {
+      "path": "src/game.js",
+      "bytes": 16452,
+      "sha256": "5c84117d462e33759f9116c4fae076ed8b4450df454faac7d017f0b4b4d7656b"
+    },
+    {
+      "path": "src/grapple.js",
+      "bytes": 9690,
+      "sha256": "481254f4e1108a0d4d0ced0c5b154e528be2677764d135b74d055d46e6e7d4d6"
+    },
+    {
+      "path": "src/hand-grip.js",
+      "bytes": 7207,
+      "sha256": "13f9460c9bb1b547786f9cbe5a55b5cf83614bc1a40af9805caf05d33d828a88"
+    },
+    {
+      "path": "src/hide-portals.js",
+      "bytes": 6259,
+      "sha256": "4b155c6a14f871f2e55f85fe5e158d70cc7da1d6f13a3d1c0443e5a6a4c82bee"
+    },
+    {
+      "path": "src/hiding.js",
+      "bytes": 2391,
+      "sha256": "098cb1b5f6b44b7a428a410086ffd01e1c87524b706b632ddeee99d969959441"
+    },
+    {
+      "path": "src/horror-presentation.js",
+      "bytes": 3000,
+      "sha256": "c01dcdee45e8bea91d6e07c9893096132fdb2c4cb035c123e0f0c1cc640446ba"
+    },
+    {
+      "path": "src/input.js",
+      "bytes": 4031,
+      "sha256": "0b9b56eeea54a4598bfd2762d5a1834cf9d9e0530e2236c2ccbab7227a51b426"
+    },
+    {
+      "path": "src/intro-visuals.js",
+      "bytes": 8478,
+      "sha256": "232daa3ffbf16a04ff00545fda35c5ba2742f93eebfd9dbf4cfc2c9325f1a412"
+    },
+    {
+      "path": "src/intro.js",
+      "bytes": 3645,
+      "sha256": "176bf9e870e3c9862e8110c6530bb9e7ea67e2d33c7e9daec91071d0e553c6e3"
+    },
+    {
+      "path": "src/liquid-material.js",
+      "bytes": 2659,
+      "sha256": "00869a9f5fc38c30bde65af5857bf2563cc2394da25977dfcd08092e9e76f7cd"
+    },
+    {
+      "path": "src/main.js",
+      "bytes": 3112,
+      "sha256": "c6a8c6651deb2d0829708f1c8b1f0bc507c8a70f824e3efb5e186f1147af4e24"
+    },
+    {
+      "path": "src/maze.js",
+      "bytes": 8460,
+      "sha256": "7215302b2aff728a0ec6dcf1af8ccb265e6bbdff5daba8c60315394e2a459bb4"
+    },
+    {
+      "path": "src/night-sky.js",
+      "bytes": 1759,
+      "sha256": "192d2c7409e6de99486b76522c721ad0cfdf3a152359e9d3a758f0f99cc95b54"
+    },
+    {
+      "path": "src/opening.js",
+      "bytes": 2690,
+      "sha256": "fc19e979e48ceac16681dd63049353d3f93a215a88b4f899e43a1abaf9c106e9"
+    },
+    {
+      "path": "src/presentation-config.js",
+      "bytes": 535,
+      "sha256": "919756a7c7914d12edc8b382fc70fb1537b2603952ed0abd919dffea025a3c2d"
+    },
+    {
+      "path": "src/prologue-actors.js",
+      "bytes": 15482,
+      "sha256": "b02a82636e50fd5fb1a22150baed4cf3391fac2f80a20d42841eef5334ab5f4b"
+    },
+    {
+      "path": "src/prologue-cabin.js",
+      "bytes": 7217,
+      "sha256": "e12281f8f89d7626200850a5e1937d8ccff8ff21f701bff5a91efdf0fec11d1d"
+    },
+    {
+      "path": "src/prologue-clearance.js",
+      "bytes": 1763,
+      "sha256": "492768aab823e8796305c4fa1f3e476340aba9791504a5445d98aa90a7502a96"
+    },
+    {
+      "path": "src/prologue-confrontation.js",
+      "bytes": 8143,
+      "sha256": "5b2d98466045eee186e1c83273818eaff808018fea8625988a2a81d7ff0c67d3"
+    },
+    {
+      "path": "src/prologue-driving.js",
+      "bytes": 5030,
+      "sha256": "9fe5cd2e498aa4e2f0890072cc2be6e59fe5e2d720b130a3de710185c884bea1"
+    },
+    {
+      "path": "src/prologue-hallucination.js",
+      "bytes": 3441,
+      "sha256": "536c1cb246b4b992e775ff44c9a3423fe2696c2834a13eec1ab5c13ed5c7f27e"
+    },
+    {
+      "path": "src/prologue-layout.js",
+      "bytes": 2274,
+      "sha256": "e9feffaedd51437f933c5fb44ea0c43f343f80c32f759f258e4e1d4b43cebdbe"
+    },
+    {
+      "path": "src/prologue-liquid-transition.js",
+      "bytes": 1851,
+      "sha256": "f99071bd8850c751e3676d46cdf0379acace5ff6da8fc2c6ccb7a0d98d9b8327"
+    },
+    {
+      "path": "src/prologue-motion.js",
+      "bytes": 12239,
+      "sha256": "9304c134d68d109b928c1e4177b37b57aea789bc95ac0f241ceda1a3e7f4d577"
+    },
+    {
+      "path": "src/prologue-radio.js",
+      "bytes": 5330,
+      "sha256": "6f7bd787ee86b7c2ae2113e274c9513797f32af37270608d2bc3580ee285aad0"
+    },
+    {
+      "path": "src/prologue-rain.js",
+      "bytes": 8708,
+      "sha256": "a618a8e4d3eb227b769e216db2ad50f631327585a1b4c7d8b6fbb0f1fcbcd763"
+    },
+    {
+      "path": "src/prologue-speech.js",
+      "bytes": 29318,
+      "sha256": "6c0c52b5232b680382f469e4a6cd98589ea68fe5f9665cfbf1ecfe5e313b6cb9"
+    },
+    {
+      "path": "src/prologue-voice-timing.js",
+      "bytes": 1892,
+      "sha256": "37ac7cb3545855ebdc38546d84a27b3119ce95e61217ff654a11a79b6c6f7577"
+    },
+    {
+      "path": "src/prop-details.js",
+      "bytes": 2674,
+      "sha256": "d4bcbb67e5cc50f207d7f319a5603ae10338d61d9ddd113169128aa5cafdc841"
+    },
+    {
+      "path": "src/render-quality.js",
+      "bytes": 1415,
+      "sha256": "af8dcb2d527103f9a3bf874f2046e2ef5d4731b4844ef08a32463cee82d26fe8"
+    },
+    {
+      "path": "src/renderer-trial.js",
+      "bytes": 4806,
+      "sha256": "94c5c1940701b567e97b07cc754aeff7fd682843235be272d2f21e859133c35b"
+    },
+    {
+      "path": "src/return-beacon.js",
+      "bytes": 4941,
+      "sha256": "40d56127cf900b8a949dbea147973ef6e7d4f1610ab751d9ffbcf9cff0cff6bb"
+    },
+    {
+      "path": "src/runtime-loop.js",
+      "bytes": 1005,
+      "sha256": "a6740d58036c294cc14e2980f695c672e56715f170a4da586c109ed37a0a3a77"
+    },
+    {
+      "path": "src/scarecrow-view.js",
+      "bytes": 6713,
+      "sha256": "4f03de33d4fa3bc7a9379013af8ac43e32ff6d2e29937ac78443147b8dc6c3b6"
+    },
+    {
+      "path": "src/shot-effects.js",
+      "bytes": 2472,
+      "sha256": "e3e07c545172279fcd1495ecd548b5ce6a7fbff1282676be0d6b12d8d8f21a7e"
+    },
+    {
+      "path": "src/style.css",
+      "bytes": 24745,
+      "sha256": "83c4eb2c29a351e662d4700ab3852e80f5d8e75a1fb56b153a5ff311a807ec8e"
+    },
+    {
+      "path": "src/survival-audio.js",
+      "bytes": 1480,
+      "sha256": "34cc44a718e86ff8fbc207c59e9a89cda8d0584a4670861843ebb0ae3a883e81"
+    },
+    {
+      "path": "src/survival-ending.js",
+      "bytes": 5381,
+      "sha256": "d7910a5dc68d51a1e51df3af10109dd66f6abab3979503cbb5978201da7f3cc0"
+    },
+    {
+      "path": "src/survival-script.js",
+      "bytes": 1449,
+      "sha256": "6126d2b3719f0e90c9478a14fa3a7530ef56681366f1889b4e8d6df46b332b6f"
+    },
+    {
+      "path": "src/survival-visuals.js",
+      "bytes": 6314,
+      "sha256": "5f9fdda245cd284325bee8d41062da1f7c26c69ead22e66e3d0f2848d0cdeb46"
+    },
+    {
+      "path": "src/survival-voice-timing.js",
+      "bytes": 654,
+      "sha256": "e5cc4b5b448818fbbca287fc905b0222bde11be75aea59efaeb29c85ebed46e2"
+    },
+    {
+      "path": "src/threat-director.js",
+      "bytes": 3833,
+      "sha256": "57daec95419c9dce2ad5589b7169095afb3e38dc4f4564fe520f545f70a487c9"
+    },
+    {
+      "path": "src/touch-input.js",
+      "bytes": 4383,
+      "sha256": "c548ccc5268368f2abd338fa415ef5e69fcbc2416da683ae4fe1f9db93ce4457"
+    },
+    {
+      "path": "src/ui.js",
+      "bytes": 17210,
+      "sha256": "1cff705435f87b1dbce6fbceb1b6128652e1cb92cfc68ad8d9cd4fc035ede265"
+    },
+    {
+      "path": "src/visual-check-build.d.ts",
+      "bytes": 42,
+      "sha256": "63551753b526cc1cabe72520722fe2f72e30d37097f764fb3736988977558f86"
+    },
+    {
+      "path": "src/visual-check-cornfields.js",
+      "bytes": 6134,
+      "sha256": "e9c9f92527f634d49adc94fabf75ceea42d48e765de7f6dba73652f4b1870425"
+    },
+    {
+      "path": "src/visual-check.d.ts",
+      "bytes": 728,
+      "sha256": "09bf421671388cac7c1098cbdd517be36658fd621f434adcf0641e63567c7774"
+    },
+    {
+      "path": "src/visual-check.js",
+      "bytes": 11913,
+      "sha256": "bb4b33f13fd61403b42ecb3b437369b97c9fc4d4373b990457f9bd1f505192dc"
+    },
+    {
+      "path": "src/weather-view.js",
+      "bytes": 12552,
+      "sha256": "202a88c97d972209c218a96845e39751d4b93e2a38423abb00a4bc4a7beb7974"
+    },
+    {
+      "path": "src/weather.js",
+      "bytes": 9081,
+      "sha256": "514fda9883c327159d65b5b2e9e2caab97e0062aa798aa4d3d104885fb8bee38"
+    },
+    {
+      "path": "src/wood-panels.js",
+      "bytes": 4235,
+      "sha256": "83d76d77d83d1bafcd754d4e85fbc0207730512d22851177124928cf45b346fe"
+    },
+    {
+      "path": "src/zombie-ai.js",
+      "bytes": 21483,
+      "sha256": "b2f82e70db6c6d89402ae96c5fc868164a6b1ed0127280b0f029b6f6111da644"
+    },
+    {
+      "path": "src/zombie-animation.js",
+      "bytes": 2854,
+      "sha256": "bc26d4f70b7473c3eb5b6417aff122b3eedbdf4a259ed9c88f62a382813d7d3c"
+    },
+    {
+      "path": "src/zombie-beams.js",
+      "bytes": 8319,
+      "sha256": "5630f69e5f2e1a3e72d32dd49c589c550ca62c5ad518718e182c60a0a81a4e83"
+    },
+    {
+      "path": "src/zombie-poses.js",
+      "bytes": 11747,
+      "sha256": "04d4c2462f1ee4bdd01748712a23302f379892f1d2e8f919a17e14cad2ab5b0c"
+    },
+    {
+      "path": "src/zombie.js",
+      "bytes": 7596,
+      "sha256": "9364799dcc18249bfa4ea042f2806968585f7165d1af994292d54147cc2ed7d1"
+    },
+    {
+      "path": "tests/approach-wind.test.mjs",
+      "bytes": 10817,
+      "sha256": "b9ba2ca9309352fe3cd970b70733f277cf6e3192847e8ff1353f19e08b7e0002"
+    },
+    {
+      "path": "tests/browser.mjs",
+      "bytes": 10519,
+      "sha256": "06d7583a6ea1854e1095d51d75d4513368479b545fd187dc60397c1694b10420"
+    },
+    {
+      "path": "tests/build.test.mjs",
+      "bytes": 10519,
+      "sha256": "1c01f7e6fb95eb6b97b85ac0b188b3152e6a4b3c1173c4b5f38ec5bd3aec4704"
+    },
+    {
+      "path": "tests/checkpoint-vision.test.mjs",
+      "bytes": 5696,
+      "sha256": "9935dd0ee84f7f2851aa816cdb148a1bdf05b2e6cf493d0dbd5f6b8f274ae563"
+    },
+    {
+      "path": "tests/checkpoints-browser.mjs",
+      "bytes": 8814,
+      "sha256": "bec25bf38d5f8d8d6e1678c6a1464b83dfa5d6e1ba2e7b8afba9a9bdb73066ad"
+    },
+    {
+      "path": "tests/control-mode-browser.mjs",
+      "bytes": 2753,
+      "sha256": "c95bc97b8b5340cfc3e15a132add5c8dcec59615324f8335c510711bfaa95a3e"
+    },
+    {
+      "path": "tests/control-mode.test.mjs",
+      "bytes": 1176,
+      "sha256": "c27b5f18ffca0b2eb4b310dac1dacc3c26665e6e05b41e013332d325048d6192"
+    },
+    {
+      "path": "tests/corn-survival-browser.mjs",
+      "bytes": 6093,
+      "sha256": "ecea4f6fd9e7ba492f43fcee10e9d5b0a720af27073b71fcb924d2fbb1943cb7"
+    },
+    {
+      "path": "tests/corn-survival.test.mjs",
+      "bytes": 18725,
+      "sha256": "4c4b080087ea018abf9942c80c8297872d3fb61631a33f3b5715337904ea1fa2"
+    },
+    {
+      "path": "tests/corn-world.test.mjs",
+      "bytes": 7551,
+      "sha256": "8b8b6d39f34b6de1958f8fa92d9b0b87ececd3dfd0c7d0b1dda18e9f616c56aa"
+    },
+    {
+      "path": "tests/corridor-field-browser.mjs",
+      "bytes": 5111,
+      "sha256": "4ae123e3b4ce297c022c46858418d671c11173f6b4d6cf363771d6320a8edbf8"
+    },
+    {
+      "path": "tests/corridor-field.test.mjs",
+      "bytes": 8794,
+      "sha256": "0f72323ec2d3640792ad6cb175073d2e1668aa38bc2780e83e07d408a506c634"
+    },
+    {
+      "path": "tests/environment-art.test.mjs",
+      "bytes": 7923,
+      "sha256": "254d411b5d2f25778e88240f1df87ffc51bfa974e364253e4e824b5766e6fa50"
+    },
+    {
+      "path": "tests/field-portal-crossing.test.mjs",
+      "bytes": 5783,
+      "sha256": "046b864a1fb57e7fbbccaffcae5233c7a63735018cadc827681d9831e5e7d6d5"
+    },
+    {
+      "path": "tests/field-return-recovery.test.mjs",
+      "bytes": 2305,
+      "sha256": "03f0eede96a38a899b2e49dca5d8db90d2e0422714883c20a973495cd1def770"
+    },
+    {
+      "path": "tests/field-visuals.mjs",
+      "bytes": 4955,
+      "sha256": "44ba56acda494e8506fa415e1053c019b5642654c7a20b692f6acfebb4bf44cc"
+    },
+    {
+      "path": "tests/footsteps-browser.mjs",
+      "bytes": 5423,
+      "sha256": "c9dce9b0ef7f744c039074a93b48594956100061a2d1d6ec6ba7955c096ff6fc"
+    },
+    {
+      "path": "tests/footsteps.test.mjs",
+      "bytes": 4962,
+      "sha256": "6b3345adb70972ed49f84e5889da0839db7a052f6b60122f0a490e17e71cc70e"
+    },
+    {
+      "path": "tests/game.test.mjs",
+      "bytes": 4850,
+      "sha256": "647a6bcf4136c7d3fe350f5640fbc1cf20287a005c6cbbdcd08f1777823c3e6d"
+    },
+    {
+      "path": "tests/gameplay-regressions.test.mjs",
+      "bytes": 5779,
+      "sha256": "177eb837a42cefa288496cd14999dd1e1c37f9f3646dc9514eae65a57a4ea8ec"
+    },
+    {
+      "path": "tests/grapple.test.mjs",
+      "bytes": 8446,
+      "sha256": "b6b7cfe091b060443f91ff54a1bd89065ebdb7d39c7561aaeb2cbead60b2fbb6"
+    },
+    {
+      "path": "tests/hand-grip.test.mjs",
+      "bytes": 10840,
+      "sha256": "11a98abe042d9736600708a005aae5de68c9dd7b45cd958dd7546bda3a81f3bc"
+    },
+    {
+      "path": "tests/handheld-upgrade.test.mjs",
+      "bytes": 7871,
+      "sha256": "5d9aae554e46e12997a8201ca4114474d126c700f0e3badcc2d2510ac51d01ba"
+    },
+    {
+      "path": "tests/hands-corn-browser.mjs",
+      "bytes": 5900,
+      "sha256": "df3c3b89df83d0474ede7675a90a64238bc95e1f80a4aed224ea690870a755e5"
+    },
+    {
+      "path": "tests/hands-corn-performance.mjs",
+      "bytes": 3630,
+      "sha256": "b664a8539496aa67332a9f3db08bb528a06c5b5ec14fcbb6fc97ccadd63da90a"
+    },
+    {
+      "path": "tests/helpers/browser.mjs",
+      "bytes": 4721,
+      "sha256": "fa288b07fcb4d35a3ff4fbd720282375d13880dd11d747d417a99ad5991bb3d9"
+    },
+    {
+      "path": "tests/helpers/capture.mjs",
+      "bytes": 2422,
+      "sha256": "357a9c6c48b8325d240c0ee314946251e05e572edf37ead7794849e422d02296"
+    },
+    {
+      "path": "tests/helpers/foliage-motion-cpu.mjs",
+      "bytes": 2152,
+      "sha256": "4e0181962dd40aaefeb52db2c97928f3876c8857c6dcaaa674b9a560e9f3d505"
+    },
+    {
+      "path": "tests/helpers/performance.mjs",
+      "bytes": 2941,
+      "sha256": "8f0f9a76cc705b8afc0b0c625f3a5fc2159bb39dddfc94b4d650a509929e7fb4"
+    },
+    {
+      "path": "tests/helpers/scenarios.mjs",
+      "bytes": 1893,
+      "sha256": "b9d323b150f37bd1d69ae9cc0d32dbc1f07197128fdb57f7c2c8150fb8182dfc"
+    },
+    {
+      "path": "tests/horror-browser.mjs",
+      "bytes": 6658,
+      "sha256": "1fa406d6e23d9340900978e9bbf36739e670e04ae9d4e73a3f2d0edf54c40f9e"
+    },
+    {
+      "path": "tests/horror-performance.mjs",
+      "bytes": 3451,
+      "sha256": "f1c912d71c3f18e4861008af905a3f53a20044be82bcae34ed93f6111d49e1bb"
+    },
+    {
+      "path": "tests/horror-presentation.test.mjs",
+      "bytes": 2556,
+      "sha256": "9c9e92c99616302f0880f7315301069c5c98d48e64fdf53845f8bff7af498959"
+    },
+    {
+      "path": "tests/infrastructure.test.mjs",
+      "bytes": 2552,
+      "sha256": "c91fe13e6e4ceb9b29a48fc52b7174d9dbcd90abfc6d1c70e3391ed9f4dc388a"
+    },
+    {
+      "path": "tests/input.test.mjs",
+      "bytes": 2743,
+      "sha256": "812c4967332642f9c2abd723c541ee4f1c61e8a301c38f10ac58c041b15dd63c"
+    },
+    {
+      "path": "tests/interactive-prologue.test.mjs",
+      "bytes": 12496,
+      "sha256": "a716683498b4f44208a8e2fb391a77f572540b082c949e98c2300eda59000e88"
+    },
+    {
+      "path": "tests/intro-assets.test.mjs",
+      "bytes": 1680,
+      "sha256": "6a9fa34e4588247dfe41a28c918db0f1f1955a8d0624efc1125367b1671764a6"
+    },
+    {
+      "path": "tests/intro-audio.test.mjs",
+      "bytes": 10890,
+      "sha256": "09104d13b413d65042c5ad8febc1d8f2ad0a542af8c04184367f6989c9c63101"
+    },
+    {
+      "path": "tests/intro-browser.mjs",
+      "bytes": 6999,
+      "sha256": "ca3c299c90bb3682391d421f1cc7675c4ccfaedeeb5d4e98bf4fa91a0ce8f941"
+    },
+    {
+      "path": "tests/intro-gameplay-upgrade-browser.mjs",
+      "bytes": 5116,
+      "sha256": "7b4becb1964a47a278913fd2bdfc19868680d62bfce32d5fe6ebcf93769363c1"
+    },
+    {
+      "path": "tests/intro.test.mjs",
+      "bytes": 7973,
+      "sha256": "d2d806e3fceee7be790814eae9cb6a4006fcb7faa39d117367e90f8daad2702c"
+    },
+    {
+      "path": "tests/mobile-browser.mjs",
+      "bytes": 9212,
+      "sha256": "a3d6959ae789d3f860b0d464f4bef97a487e7fd72f055446f2ae72bd9cc1dafc"
+    },
+    {
+      "path": "tests/open-passages.test.mjs",
+      "bytes": 5392,
+      "sha256": "f0a5b084952e0103ee2fa46c503dba5c79f08bd5ea58a6baa422b8a5aaaabcf9"
+    },
+    {
+      "path": "tests/opening.test.mjs",
+      "bytes": 8878,
+      "sha256": "1a4dd610a05c9cf4060adc2619e2ed90d1b8ca5c10eec6d4540f66d6db44132a"
+    },
+    {
+      "path": "tests/player-upgrade-browser.mjs",
+      "bytes": 3979,
+      "sha256": "ee8f541608dd666d8749c8fe82f24a3f1ae01622e9bd237ac727415809082d0e"
+    },
+    {
+      "path": "tests/polish-browser.mjs",
+      "bytes": 5084,
+      "sha256": "300975cb3754adf29b50394cb452c1c41da1c78c28f752c5bdadc4e76155660b"
+    },
+    {
+      "path": "tests/polish.test.mjs",
+      "bytes": 3275,
+      "sha256": "a362437ecb429bed1cce5166816f295817581f7a89adf25b8efeb498d16a6cda"
+    },
+    {
+      "path": "tests/prologue-browser.mjs",
+      "bytes": 12616,
+      "sha256": "24c611eaa4446dc6b423a38cd05b1b199fcaf8cbf4b8027f3ce6734203c2eed0"
+    },
+    {
+      "path": "tests/prologue-door-hinge.test.mjs",
+      "bytes": 8226,
+      "sha256": "6a08cc941069b9be05dcd6bef68af03a40e372ff74e985e266563982ca17c4d6"
+    },
+    {
+      "path": "tests/prologue-driving.test.mjs",
+      "bytes": 5883,
+      "sha256": "2d88894d538dd8bff8c195f903b702db8f0d6b0d63fd989fe8a8768eeca531bc"
+    },
+    {
+      "path": "tests/prologue-face-repair.test.mjs",
+      "bytes": 9036,
+      "sha256": "817fb59d89d7acd562a3841cffbe8edf9c0e3946ce7d362de978dab3abe71a2d"
+    },
+    {
+      "path": "tests/prologue-liquid-cinematics-browser.mjs",
+      "bytes": 3338,
+      "sha256": "45167a8e9ac52823cd8caeaee8ff191272b76ccd1fee278d4910f50f9cac22d9"
+    },
+    {
+      "path": "tests/prologue-model-actor.test.mjs",
+      "bytes": 25804,
+      "sha256": "6d0e8f0d8346f4f728996d4060e1deae2731beb7f7fbbc92fa057a798c22e2e7"
+    },
+    {
+      "path": "tests/prologue-motion.test.mjs",
+      "bytes": 8697,
+      "sha256": "fd4c58c443d24f2d4e2d8012ff8aa4c277ab78287c61c6703b2716b81a3fd156"
+    },
+    {
+      "path": "tests/prologue-radio.test.mjs",
+      "bytes": 7368,
+      "sha256": "3a551ba5e923547723774dd03326b8aa082e738efc2a989dae1dbbfe0d752f6e"
+    },
+    {
+      "path": "tests/prologue-rain.test.mjs",
+      "bytes": 10239,
+      "sha256": "445721a2c139bc6c7a843e9213d3f68d05fbd45a271b0af200d5e1bf1f087fba"
+    },
+    {
+      "path": "tests/prologue-scene-alignment.test.mjs",
+      "bytes": 22259,
+      "sha256": "a4738f196e07529616673c08eb95cfceae2692f59b11bd37d894f7915522f387"
+    },
+    {
+      "path": "tests/prologue-visuals.test.mjs",
+      "bytes": 31217,
+      "sha256": "374418fe7191286a6fb6d2574cade8d7fc84623fd638b939583627b25c107bf7"
+    },
+    {
+      "path": "tests/pursuit-portals-browser.mjs",
+      "bytes": 7599,
+      "sha256": "424fcaa2be715690382731a689546e4bd0c04b6a4f124c5b8dd426bd39c382b8"
+    },
+    {
+      "path": "tests/pursuit.test.mjs",
+      "bytes": 6582,
+      "sha256": "37a26cbf7587e458a22529b81fc9b3e1c790d13356faeee6387c43daa82ce962"
+    },
+    {
+      "path": "tests/renderer-trial-browser.mjs",
+      "bytes": 2442,
+      "sha256": "0d2a5cb0d00ed18b0d86c7b2d5be7e75e773ab11d21e1650070ffb34ba945ce6"
+    },
+    {
+      "path": "tests/shot-beacon-browser.mjs",
+      "bytes": 9087,
+      "sha256": "4f65a09cc17855b47e702aaf17021132de6aec2e7f85088f7f579bd9d6d19294"
+    },
+    {
+      "path": "tests/shot-beacon.test.mjs",
+      "bytes": 3234,
+      "sha256": "1e9001d50147c3b48fe10d827b193dd83bb258c7af0e0074b9cd42abeac1e3e1"
+    },
+    {
+      "path": "tests/sky-visuals.mjs",
+      "bytes": 4436,
+      "sha256": "8b402573cde0374ee0e3e492155d8bb70c1372b35feed55ea9a6a73ac8c643a7"
+    },
+    {
+      "path": "tests/survival-ending-browser.mjs",
+      "bytes": 6750,
+      "sha256": "d5acc482715e8a9ed6235c3eafbe5d9ae1187608181ab2e4c551f64d41e159eb"
+    },
+    {
+      "path": "tests/survival-ending.test.mjs",
+      "bytes": 8417,
+      "sha256": "1f364e6ea9f8996fcd0f24e2621a1f76b2f75372b3c75f73a472f0dd541c7b15"
+    },
+    {
+      "path": "tests/survival.test.mjs",
+      "bytes": 15529,
+      "sha256": "0c9d7d0a5e77d8beb4d4a3b52654d83940e886244fb835552a8edd21a4ecb6a4"
+    },
+    {
+      "path": "tests/touch-input.test.mjs",
+      "bytes": 6733,
+      "sha256": "fd4322ad6a5fb65aff41e5ebb3d4da7e0a22fcf80796e4ec49cdddb8a1792690"
+    },
+    {
+      "path": "tests/trigger-eligibility.test.mjs",
+      "bytes": 2080,
+      "sha256": "8668e9a517a7eead9a97863e4da2d5752581305fb1f38973085a745c688d1915"
+    },
+    {
+      "path": "tests/ui-runtime.test.mjs",
+      "bytes": 4909,
+      "sha256": "dce77372f8b77dcc682ad82c57c4e9732980ac25b052dee5ab46d05aefce0c34"
+    },
+    {
+      "path": "tests/upgrade-browser.mjs",
+      "bytes": 7754,
+      "sha256": "a647614f3081e7b3e34533b0483437c7b7ab495ae2a307b78569c53762463ce9"
+    },
+    {
+      "path": "tests/upgrade.test.mjs",
+      "bytes": 9434,
+      "sha256": "caf507a94e1d77602e51db1a4119a555300331635d89ead9137ecf505375fcc8"
+    },
+    {
+      "path": "tests/visual-check-backend.test.mjs",
+      "bytes": 9368,
+      "sha256": "5b4a551a5a8c1f9a6cde81febac70db2d7f06859a1190ae1ac9ea4a30359f391"
+    },
+    {
+      "path": "tests/visual-check-package.mjs",
+      "bytes": 3284,
+      "sha256": "b73171fe1cd2ade650014bc98a18f430b8516113ec3775b2fed87a8734a2480b"
+    },
+    {
+      "path": "tests/visual-check-presets.mjs",
+      "bytes": 3223,
+      "sha256": "0c942f184f84b914a1ed5fa0b1136ecabb632b729e3d3e1fc56ffa8b07e933d3"
+    },
+    {
+      "path": "tests/visual-check-suspend.test.mjs",
+      "bytes": 839,
+      "sha256": "b98242041c2ad108ff28731fdac6572f196dc436668594561151fad20cde0f34"
+    },
+    {
+      "path": "tests/visual-check-zip.test.mjs",
+      "bytes": 1157,
+      "sha256": "a5fd737b45fec4c38386b21fae72ea2c54d4d77d52bd840ecc7931e0a0e201cb"
+    },
+    {
+      "path": "tests/visual-integration.test.mjs",
+      "bytes": 2503,
+      "sha256": "38cab9e10e5304559ce714addab2cb08e0413caf6314efb9dab6b22930f225c5"
+    },
+    {
+      "path": "tests/weapon-audio.test.mjs",
+      "bytes": 5090,
+      "sha256": "bc11df0ce1a07bdfecec3b1a8331ba21d3b64d252baa2977c5e5c577eca3d9a9"
+    },
+    {
+      "path": "tests/weather-audio.test.mjs",
+      "bytes": 2467,
+      "sha256": "46af315392637915d0040fd4429074f48171890dfef04843ca48d502ae371bd1"
+    },
+    {
+      "path": "tests/weather-browser.mjs",
+      "bytes": 5492,
+      "sha256": "c7fb098db2f7964c55ead8d0aeae06c5724b2115b46700128c6de223db3ea064"
+    },
+    {
+      "path": "tests/weather.test.mjs",
+      "bytes": 7878,
+      "sha256": "e2e7231545fb4196febe4c1ddd89447810bd68b5ec8930fe830d410cf135d4e5"
+    },
+    {
+      "path": "tests/zombie-beams.test.mjs",
+      "bytes": 6408,
+      "sha256": "2352b5db663ea7b6ba4703622aec39fa9217af591eda9a6ccdec26f09e2bf329"
+    },
+    {
+      "path": "tests/zombie-poses.test.mjs",
+      "bytes": 7543,
+      "sha256": "734ecc27e2a4ab1c7843646b48abe9a0e89d6ac710b2d1579c7d133a5f27cd47"
+    },
+    {
+      "path": "visual-check-limits.json",
+      "bytes": 57,
+      "sha256": "4cc112d987f94d6f1024dcb3b2d5f30b75f732f2c822852a9c2f284259c88eb5"
+    },
+    {
+      "path": "worker/visual-check-worker.js",
+      "bytes": 14937,
+      "sha256": "1b334652d3308b9114c4afa5bc0043f3e563f45b31e9967ad62fb38123772c0d"
+    }
+  ],
+  "baselineManifest": [
+    {
+      "path": ".gitignore",
+      "bytes": 67,
+      "sha256": "8716c18f0a92da27ef44ae73a3b506c76fddaf1908330cdcf7237d6e65ea9be5"
+    },
+    {
+      "path": "assets/audio/LICENSES.md",
+      "bytes": 2534,
+      "sha256": "7525ed9b963bc441e88a32db6d2918a6a3ff2c9d1b27bde9ceb0415a15d2f8d6"
+    },
+    {
+      "path": "assets/audio/creature-growl.mp3",
+      "bytes": 16971,
+      "sha256": "226eed74ac865531f0f3e474e111cd73c4e851c8b3d179a6e2036fe17f96789b"
+    },
+    {
+      "path": "assets/audio/creature-roar-alt.mp3",
+      "bytes": 22613,
+      "sha256": "b9fcd1751b328deeb2f125350dd5d00f7dd87714cfab596a74c257b81afbf0ac"
+    },
+    {
+      "path": "assets/audio/creature-roar.mp3",
+      "bytes": 15404,
+      "sha256": "271ec5a4ce0d91e5c18068e2defba87d8a40009383f0e083311f0ae42cf048e9"
+    },
+    {
+      "path": "assets/audio/creature-sources.json",
+      "bytes": 1849,
+      "sha256": "78af87402e23b304de7e17b05f5fb5baba9f868ac028e9724a5757957921a959"
+    },
+    {
+      "path": "assets/audio/distress.wav",
+      "bytes": 210492,
+      "sha256": "2b1984e3485715642a1195393fd35227eadc27b8f7eeb968956e18f4e8cb9400"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-1.mp3",
+      "bytes": 5079,
+      "sha256": "1e2712a74a800c3c2988594dc9da0e07a9dc469a2ffbc77fbfb578a279a302af"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-2.mp3",
+      "bytes": 5079,
+      "sha256": "499e0a86593232d3ff4d4f70be8a854a8bf197f8725be5dfc027458d2e968125"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-3.mp3",
+      "bytes": 4452,
+      "sha256": "dfcb95b4ced7d09f3fb10ab830b9583c919540d54b83f7c670a2913e6c713f52"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-4.mp3",
+      "bytes": 4452,
+      "sha256": "e3915d42592f2295911e798549862ee04d72897507b6ae0924798b9241d1f891"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-5.mp3",
+      "bytes": 4766,
+      "sha256": "2e16f1de5228d412588574e650c5433e70363f5312f238f46e67e731901fa47b"
+    },
+    {
+      "path": "assets/audio/footsteps/hard-6.mp3",
+      "bytes": 4766,
+      "sha256": "977ca0cfd517547def33d5afd5bda1f63d2757cc3553dd45c0db198b47093ccc"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-1.mp3",
+      "bytes": 5706,
+      "sha256": "cdcaaa42decfdc506d783adfa850e0a3e0068e94555153db5605a5a7aff22832"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-2.mp3",
+      "bytes": 5393,
+      "sha256": "f837a05c02ba2b91ff6b981c02d49152a83ab15f2480193fcc8d1c52e9026677"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-3.mp3",
+      "bytes": 4766,
+      "sha256": "94023571746429c6fb350c8c62417e6f603317290f691937a82899284ff2c760"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-4.mp3",
+      "bytes": 4766,
+      "sha256": "ea448466b36fa83f1db8e9653e49bda409d42da623486f654873485fd50706ff"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-5.mp3",
+      "bytes": 4766,
+      "sha256": "5d2b727a8724c630e54dda7c03a8741b73ad64d3b843eecfd1419783f094f6c3"
+    },
+    {
+      "path": "assets/audio/footsteps/soft-6.mp3",
+      "bytes": 4766,
+      "sha256": "57db9d6746e0188a39b485fc9b53f45f3db14be8a7105e24134e8af3f1d17d26"
+    },
+    {
+      "path": "assets/audio/footsteps/sources.json",
+      "bytes": 7443,
+      "sha256": "9ba200dcc63446da6d8d653a5df05bb46b6658b2f22f37ea24d3eb29ac15b691"
+    },
+    {
+      "path": "assets/audio/pistol-shot.wav",
+      "bytes": 79458,
+      "sha256": "7b785383f934ee984708fcbb9e925f2b25c15bcfadbadab5c4c6307eeeee929e"
+    },
+    {
+      "path": "assets/audio/prologue/ARR-00.mp3",
+      "bytes": 17372,
+      "sha256": "4453e41528dc89ec882adbb51a1b4477c0e5a4baddacb775f5307d0f39c6f9ca"
+    },
+    {
+      "path": "assets/audio/prologue/ARR-01.mp3",
+      "bytes": 28796,
+      "sha256": "27d5ac8a867db91ab779d49756e5ab0a00eef8e9a223f72d33ce2eb5d1f8d03f"
+    },
+    {
+      "path": "assets/audio/prologue/ARR-02.mp3",
+      "bytes": 9476,
+      "sha256": "84edf1f5da8ca811712ddb1b62d8dccb940cc1e7bbdbf9de3103f8ae1b3070b8"
+    },
+    {
+      "path": "assets/audio/prologue/CAB-01.mp3",
+      "bytes": 16028,
+      "sha256": "0feda9d9f059d6559b0b4458c4e6b94ab0ba6000e9ab5f1089b6717bde5192fa"
+    },
+    {
+      "path": "assets/audio/prologue/CAB-02.mp3",
+      "bytes": 9476,
+      "sha256": "705aa2aa4512aafd244394097c14016a3422af3bab6b1b8fc8802e67227ad171"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-01.mp3",
+      "bytes": 21404,
+      "sha256": "b67cb726d650d65073459d1ea41bcee9f698360d09b83ef1e440c23940a270a6"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-02.mp3",
+      "bytes": 11828,
+      "sha256": "81891dc31e0d43ae1fc17e6c5d140613a01900ceb3e43a9775fbba7c43c95ae6"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-03.mp3",
+      "bytes": 30308,
+      "sha256": "cd67dfdc8856fe33cf43764c3b5615f1dd59fc7a6a45c4e79ad0115e8f19ec8e"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-04.mp3",
+      "bytes": 22244,
+      "sha256": "67508935fb071908ffed19c8f792767d2024d2b624d84ce7ceab125e7027314e"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-05.mp3",
+      "bytes": 9308,
+      "sha256": "da93054318a1928b15c31d2c99de85f45dd406e90b5e7d2dc9c35b3f93f45abc"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-06.mp3",
+      "bytes": 9476,
+      "sha256": "8a3f2ff7d943e30869392738157b5f23d0b4cff89e0fbfd010c23ee54964befb"
+    },
+    {
+      "path": "assets/audio/prologue/CAR-07.mp3",
+      "bytes": 24932,
+      "sha256": "5181c3afc152831b8548d3a86f7d0f26d362c5d5bc8be022494ed07ae4e56166"
+    },
+    {
+      "path": "assets/audio/prologue/END-01.mp3",
+      "bytes": 14012,
+      "sha256": "e28eebd99e4e28dd1f814da3fd0fa524353ccfe23e2faeb6a09e1fcbb5436072"
+    },
+    {
+      "path": "assets/audio/prologue/FLA-01.mp3",
+      "bytes": 5948,
+      "sha256": "5252da7edb0685cc05330fb60aa43228c45604f8bf421d920f0011964e601593"
+    },
+    {
+      "path": "assets/audio/prologue/FLA-02.mp3",
+      "bytes": 32156,
+      "sha256": "4bb6ed664d01c84850bc9c7805b017248542a3ad8241bbf2266353374f2e9bbf"
+    },
+    {
+      "path": "assets/audio/prologue/FLA-03.mp3",
+      "bytes": 23420,
+      "sha256": "99dadfab412e610b938c2111dcdb232646f9ec357578a2a85fe465c07025d984"
+    },
+    {
+      "path": "assets/audio/prologue/FOL-01.mp3",
+      "bytes": 11492,
+      "sha256": "ed0161dc3e737f3dde391759f10fcd681c30e2bb4a144d510c64b9902faefbd8"
+    },
+    {
+      "path": "assets/audio/prologue/FOL-02.mp3",
+      "bytes": 22916,
+      "sha256": "723a1408d1e4dc3feb4831c48acd0a38d2765cbaa6b9103b01df7bd23ecc4636"
+    },
+    {
+      "path": "assets/audio/prologue/FOL-03.mp3",
+      "bytes": 11996,
+      "sha256": "a0bc6060366a5b986003300c7be79704e75ccc6fcfcbc47ee0c9e4bfc56da34d"
+    },
+    {
+      "path": "assets/audio/prologue/LICENSES.md",
+      "bytes": 3715,
+      "sha256": "7760f85f3e2d51fb9bd06f9ce36d26c8a76fca31e496439a4017eaba5b18c3eb"
+    },
+    {
+      "path": "assets/audio/prologue/LIQ-01.mp3",
+      "bytes": 5948,
+      "sha256": "e16a521da5a5929f28f91a7eb70a5ada64d092ba24a8857db69099a40862f5e9"
+    },
+    {
+      "path": "assets/audio/prologue/RAD-01.mp3",
+      "bytes": 40892,
+      "sha256": "10867cc25ce2d23a37485ca38187416b7ac648c70c70eb82060554e41daf72e1"
+    },
+    {
+      "path": "assets/audio/prologue/RAD-02.mp3",
+      "bytes": 10484,
+      "sha256": "a60593109857c7873838816674fed89567c4ad28cebda340cc96631ed81de053"
+    },
+    {
+      "path": "assets/audio/prologue/RED-01.mp3",
+      "bytes": 4604,
+      "sha256": "252ceee57a59400fe7eb055f3dba22e3f126136427eedfc456c5548c94b42cec"
+    },
+    {
+      "path": "assets/audio/prologue/RED-02.mp3",
+      "bytes": 6452,
+      "sha256": "8c0b589360d6e3214f36363361f7abe56d1130dd0b8f6a37c627905b58adae1a"
+    },
+    {
+      "path": "assets/audio/prologue/RED-03.mp3",
+      "bytes": 4772,
+      "sha256": "62054762b16c289167e25af65c643faec8d5de583eed40bfac600e3dd058c7ce"
+    },
+    {
+      "path": "assets/audio/prologue/RET-01.mp3",
+      "bytes": 20060,
+      "sha256": "0dd7c68c38c69798aca988bf47420ac0ea14d0a2612deeda06ca7e0d91c92061"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-01.mp3",
+      "bytes": 40724,
+      "sha256": "7f698114e5c6ae0972e604bb46b180d5e367ea84a68059d9e89bdc697ce92133"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-02.mp3",
+      "bytes": 6956,
+      "sha256": "b0bf0470bd033d34d24393275ade8f299f6600e0ed071c89878207492b0294f6"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-03.mp3",
+      "bytes": 13676,
+      "sha256": "f24c479876a9c85c2040e06d31ec0fa8d3c46d44350a8ac6f8aa0a9913ab3a30"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-04.mp3",
+      "bytes": 6452,
+      "sha256": "6c489ce32144280c8887b0744e070db882283a38bcb3ce4a98d19f374c4b1cca"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-05.mp3",
+      "bytes": 29804,
+      "sha256": "db49ff7340a921ed1f6d11509669a1a58e5cd6e04755a142a3f275f09989058e"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-06.mp3",
+      "bytes": 34844,
+      "sha256": "9f72527f095b93d470f33ae5dfce6633d9ee70a5d3551928af1698061177c43f"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-07.mp3",
+      "bytes": 20900,
+      "sha256": "feb36a981ba49c0579ec1d3f0384286c058414ba55ea0b9bab44b699c6205e14"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-08.mp3",
+      "bytes": 48116,
+      "sha256": "e07eb685f74d359cb14f8311f14b3dac549aaeaea4f944b5d7fd802188d6ba08"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-09.mp3",
+      "bytes": 14012,
+      "sha256": "27b808f5a037b12671ded872abdc8907bcf292476e2d167960d0e9fb03b7d087"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-10.mp3",
+      "bytes": 11156,
+      "sha256": "857c617649c406520fd5ef327b7ac0ceaa051c8e1be9ff132a5190ec06bb92ea"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-11.mp3",
+      "bytes": 20732,
+      "sha256": "221efdf4ab8116b7de1ef251425eae478eceb67558861bee683dccd377847c4f"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-12.mp3",
+      "bytes": 11156,
+      "sha256": "b380d65dbc6ad8ced9aad1904fb48af8480926b8cc7b0a53eb3ff86f2fd7161c"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-13.mp3",
+      "bytes": 40388,
+      "sha256": "3d66b599c1a023edea628fa77835cff0b2d8ac8e3b782033a6dc2ca887ba9fab"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-14.mp3",
+      "bytes": 19052,
+      "sha256": "f55b1b8262387fcb4c5eed331e4e4b450138cf5fcba508ebe0bedbf6f7e93f2d"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-15.mp3",
+      "bytes": 15188,
+      "sha256": "a8a4fc3bd205c90bfa057875151f5c7f1d0269978415157f07323b6f65d6a547"
+    },
+    {
+      "path": "assets/audio/prologue/WAL-16.mp3",
+      "bytes": 27452,
+      "sha256": "c0211e72981a3cfa4f72a0a16f300a33f9d3025019a41efb10d49dbae4e07b41"
+    },
+    {
+      "path": "assets/audio/prologue/arrival_clarence_here.mp3",
+      "bytes": 7292,
+      "sha256": "e43291617486493d401e4f37754db75683c0550eb96f73750ebd96d286bcf161"
+    },
+    {
+      "path": "assets/audio/prologue/arrival_stanley_yes.mp3",
+      "bytes": 3428,
+      "sha256": "8e988e44c775a570fee5a4a2a31936840312f7eabfbf6e0f64d738af22028f26"
+    },
+    {
+      "path": "assets/audio/prologue/car_clarence_nervous.mp3",
+      "bytes": 8972,
+      "sha256": "44ba19e84b8004d7eaae133598c6dd8cf516a3d763518e0a0c3c773691f1946a"
+    },
+    {
+      "path": "assets/audio/prologue/car_mike_2002.mp3",
+      "bytes": 14516,
+      "sha256": "b1c15c52412175a6e18e243bec4105ef2ad2936f656e93815357067ecd2d4596"
+    },
+    {
+      "path": "assets/audio/prologue/car_mike_memory.mp3",
+      "bytes": 110948,
+      "sha256": "74b62702e5091c9099c82b54e35f548947ca2d60b08c49b837876f71b0f34653"
+    },
+    {
+      "path": "assets/audio/prologue/car_mike_ready.mp3",
+      "bytes": 34844,
+      "sha256": "0dc85316d031ecf17c6fe5999c9ece764678c52927c61a50b0d4af0852ed89db"
+    },
+    {
+      "path": "assets/audio/prologue/car_mike_story.mp3",
+      "bytes": 24596,
+      "sha256": "a26f511af5f9abfa9dc7f1855013f4e88e02e6a0293b5f87eb6fe3a3d4dc904a"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_clarence_footsteps.mp3",
+      "bytes": 15692,
+      "sha256": "53bf9108ce4a5a6c1febd6422049a58dcc9f1083068759042d373a9b69815f0c"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_mike_when.mp3",
+      "bytes": 10988,
+      "sha256": "43308879bfe9776e17db08bf554ca6c365b12253d12e9f1e8ed166b00bd8526a"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_stanley_barking.mp3",
+      "bytes": 51644,
+      "sha256": "4711b9355b7d1cb8d57181d15a48aeab9e272698f2697e92a69d287385dbf2f4"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_stanley_dog.mp3",
+      "bytes": 28124,
+      "sha256": "8b05e026f81ebf4473a97bf2205ac65077eb25b7784f39084de6e7ffbeaec5b2"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_stanley_gone.mp3",
+      "bytes": 22748,
+      "sha256": "add181a34d7f49e0aae950436b7282b959306c88b268a39a38d877b1e7089475"
+    },
+    {
+      "path": "assets/audio/prologue/disappearance_stanley_vanished.mp3",
+      "bytes": 28292,
+      "sha256": "6e2a9413f8611427bfd1edc66ecf0f0cca990b97ef5818d7923988b14c7c5612"
+    },
+    {
+      "path": "assets/audio/prologue/dispatch_clarence_close.mp3",
+      "bytes": 7124,
+      "sha256": "04b20a55c44ce8514c112cf43d1d6e326b016e6dee541a73109e86fc594a7deb"
+    },
+    {
+      "path": "assets/audio/prologue/dispatch_missing.mp3",
+      "bytes": 47108,
+      "sha256": "895870aeb99552379a772f7f1a038bd7d6e3f87a86071e4131076ca01d40e9c0"
+    },
+    {
+      "path": "assets/audio/prologue/dispatch_property.mp3",
+      "bytes": 22748,
+      "sha256": "32f4580f7ae077f55c43ee7ee31f45597039e936f563ac7a0b59b9c5c5f1359f"
+    },
+    {
+      "path": "assets/audio/prologue/emergence_stanley_follow.mp3",
+      "bytes": 9644,
+      "sha256": "9904c16269260a105af3ba9b87640755b7266c638f9a2adc972acb91f41ad517"
+    },
+    {
+      "path": "assets/audio/prologue/emergence_stanley_missing.mp3",
+      "bytes": 29972,
+      "sha256": "ec2a75d9ba88af3a0dc2f9b0f0c0939f79d353233b1da67da2f1da11a57f211c"
+    },
+    {
+      "path": "assets/audio/prologue/entertainment-music.mp3",
+      "bytes": 50512,
+      "sha256": "c0658371c2b08c838351ff54fb77b6f403a08aa40d55dd2f2b30ee45c7b50550"
+    },
+    {
+      "path": "assets/audio/prologue/history_clarence_through.mp3",
+      "bytes": 8300,
+      "sha256": "004f4836c1e4da5f4fc7d498ce4d4f5845f4f32a4a2531afaf5366ff99243e10"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_acres.mp3",
+      "bytes": 37700,
+      "sha256": "a31e2fea6a6bdc1a23f1317e7216db9ef5592745e2a46b39fcf24deda20bc1cb"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_compass.mp3",
+      "bytes": 37532,
+      "sha256": "03e038ff24efe0ee292217399afe5d95b020642923be3ad0538297168e3b4a85"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_direction.mp3",
+      "bytes": 50300,
+      "sha256": "8fa392504c0bb619790dd18929e65bb923728ddf4a9fe8499db6a006184db15a"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_knew.mp3",
+      "bytes": 14180,
+      "sha256": "704992567a3d0cfb9a34b49c5937bedecbed76ba0ca765ac92bd965efcd26085"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_miles.mp3",
+      "bytes": 21236,
+      "sha256": "800c6328f4897f08476a327d01fe41ed7c38baff90215aabc98e3b1a803886ef"
+    },
+    {
+      "path": "assets/audio/prologue/history_stanley_rule.mp3",
+      "bytes": 47780,
+      "sha256": "15f43a34fcfd7ca4b6812b5e143a8893da160f08cb6efc454a4e552a4ebed6dd"
+    },
+    {
+      "path": "assets/audio/prologue/rupture_clarence_mike.mp3",
+      "bytes": 3932,
+      "sha256": "3a2ccbc592593338fee795229a464dd315c6f9a9715bc245fbfd525900db0f3d"
+    },
+    {
+      "path": "assets/audio/prologue/sources.json",
+      "bytes": 10950,
+      "sha256": "e750a46115db545172036051530679e0d0e7c9489580e4acaf22a7ad85695824"
+    },
+    {
+      "path": "assets/audio/prologue/title-music.mp3",
+      "bytes": 27315,
+      "sha256": "2689f129cd95b016e1e5eb23879b3af8879222eeaedc4f5134a8c96e7c6b2dc0"
+    },
+    {
+      "path": "assets/audio/prologue/walk_clarence_known.mp3",
+      "bytes": 7124,
+      "sha256": "ac4f25d1bf8b58127affbc7e809365796cca531cf2bdec9db39c9c0e6bd1c787"
+    },
+    {
+      "path": "assets/audio/prologue/walk_clarence_lives.mp3",
+      "bytes": 5780,
+      "sha256": "7783f204a0abffa14be1be6fe13889fd5467db4d872e13ec9b77b66df2a3de52"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_asked.mp3",
+      "bytes": 13172,
+      "sha256": "ffbfc3ab8f158b6ce062197db1824b8b83bb89cf5ae46738a3bbad4c398cbb7d"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_curious.mp3",
+      "bytes": 11492,
+      "sha256": "34fa898e198b2c8fed7bf84901d3100e4f0123f6f017357b378440f80bebc41d"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_dinner.mp3",
+      "bytes": 43076,
+      "sha256": "d3285615f9e7d586f3b145d582c45f34644672904bbede3df7d21ddb29fe51e2"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_man.mp3",
+      "bytes": 28964,
+      "sha256": "bb9c4ba4f4bf879b0f4a817d44f324b09999b5907d914a5e666b3b88f8ebab49"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_nobody.mp3",
+      "bytes": 38708,
+      "sha256": "4b1587926a4f062b5fdf4da545e506758429930974259383bbfff3fe338522c3"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_protective.mp3",
+      "bytes": 23420,
+      "sha256": "defa36116aa567d34e940bd292bccb741d47e9ff9b101addbf3d4aa20d4aab93"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_stranger.mp3",
+      "bytes": 18884,
+      "sha256": "4d541ef14f8982cb5c1e2de3a0b892eaead148c482f914d602a3ac35c344194e"
+    },
+    {
+      "path": "assets/audio/prologue/walk_stanley_weeks.mp3",
+      "bytes": 35348,
+      "sha256": "7476f3d446c92fd42cdf702c4e695c2ea0a62adda818f917e3ae75d4c9961766"
+    },
+    {
+      "path": "assets/audio/rain.mp3",
+      "bytes": 625684,
+      "sha256": "5c67d3f347a990446e0027a1ceb990f0fbb4cf82f4cedca2b528c64a96ddab50"
+    },
+    {
+      "path": "assets/audio/scream.wav",
+      "bytes": 420242,
+      "sha256": "c954b6173399ed574c1c1350b8da4a5b465e0454cc810d6e49779fe121fafa34"
+    },
+    {
+      "path": "assets/audio/sources.json",
+      "bytes": 567,
+      "sha256": "45bccb9ca81f7bbde63d0153990d43c985cd51648d971f6be7a09af64b89b06e"
+    },
+    {
+      "path": "assets/audio/splash-1.mp3",
+      "bytes": 5059,
+      "sha256": "1be09a1792f0b04ed07d2407899786dbb18e2329ed6e947586e91a3e9b63209a"
+    },
+    {
+      "path": "assets/audio/splash-2.mp3",
+      "bytes": 4746,
+      "sha256": "1ea7e1ae1ad3884ba050305a7f4b241dd54ca326c93e2fc3f053616fac8e9f27"
+    },
+    {
+      "path": "assets/audio/survival/GATE-01.mp3",
+      "bytes": 11660,
+      "sha256": "55e48c289c3a4c27037a1d2a3306d0374ad0ce672ef4c1d5a2f621439713e361"
+    },
+    {
+      "path": "assets/audio/survival/GATE-02.mp3",
+      "bytes": 15860,
+      "sha256": "b7f168997efedca08869a281ca8233ded184f9930a574430eb3ca22a07955cf6"
+    },
+    {
+      "path": "assets/audio/survival/GATE-03.mp3",
+      "bytes": 17036,
+      "sha256": "88b805f6310c2a947f080de33db35ed7be8c83f6fe14b67f94fd02fec7ca0b0a"
+    },
+    {
+      "path": "assets/audio/survival/GATE-04.mp3",
+      "bytes": 13172,
+      "sha256": "3c09d828e4ee83a19b1f24d6af3cfbf3418bc760313d6002c851dea4b607dd98"
+    },
+    {
+      "path": "assets/audio/survival/GATE-05.mp3",
+      "bytes": 16700,
+      "sha256": "4de3c3017a7631e35873dbeb9e0ae1061d7d23205f7a8dbd0f581e9177df7d8e"
+    },
+    {
+      "path": "assets/audio/survival/GATE-06.mp3",
+      "bytes": 19388,
+      "sha256": "14804a8dd0376bedb077d9cdc7707ad12c83221072fe4dc6af003dc1497597db"
+    },
+    {
+      "path": "assets/audio/survival/GATE-07.mp3",
+      "bytes": 15692,
+      "sha256": "5be46d7ba0f9347704bd0e5e39dad1ba02f4375f058ec1cabbee8dc7f668d874"
+    },
+    {
+      "path": "assets/audio/survival/GATE-08.mp3",
+      "bytes": 4100,
+      "sha256": "926869478673917a83273a5c81d4b4eb895d35231b4966626c9ed3eb85188424"
+    },
+    {
+      "path": "assets/audio/survival/GATE-HEAL.mp3",
+      "bytes": 30140,
+      "sha256": "8ba349fe3ead9d5362e7d38ee11745928576a9f1bda34237f40b53844d488a8f"
+    },
+    {
+      "path": "assets/audio/survival/LICENSES.md",
+      "bytes": 1707,
+      "sha256": "c06caa00870da65147badbb5955b9f5b16e6928c61c67c734c370c76ccff53cd"
+    },
+    {
+      "path": "assets/audio/survival/PIT-01.mp3",
+      "bytes": 15188,
+      "sha256": "4b0ff7b6779941d3e7391ece8ded3e585130c1650babfcf188d7b1eec0bb46ee"
+    },
+    {
+      "path": "assets/audio/survival/PIT-02.mp3",
+      "bytes": 3428,
+      "sha256": "64efada89a73ce82e5e86234d6c3e7f45d3e5fa42053b57f7d3956cce5ad223f"
+    },
+    {
+      "path": "assets/audio/survival/PIT-03.mp3",
+      "bytes": 9644,
+      "sha256": "36ae577f786b2090d7cf322fb0ed1e13e7ed4617181c01a797c22ef7aa57a22c"
+    },
+    {
+      "path": "assets/audio/survival/sources.json",
+      "bytes": 3110,
+      "sha256": "c8b6f27dc712f708cf2cb9e7902bba10c28efd9d2d175e53da3cb08a8a950145"
+    },
+    {
+      "path": "assets/audio/thunder.mp3",
+      "bytes": 63991,
+      "sha256": "62c8395dd1b725ae46dc85fae48ca9b700e41a9f1b86aa0d7fe6f53b02ecc989"
+    },
+    {
+      "path": "assets/audio/weapon-source.json",
+      "bytes": 829,
+      "sha256": "0b5ed1648fbd319768f450fdb848df5bbba7627c38ebcd8e745a7d8f1ed2b862"
+    },
+    {
+      "path": "assets/audio/weather-sources.json",
+      "bytes": 1723,
+      "sha256": "2ede1c152541126f0a74529dca4edc662531c90dbf84fd6e69492307e1a00d90"
+    },
+    {
+      "path": "assets/field/LICENSES.md",
+      "bytes": 8176,
+      "sha256": "28aeb4b8c858cf64f59622e54b0fa3c1157cd3899eb76b8907ef1537b6d1237f"
+    },
+    {
+      "path": "assets/field/beacon-mist.png",
+      "bytes": 58796,
+      "sha256": "810f3959b1beea2fe2ad077c8dd01caf48e04bf4422743fe680676948ed253ee"
+    },
+    {
+      "path": "assets/field/beacon-source.json",
+      "bytes": 722,
+      "sha256": "25d735dfbd5ceaaae7c1b35708f050466fb14b0f817aa2a9683fd6c5d22468d4"
+    },
+    {
+      "path": "assets/field/blue_metal_plate_diff_1k.jpg",
+      "bytes": 395923,
+      "sha256": "a0162bffce47d4a35613a12af22571b28c18412dc5805cbb69eac343554ef750"
+    },
+    {
+      "path": "assets/field/blue_metal_plate_rough_1k.jpg",
+      "bytes": 402450,
+      "sha256": "37168cf57144db28dd0743dab47fbebc09147fac919d5e2b5610b069c0b13a46"
+    },
+    {
+      "path": "assets/field/brown_mud_diff_1k.jpg",
+      "bytes": 501955,
+      "sha256": "df3f135c899f10a3b018738343b222cbc67d13e7c76c5d8da834a3d34c984417"
+    },
+    {
+      "path": "assets/field/brown_mud_nor_gl_1k.jpg",
+      "bytes": 1011780,
+      "sha256": "ac517ca39eb507ae0f27e2b3db431c60888f9b5c3c52bec49d2c0775da0920cb"
+    },
+    {
+      "path": "assets/field/brown_mud_rough_1k.jpg",
+      "bytes": 340815,
+      "sha256": "ae9fb57c1173ccb4579f40edf8321a30bdca815042ffd72015a2a707c7e2e7ba"
+    },
+    {
+      "path": "assets/field/corn_color.png",
+      "bytes": 1567406,
+      "sha256": "8106cf5d37be804d1eba585373988c47c6e9a8b9895a76c00e3c401005853272"
+    },
+    {
+      "path": "assets/field/corn_normal.png",
+      "bytes": 183807,
+      "sha256": "908c0f86b287ad9457f31cd468f81ffa06f03c0549b29dbd0e0f1696eeeaa7ce"
+    },
+    {
+      "path": "assets/field/cornfield-kit.glb",
+      "bytes": 1889360,
+      "sha256": "fca415a19b3406ff82b77275837890ec5054c1236c1723a2688bc1938e3a5904"
+    },
+    {
+      "path": "assets/field/geometry.json",
+      "bytes": 859,
+      "sha256": "e522698cc2c0ab48a049c3ab653a7b53cf9a8e386e54dc72b9c03e1c03f8723c"
+    },
+    {
+      "path": "assets/field/handheld-flashlight.glb",
+      "bytes": 687100,
+      "sha256": "cbb713cea1fc114abf4df4fffb8770b58a66c2171525e246de2598f906d764f3"
+    },
+    {
+      "path": "assets/field/hands-color.png",
+      "bytes": 1214993,
+      "sha256": "e57f6e253e9c7c116798ae488fbbca6fe9a7b5606869fd7dd7f2d68049d0f8b2"
+    },
+    {
+      "path": "assets/field/hands-source.json",
+      "bytes": 384,
+      "sha256": "cf0918319fdadeabdbe7a4da0e3d25340420d8130cf1baed92695ad644de49b4"
+    },
+    {
+      "path": "assets/field/hands.glb",
+      "bytes": 1376104,
+      "sha256": "66b3e6e4bb587905aad8c682d823d9b4120cecfc0a9ccaf88ba98cae1a0c564b"
+    },
+    {
+      "path": "assets/field/hessian_380_diff_1k.jpg",
+      "bytes": 944914,
+      "sha256": "5727302df3a9c845e6320ff186ac13fc7d0f1ffcd6fda71667e808e09379fe6f"
+    },
+    {
+      "path": "assets/field/hessian_380_nor_gl_1k.jpg",
+      "bytes": 1076074,
+      "sha256": "3994fd74148cb413892edd08155976497b3e7e15a403a182f07325a6b1e7be1a"
+    },
+    {
+      "path": "assets/field/night-sky.jpg",
+      "bytes": 76936,
+      "sha256": "b1a9c3b603e0519fad0db6ae9fe292f53d7a2ceb3c4ae93a0f6f61a465c99c3a"
+    },
+    {
+      "path": "assets/field/player-arms.glb",
+      "bytes": 352948,
+      "sha256": "ef42a6fb1aee866bec852bbe722acd9a5cea36a291baba939691c7ecf9690e54"
+    },
+    {
+      "path": "assets/field/player-viewmodel-source.json",
+      "bytes": 1719,
+      "sha256": "b9fbab7bec9772f11585d7fc65692fd2d0b999272bb1fa163c81ebdb0c1388db"
+    },
+    {
+      "path": "assets/field/prop-sources.json",
+      "bytes": 1722,
+      "sha256": "c390abc2335ea46e743f66ae6356ba17ef66cf9111b729d9fed749ae36689e2d"
+    },
+    {
+      "path": "assets/field/rusty_metal_02_diff_1k.jpg",
+      "bytes": 564932,
+      "sha256": "adaf094391518b6afe787a123942110aa88ef521c844f970b124420f5ed5d3d9"
+    },
+    {
+      "path": "assets/field/rusty_metal_02_nor_gl_1k.jpg",
+      "bytes": 403156,
+      "sha256": "995197a62cac6fbb000e6e6591a3330a3b77ef069c4ac58f505b586b9bdbd97b"
+    },
+    {
+      "path": "assets/field/rusty_metal_02_rough_1k.jpg",
+      "bytes": 135023,
+      "sha256": "178deb5896232f0498555676e55a3be1d6d197e2211d8d17cb8386a868bfd54a"
+    },
+    {
+      "path": "assets/field/scarecrow-source.json",
+      "bytes": 1126,
+      "sha256": "5b16e9a60787ce2750a2c2d0097e312c57e618206d2cfc84488bf6070e528859"
+    },
+    {
+      "path": "assets/field/scarecrow.glb",
+      "bytes": 51656,
+      "sha256": "9a1911746ad4ed5d9b915964fcd20fc9b6b2c5d109842352350d9210ea6261be"
+    },
+    {
+      "path": "assets/field/service-pistol.glb",
+      "bytes": 2550148,
+      "sha256": "009df6c833794c86f3206a11fd092d244e78ef7e04383095d340e7cf196298eb"
+    },
+    {
+      "path": "assets/field/sky-source.json",
+      "bytes": 1085,
+      "sha256": "78e97d38864841c6f8c0e16fac7dc199160952cc5fb9055b374b396951bf3429"
+    },
+    {
+      "path": "assets/field/sources.json",
+      "bytes": 4738,
+      "sha256": "2b8fec1443a38c9f2da3759190edd4fc6651fa310cc495a2fad4bcb202eff06d"
+    },
+    {
+      "path": "assets/field/wood_planks_diff_1k.jpg",
+      "bytes": 609525,
+      "sha256": "3b0669f683e4bf10f5a55a381cfa9669a7b8dfd921901829daa3b35acc2bbdec"
+    },
+    {
+      "path": "assets/field/wood_planks_dirt_diff_1k.jpg",
+      "bytes": 918123,
+      "sha256": "230bb4aabaebde24ead3ae593a48f8f45e93705aaf3cfdc438589bb49c2a7af3"
+    },
+    {
+      "path": "assets/field/wood_planks_dirt_nor_gl_1k.jpg",
+      "bytes": 515002,
+      "sha256": "877bf561c0bc83a583238c5133c221026ff25052f8f567174c6b285af4b74f0e"
+    },
+    {
+      "path": "assets/field/wood_planks_dirt_rough_1k.jpg",
+      "bytes": 523014,
+      "sha256": "f9b706729bb727d3eeab4794f18d3c4df43760d580342bf28fe8f3f09a68c5e9"
+    },
+    {
+      "path": "assets/field/wood_planks_nor_gl_1k.jpg",
+      "bytes": 652441,
+      "sha256": "d02abf113e17a8abe97e1be3e9d6d88add242e8c2291e2200d37aa8c68909f25"
+    },
+    {
+      "path": "assets/field/wood_planks_rough_1k.jpg",
+      "bytes": 299757,
+      "sha256": "1b7f115bfa25619b0a2db554eb1ab88a6fc5ef0b74ba4890611eae04d00b9829"
+    },
+    {
+      "path": "assets/field/zombie-clips.json",
+      "bytes": 238970,
+      "sha256": "d1aeaa4e66960c331e05ae02c103a6cee42b649a335d18e32ee0c1ec90945706"
+    },
+    {
+      "path": "assets/field/zombie-color.jpg",
+      "bytes": 830029,
+      "sha256": "c4629d70509f78fde0fc9d9dc8fbecfb985140f133e489094c52d028537b4d95"
+    },
+    {
+      "path": "assets/field/zombie-normal.jpg",
+      "bytes": 181646,
+      "sha256": "6e649199ef2a45028eb0d5f0172414f98ec4f2b5347a34a61bdaf4b0120a2b5a"
+    },
+    {
+      "path": "assets/field/zombie-roughness.jpg",
+      "bytes": 162531,
+      "sha256": "263f0734ec17313d48546b082c9e55c9c8c18b211689190cbc9322e9767b16ec"
+    },
+    {
+      "path": "assets/field/zombie-source.json",
+      "bytes": 3495,
+      "sha256": "d6a99614d62a8c9173e5c27e7bbbbe7cf6fd7b6fb0f4627ff9e1d9e3c5a58d5a"
+    },
+    {
+      "path": "assets/field/zombie.glb",
+      "bytes": 1389552,
+      "sha256": "e0266f171f1709717eebd9421d1ce295c1ec93e0e2e1f81ad97d52e22f45f89e"
+    },
+    {
+      "path": "assets/fonts/LICENSES.md",
+      "bytes": 622,
+      "sha256": "d86c498feff344f84a5ac1216b35baf31feaf7f951ad7e9accbd265fc236d041"
+    },
+    {
+      "path": "assets/fonts/barlow-condensed.ttf",
+      "bytes": 109428,
+      "sha256": "7b619d14bc2327509a9ef32b0890f709626f7ecc9ff61191c2a4314c5499d2d9"
+    },
+    {
+      "path": "assets/fonts/barlowcondensed-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f"
+    },
+    {
+      "path": "assets/fonts/rubik-glitch.ttf",
+      "bytes": 407304,
+      "sha256": "260245012483d56956269100ebece747aa95b4b67e5a9411a81a36e91f55e653"
+    },
+    {
+      "path": "assets/fonts/rubikglitch-OFL.txt",
+      "bytes": 4406,
+      "sha256": "f9e2d4498ea80d38bac7b8841d68af68c132fa67e1552e7c05717e6987de1d74"
+    },
+    {
+      "path": "assets/fonts/sources.json",
+      "bytes": 2174,
+      "sha256": "e29036533f4be7e53947c64a2c0f6c7d21115ed10014553197b37ba6021f051d"
+    },
+    {
+      "path": "assets/intro/LICENSES.md",
+      "bytes": 8229,
+      "sha256": "c7292bf937d09edf818ced2b123ea632fbf6f6a8a83f2a70910fded5082f05ac"
+    },
+    {
+      "path": "assets/intro/asphalt_diff.jpg",
+      "bytes": 788840,
+      "sha256": "95ad02e2631c41cf9fdd6a37596cf75adb4fb8a8b6880567cc78ed1c41dc5681"
+    },
+    {
+      "path": "assets/intro/asphalt_nor_gl.jpg",
+      "bytes": 974676,
+      "sha256": "978de8349ce2e9989325099a6fd1f5ea6b2826528e1264606a5c51296b1e2888"
+    },
+    {
+      "path": "assets/intro/asphalt_rough.jpg",
+      "bytes": 590105,
+      "sha256": "069b6ea342aaad04fd1582f59c16fbbe5c7a6f0f3a87bc9d57648ed53336fb3a"
+    },
+    {
+      "path": "assets/intro/cast-clarence.glb",
+      "bytes": 2909688,
+      "sha256": "d1c31bb31b1a012d5e16ff32b4e6f484d9f2699c009bd553827973d238f0547e"
+    },
+    {
+      "path": "assets/intro/cast-stanley.glb",
+      "bytes": 2957068,
+      "sha256": "412378dae8059494615c82717a634db7c9a14b0bf4d024a4a6aa34f578a54da6"
+    },
+    {
+      "path": "assets/intro/cast.glb",
+      "bytes": 714324,
+      "sha256": "739d9b6604511712ddab6c4bff76b12ea65b2b57b5ef18e6cc15b9519c27c096"
+    },
+    {
+      "path": "assets/intro/cruiser.glb",
+      "bytes": 5093584,
+      "sha256": "167060a8d6668424a9bf47a0972e9d9f3185d1e5552c3a41daca2acd9cb3a1f4"
+    },
+    {
+      "path": "assets/intro/dispatch-radio.glb",
+      "bytes": 264232,
+      "sha256": "8f854a30f58d90f5f3c7c32ad95f195def460297f18cd03b1c85dad72d666d9e"
+    },
+    {
+      "path": "assets/intro/human-roadside-v2-source.json",
+      "bytes": 4856,
+      "sha256": "fdc4cb7d0f659e6ae19daa19456a54c3abfe1fbebeab3f4fcc2119ba117ad94a"
+    },
+    {
+      "path": "assets/intro/mike-body.glb",
+      "bytes": 314372,
+      "sha256": "1231ff700b2b42417618d0fe9963f4fb7f3aad37e1ca162e184635b4bd4dcf6c"
+    },
+    {
+      "path": "assets/intro/projector.glb",
+      "bytes": 444552,
+      "sha256": "335e906ac0f691df561d77d72a8f52f165c7a38454ab2ea14cb13769394c9346"
+    },
+    {
+      "path": "assets/intro/roadside-set.glb",
+      "bytes": 134500,
+      "sha256": "cdbdc35d78384696a8f23cf47aeff5a35c7b7c74f328d4767da70a6dca894da0"
+    },
+    {
+      "path": "assets/intro/sources.json",
+      "bytes": 18752,
+      "sha256": "761f7491346fafb2f95bad67ef966b6e849bcc40ac5cad3c9e28e56624808f6c"
+    },
+    {
+      "path": "index.html",
+      "bytes": 11559,
+      "sha256": "46d993d19837f86b49d0c6bbc0c4db8ec177ea71a6fe3aaef0ba6e40e9a55d82"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 519,
+      "sha256": "6e23b735bec4fb071d5391e512d052ffd167967132628b5efc434b5e585fd6bd"
+    },
+    {
+      "path": "package.json",
+      "bytes": 1857,
+      "sha256": "34c67866c6cc30252a4ace59fd4e2e00af9733a10534c25747141f1a19a0ddff"
+    },
+    {
+      "path": "scripts/benchmark-intro-pose.mjs",
+      "bytes": 2423,
+      "sha256": "c1b84923d2939f7a50b9a116a86734e72ea2ef1f786cfc3aa363a5187fa4dfee"
+    },
+    {
+      "path": "scripts/browser-runtime.mjs",
+      "bytes": 1152,
+      "sha256": "7af6f39e78984de659168043a2cc67bba3dcedb71e6521f01d7eccc1bed56ec5"
+    },
+    {
+      "path": "scripts/build-field-assets.py",
+      "bytes": 11744,
+      "sha256": "8ee012732cdcd6f398a19c9ac1ad22bfd6777afafe05ce1615e8a1acb6330c2d"
+    },
+    {
+      "path": "scripts/build-hands.py",
+      "bytes": 5744,
+      "sha256": "08bb7cd256d5e4048e16664af26ef6a1dae23dc5ab777c3e23a6261d2626e623"
+    },
+    {
+      "path": "scripts/build-intro-assets.py",
+      "bytes": 7212,
+      "sha256": "0a8300410d0d8daa534a9a5c46499fa713f739e34ad89748b8d8acdff8a2b405"
+    },
+    {
+      "path": "scripts/build-night-sky.py",
+      "bytes": 5248,
+      "sha256": "f0df060265af79e11ab0e270d0681d0a383118f079f9a4435302c5f2e0cff400"
+    },
+    {
+      "path": "scripts/build-player-viewmodel.py",
+      "bytes": 7464,
+      "sha256": "dcf15a163f768f5dfe1441778a242fff124b3586707daef6733a9f73f91da213"
+    },
+    {
+      "path": "scripts/build-prologue-envelopes.py",
+      "bytes": 1534,
+      "sha256": "e6858229747aa34f8e88e8c636667924be051a385cfdce285a8af348a8c950b3"
+    },
+    {
+      "path": "scripts/build-prologue-voices.py",
+      "bytes": 4925,
+      "sha256": "793845b7156843127c85ca9ae232014cc4c8f6925523e4f156e4f0ad4ad59a93"
+    },
+    {
+      "path": "scripts/build-renderer-trial.mjs",
+      "bytes": 2440,
+      "sha256": "0453fa1a60c9169f7913a67a114b7ed6ddf5581fbbd5db12174fdf4592db444f"
+    },
+    {
+      "path": "scripts/build-visual-check-site.mjs",
+      "bytes": 587,
+      "sha256": "7f032a2f82c4f05add3fc314109f8542117803c15c996aabb68ab065486b3c40"
+    },
+    {
+      "path": "scripts/build-zombie-clips.mjs",
+      "bytes": 2902,
+      "sha256": "c327f6da5426ab07980e79495d4d41a9faaf746a0acb4727367fd359fb4506cb"
+    },
+    {
+      "path": "scripts/build-zombie.py",
+      "bytes": 3502,
+      "sha256": "c6436f372f0917058935fd9074fed3f5daa5062d4d09380bf46cd12b127e03e4"
+    },
+    {
+      "path": "scripts/build.mjs",
+      "bytes": 7827,
+      "sha256": "4b617bb61a637610556f38684720d4ebbb9094eff550227f38b6cb5058fce44d"
+    },
+    {
+      "path": "scripts/check.mjs",
+      "bytes": 1089,
+      "sha256": "26041121daddf556be6f14ec27a0a257a1c74be8b2d89f063d70e36817e494a7"
+    },
+    {
+      "path": "scripts/export-approach-wind-study.mjs",
+      "bytes": 3073,
+      "sha256": "37d84e11a0460512121c16427b15e06834b1e80c3fc82143945894d0eddbb623"
+    },
+    {
+      "path": "scripts/export-cabin-geometry.mjs",
+      "bytes": 1737,
+      "sha256": "9d45f023dd2c6d206f5b42977ccc552025e71d6986bfed9d6f17ff0e09955cf8"
+    },
+    {
+      "path": "scripts/export-cinematic-characters.py",
+      "bytes": 23658,
+      "sha256": "8c2f8a4746ba55779c48a0725469a3034a0146d55177b9e3a5c2f69a5755ed09"
+    },
+    {
+      "path": "scripts/export-corn-art-study.mjs",
+      "bytes": 910,
+      "sha256": "171d5c80181a06abe4c56909024e5e719b0bfe7e2e08425a8f64d4be020a881f"
+    },
+    {
+      "path": "scripts/export-human-roadside-v2.py",
+      "bytes": 25261,
+      "sha256": "46d0ff3f6ffbf0f233bf1b8ab271381ca4ca22554773d5e9cbac3fa84bca9bc1"
+    },
+    {
+      "path": "scripts/export-prologue-faces-v3.py",
+      "bytes": 28472,
+      "sha256": "0ed8c6e8d7bf0f472c7e1c207a5688dc8325045e81d0ca65581af65a80f5f11b"
+    },
+    {
+      "path": "scripts/export-prologue-radio-v1.py",
+      "bytes": 16740,
+      "sha256": "4e54b14d662869ca2d78496ea1b3c0eea898bc43b2a67ede9cb920b374b2496c"
+    },
+    {
+      "path": "scripts/export-zombie-clips.py",
+      "bytes": 1236,
+      "sha256": "83e1d0dd638855f83382392de54e02d4d375f40fa82bcbf75584e91b7ab7fa9a"
+    },
+    {
+      "path": "scripts/fetch-field-textures.mjs",
+      "bytes": 1632,
+      "sha256": "f28c38a9ce35a4721a12ada78f39960d63366295f40f7e446c9be113ab309c0c"
+    },
+    {
+      "path": "scripts/fetch-intro-assets.mjs",
+      "bytes": 2211,
+      "sha256": "24257b3efc25796f8ef9577d32b8ae4e7fefabd73a7b0ce3ec9cacab3457604a"
+    },
+    {
+      "path": "scripts/fetch-prop-textures.mjs",
+      "bytes": 1611,
+      "sha256": "81f724c9528182acddc678aec8b16ff2645ed7a1a6cc072f4944f0b1e2ebdf1b"
+    },
+    {
+      "path": "scripts/inspect-cast.mjs",
+      "bytes": 1959,
+      "sha256": "cc637391e658ea4cafff519c7812d2e3a04ef9cb2b76d6f7dca53583dc8d0161"
+    },
+    {
+      "path": "scripts/inspect-driver-exit.mjs",
+      "bytes": 1956,
+      "sha256": "87b53d1b3e7c43b3386a581a8b7a9cf0172bf9d46ad5d3fbd7d71f521263e8c7"
+    },
+    {
+      "path": "scripts/inspect-gait.mjs",
+      "bytes": 1705,
+      "sha256": "c1624855ac8db6a9df235e124f99d55494fabe0feb3909e6e2616dc62a0d33ad"
+    },
+    {
+      "path": "scripts/inspect-scene-fit.mjs",
+      "bytes": 1050,
+      "sha256": "66933e74547821fcad98c9e5bbfddef3acca1ee0c72cf70b901d1ca6cd4e47dc"
+    },
+    {
+      "path": "scripts/inspect-window-sightline.mjs",
+      "bytes": 2513,
+      "sha256": "3474f7834b071c7f7c538432027217e6fe54d856aaf67971e115dbe333197834"
+    },
+    {
+      "path": "scripts/inspect-window-skin.mjs",
+      "bytes": 2371,
+      "sha256": "3e9aed835a1dbb9fd2b4cd165d884196714a75688e6bfb95b224841645486a3c"
+    },
+    {
+      "path": "scripts/load-glb-cpu.mjs",
+      "bytes": 1033,
+      "sha256": "47e86eed917fac3c2155c48610eb31c579ca472c8df382ad1ee47f62495b1314"
+    },
+    {
+      "path": "scripts/preview-dist.mjs",
+      "bytes": 3418,
+      "sha256": "4ad072317377b45dae450a42b36441a5c4b47a70eb14945092ccdae63ed47c47"
+    },
+    {
+      "path": "scripts/preview-zombie-poses.mjs",
+      "bytes": 2670,
+      "sha256": "364a79c938a654f662aea3282ca257a6e4a6742f7443eb0bb45ca420834b33f9"
+    },
+    {
+      "path": "scripts/probe-wheel-grip.mjs",
+      "bytes": 2811,
+      "sha256": "f02c7c41ed3eeeb5ff70e13bda1fdb66b4151d0024ba04a3a631fa9a44b15c6f"
+    },
+    {
+      "path": "scripts/render-approach-wind-study.py",
+      "bytes": 4904,
+      "sha256": "12a37d2eb12b3f707ec65ef496c53322131d0b24a39c05020d178fdec6f6ff47"
+    },
+    {
+      "path": "scripts/render-cabin-geometry.py",
+      "bytes": 2995,
+      "sha256": "9404792655506459ea6aef6733d75db07b2e75ac7020e9ed0a6d842ea2a8250a"
+    },
+    {
+      "path": "scripts/render-corn-art-study.py",
+      "bytes": 5122,
+      "sha256": "d23e88e9fd2b4095695d627fcdc16f12104f9714e342a9a42294951160647b92"
+    },
+    {
+      "path": "scripts/render-zombie-poses.py",
+      "bytes": 2285,
+      "sha256": "cc7c8540319ae609d06aca45cd0652c5127dbbead4ef19bab936f3e1033c2794"
+    },
+    {
+      "path": "scripts/repair-cast-face.py",
+      "bytes": 3261,
+      "sha256": "fc3ee7be11e0a9423a20cd1099aeb214a09592b053ac62eb4686e131d85c0e58"
+    },
+    {
+      "path": "scripts/serve.mjs",
+      "bytes": 1649,
+      "sha256": "e86293ff54ac96f7c04d1a9ec7bfb34fb5321d8bab88ba1708a8793b28873859"
+    },
+    {
+      "path": "scripts/server-path.mjs",
+      "bytes": 1052,
+      "sha256": "2039baee9b4a518d8ee27f75ef4f8331acac1c6b0629e009091937440aeaae27"
+    },
+    {
+      "path": "scripts/verification/web-game-client.mjs",
+      "bytes": 10057,
+      "sha256": "b137df4a8e7397faac37acde0f3039ed044c22554b64c413dddc166f958e8afe"
+    },
+    {
+      "path": "scripts/visual-check-probe.mjs",
+      "bytes": 4303,
+      "sha256": "4c384095f139e843f0342b0f595e33fea0e07aea6a0925da9bbb3252850d459d"
+    },
+    {
+      "path": "scripts/visual-check-stage.mjs",
+      "bytes": 2912,
+      "sha256": "87cc5bc7a820b463ce7ebdde528eba6849d231f5aa17a39164798c6526365901"
+    },
+    {
+      "path": "scripts/visual-check-stamp.mjs",
+      "bytes": 1343,
+      "sha256": "9146da4251e9b88f892d9a479a5d9214983ef88fdcd808681d50b358a4478b19"
+    },
+    {
+      "path": "src/app.js",
+      "bytes": 35954,
+      "sha256": "51a645cc02fc2ac6afba2f32444e17ddc07890af6cec02ed7fe0568c358e546f"
+    },
+    {
+      "path": "src/asset-safety.js",
+      "bytes": 763,
+      "sha256": "3512b4ebf1a17be3d5646e9807c27ea27ae20176ffd8d2600222eab2404394eb"
+    },
+    {
+      "path": "src/audio-lifecycle.js",
+      "bytes": 1313,
+      "sha256": "38c0c65e6952b422247b958caa3632321a85b226a00756724ec1c53b4fc11e84"
+    },
+    {
+      "path": "src/audio.js",
+      "bytes": 24297,
+      "sha256": "b17c92df6ba37805b4f316880cd9eaff961a5b2b883e70b2f1180e36a030e403"
+    },
+    {
+      "path": "src/blood-room.js",
+      "bytes": 9254,
+      "sha256": "179181801092b88e1e136d4f292603bc53e839cda49bb46989e13b2fb737a25f"
+    },
+    {
+      "path": "src/checkpoint-vision.js",
+      "bytes": 2095,
+      "sha256": "59e0745c585ae9b8f3c3f7d9b2be723b5d29a91bdf67cf4ff2c0617007f1d5bc"
+    },
+    {
+      "path": "src/combat.js",
+      "bytes": 3366,
+      "sha256": "0ab557ffbc436ffd4e05f9d810511c6b25046940a2fe0f726d2fc8e2877b92d5"
+    },
+    {
+      "path": "src/control-mode.js",
+      "bytes": 502,
+      "sha256": "ec29efad184a051fce7ba966ca7989124de29855b9eb5add3da73f0c870135cb"
+    },
+    {
+      "path": "src/corn-art.js",
+      "bytes": 7962,
+      "sha256": "c67ab80e61a35283b3fe34198dc43e7ebc43045259d1ec67bd40edbdd01463dc"
+    },
+    {
+      "path": "src/corn-layout.js",
+      "bytes": 10775,
+      "sha256": "87a136310f871e128a9871736d7c59a19c3435594921f5616c8cf2dafc5906ce"
+    },
+    {
+      "path": "src/corn-survival-view.js",
+      "bytes": 2545,
+      "sha256": "db1bd993cfacfd6efd274a84a5e08f4bb7604b24ebbd5d83d1cb9c453da4a3cd"
+    },
+    {
+      "path": "src/corn-survival.js",
+      "bytes": 5314,
+      "sha256": "08b9624edc87aeb1e95207e3ee2774d16fa4e64c6d06860f06a8b7902161dc8b"
+    },
+    {
+      "path": "src/corn-view.js",
+      "bytes": 3271,
+      "sha256": "1ecfc212bea7fc0c9d5203175a52df857203537b56e8f1c76439f6f2abdcf972"
+    },
+    {
+      "path": "src/corn-world.js",
+      "bytes": 14382,
+      "sha256": "a36c08e7b7d69df9815a549853dabea6a0006554aa12bb4908c894846481af56"
+    },
+    {
+      "path": "src/corridor-layout.js",
+      "bytes": 7190,
+      "sha256": "8ed80a36b6d8b1a1cf3fe6e84ea8acb3783d4c886b34bae23d4ca41594cc179d"
+    },
+    {
+      "path": "src/corridor-run.js",
+      "bytes": 10204,
+      "sha256": "ca42ea0e9c96fcd445ed44b5eea3f31bcd5e5f466c9eec4dc7ce9f5286e48663"
+    },
+    {
+      "path": "src/corridor-view.js",
+      "bytes": 5921,
+      "sha256": "cc92b631c55358b364107d5c2e08c4d1fc98d75b47300dc71f7cd88fbed18ab2"
+    },
+    {
+      "path": "src/debug.js",
+      "bytes": 2895,
+      "sha256": "aa3fc3dc8ddc4a21b147736450b701bbfc2027b362dff3cfca52e9882003eca2"
+    },
+    {
+      "path": "src/enemy-state.js",
+      "bytes": 1970,
+      "sha256": "d5255dba4dcac6bb3f07c250bde0029aad90e56075f556b586986074817ec475"
+    },
+    {
+      "path": "src/environment-materials.js",
+      "bytes": 6760,
+      "sha256": "a4f4b414e94f56e10b1a098cee7dd57b725b1a74f27141d6e2576f34bb831fb2"
+    },
+    {
+      "path": "src/field-portal.js",
+      "bytes": 957,
+      "sha256": "b24325a4f7346c396eb2b99d94c775eaa27f047d4560fa02c6e9416e9e9f3a95"
+    },
+    {
+      "path": "src/field-visuals.js",
+      "bytes": 14052,
+      "sha256": "50f7134b6b2928530e42beef7ad865f20f4cf49dc70d2d1e4b4f0fa8e3fa1afd"
+    },
+    {
+      "path": "src/foliage-motion.js",
+      "bytes": 2678,
+      "sha256": "3b7bd7b9b2a3177a39f163197414d9fe4920306cd913312190866471d46afe8b"
+    },
+    {
+      "path": "src/footsteps.js",
+      "bytes": 3888,
+      "sha256": "63722b174c86c4f756fd04ad5fe9a6b6209d6f97136eea6633c8a049a99518d3"
+    },
+    {
+      "path": "src/game-config.js",
+      "bytes": 3289,
+      "sha256": "3d6770ada66cae84a0427a7aa19def7787183856d066cc064bcdd1bfcdf590a8"
+    },
+    {
+      "path": "src/game.js",
+      "bytes": 16452,
+      "sha256": "5c84117d462e33759f9116c4fae076ed8b4450df454faac7d017f0b4b4d7656b"
+    },
+    {
+      "path": "src/grapple.js",
+      "bytes": 9690,
+      "sha256": "481254f4e1108a0d4d0ced0c5b154e528be2677764d135b74d055d46e6e7d4d6"
+    },
+    {
+      "path": "src/ground-details.js",
+      "bytes": 5436,
+      "sha256": "b325262d66eb09df380b1afed57fddc1d3d5c382de7f42ccb7575a85c59085f5"
+    },
+    {
+      "path": "src/hand-grip.js",
+      "bytes": 7207,
+      "sha256": "13f9460c9bb1b547786f9cbe5a55b5cf83614bc1a40af9805caf05d33d828a88"
+    },
+    {
+      "path": "src/hands.js",
+      "bytes": 10785,
+      "sha256": "9e97b1ca7792e23b2c1ad998c58dfbf8130ca564cd6182d1defb09f844605c28"
+    },
+    {
+      "path": "src/hide-portals.js",
+      "bytes": 6259,
+      "sha256": "4b155c6a14f871f2e55f85fe5e158d70cc7da1d6f13a3d1c0443e5a6a4c82bee"
+    },
+    {
+      "path": "src/hiding.js",
+      "bytes": 2391,
+      "sha256": "098cb1b5f6b44b7a428a410086ffd01e1c87524b706b632ddeee99d969959441"
+    },
+    {
+      "path": "src/horror-presentation.js",
+      "bytes": 3000,
+      "sha256": "c01dcdee45e8bea91d6e07c9893096132fdb2c4cb035c123e0f0c1cc640446ba"
+    },
+    {
+      "path": "src/input.js",
+      "bytes": 4031,
+      "sha256": "0b9b56eeea54a4598bfd2762d5a1834cf9d9e0530e2236c2ccbab7227a51b426"
+    },
+    {
+      "path": "src/intro-visuals.js",
+      "bytes": 8478,
+      "sha256": "232daa3ffbf16a04ff00545fda35c5ba2742f93eebfd9dbf4cfc2c9325f1a412"
+    },
+    {
+      "path": "src/intro.js",
+      "bytes": 3645,
+      "sha256": "176bf9e870e3c9862e8110c6530bb9e7ea67e2d33c7e9daec91071d0e553c6e3"
+    },
+    {
+      "path": "src/liquid-material.js",
+      "bytes": 2659,
+      "sha256": "00869a9f5fc38c30bde65af5857bf2563cc2394da25977dfcd08092e9e76f7cd"
+    },
+    {
+      "path": "src/main.js",
+      "bytes": 3270,
+      "sha256": "b633fb3d12b9b9b56b81d3aa1f3b1f39f225dd647a8f180e60878f4bf04a5b3f"
+    },
+    {
+      "path": "src/maze.js",
+      "bytes": 8460,
+      "sha256": "7215302b2aff728a0ec6dcf1af8ccb265e6bbdff5daba8c60315394e2a459bb4"
+    },
+    {
+      "path": "src/night-sky.js",
+      "bytes": 1759,
+      "sha256": "192d2c7409e6de99486b76522c721ad0cfdf3a152359e9d3a758f0f99cc95b54"
+    },
+    {
+      "path": "src/opening.js",
+      "bytes": 2690,
+      "sha256": "fc19e979e48ceac16681dd63049353d3f93a215a88b4f899e43a1abaf9c106e9"
+    },
+    {
+      "path": "src/presentation-config.js",
+      "bytes": 535,
+      "sha256": "919756a7c7914d12edc8b382fc70fb1537b2603952ed0abd919dffea025a3c2d"
+    },
+    {
+      "path": "src/prologue-actors.js",
+      "bytes": 15482,
+      "sha256": "b02a82636e50fd5fb1a22150baed4cf3391fac2f80a20d42841eef5334ab5f4b"
+    },
+    {
+      "path": "src/prologue-assets.js",
+      "bytes": 12889,
+      "sha256": "f0467a2ab6a2b317ebf915be9c61dfb32be0b80b18938cb5e272ac9c976b97bb"
+    },
+    {
+      "path": "src/prologue-audio.js",
+      "bytes": 15320,
+      "sha256": "470e53c1a47e286c68a1ba016505246bbcdb0fe50e60a11e8dcd8da13f3735b3"
+    },
+    {
+      "path": "src/prologue-cabin.js",
+      "bytes": 7217,
+      "sha256": "e12281f8f89d7626200850a5e1937d8ccff8ff21f701bff5a91efdf0fec11d1d"
+    },
+    {
+      "path": "src/prologue-clearance.js",
+      "bytes": 1763,
+      "sha256": "492768aab823e8796305c4fa1f3e476340aba9791504a5445d98aa90a7502a96"
+    },
+    {
+      "path": "src/prologue-confrontation.js",
+      "bytes": 8143,
+      "sha256": "5b2d98466045eee186e1c83273818eaff808018fea8625988a2a81d7ff0c67d3"
+    },
+    {
+      "path": "src/prologue-driving.js",
+      "bytes": 5030,
+      "sha256": "9fe5cd2e498aa4e2f0890072cc2be6e59fe5e2d720b130a3de710185c884bea1"
+    },
+    {
+      "path": "src/prologue-hallucination.js",
+      "bytes": 3441,
+      "sha256": "536c1cb246b4b992e775ff44c9a3423fe2696c2834a13eec1ab5c13ed5c7f27e"
+    },
+    {
+      "path": "src/prologue-layout.js",
+      "bytes": 2274,
+      "sha256": "e9feffaedd51437f933c5fb44ea0c43f343f80c32f759f258e4e1d4b43cebdbe"
+    },
+    {
+      "path": "src/prologue-liquid-transition.js",
+      "bytes": 1851,
+      "sha256": "f99071bd8850c751e3676d46cdf0379acace5ff6da8fc2c6ccb7a0d98d9b8327"
+    },
+    {
+      "path": "src/prologue-model-actor.js",
+      "bytes": 50680,
+      "sha256": "b4d5ede8bb89409078d8500287b4037c010e359ba551dac2b7c62d012b3309ad"
+    },
+    {
+      "path": "src/prologue-motion.js",
+      "bytes": 12239,
+      "sha256": "9304c134d68d109b928c1e4177b37b57aea789bc95ac0f241ceda1a3e7f4d577"
+    },
+    {
+      "path": "src/prologue-performance.js",
+      "bytes": 3478,
+      "sha256": "802578a606d554b738378aa31a5c2e46dfba6ca5f3b35dfaf6f9ab8dd7f856bb"
+    },
+    {
+      "path": "src/prologue-radio.js",
+      "bytes": 5330,
+      "sha256": "6f7bd787ee86b7c2ae2113e274c9513797f32af37270608d2bc3580ee285aad0"
+    },
+    {
+      "path": "src/prologue-rain.js",
+      "bytes": 8708,
+      "sha256": "a618a8e4d3eb227b769e216db2ad50f631327585a1b4c7d8b6fbb0f1fcbcd763"
+    },
+    {
+      "path": "src/prologue-script.js",
+      "bytes": 9284,
+      "sha256": "5d7d0012b8a15718bfa58ed4b749f8bba9aac5b5dab2495093f6be5b425646ab"
+    },
+    {
+      "path": "src/prologue-speech.js",
+      "bytes": 29318,
+      "sha256": "6c0c52b5232b680382f469e4a6cd98589ea68fe5f9665cfbf1ecfe5e313b6cb9"
+    },
+    {
+      "path": "src/prologue-visuals.js",
+      "bytes": 40831,
+      "sha256": "44ecb7484e3b16fc240edae6764853fe48088925966b8575615457cb108dd38d"
+    },
+    {
+      "path": "src/prologue-voice-timing.js",
+      "bytes": 1892,
+      "sha256": "37ac7cb3545855ebdc38546d84a27b3119ce95e61217ff654a11a79b6c6f7577"
+    },
+    {
+      "path": "src/prologue.js",
+      "bytes": 13331,
+      "sha256": "0e282535ce42c51fa1bce9ce2ae4b51e18f8b7abaa67eb7fb9debe66825485a6"
+    },
+    {
+      "path": "src/prop-details.js",
+      "bytes": 2674,
+      "sha256": "d4bcbb67e5cc50f207d7f319a5603ae10338d61d9ddd113169128aa5cafdc841"
+    },
+    {
+      "path": "src/render-quality.js",
+      "bytes": 1415,
+      "sha256": "af8dcb2d527103f9a3bf874f2046e2ef5d4731b4844ef08a32463cee82d26fe8"
+    },
+    {
+      "path": "src/renderer-trial.js",
+      "bytes": 4806,
+      "sha256": "94c5c1940701b567e97b07cc754aeff7fd682843235be272d2f21e859133c35b"
+    },
+    {
+      "path": "src/return-beacon.js",
+      "bytes": 4941,
+      "sha256": "40d56127cf900b8a949dbea147973ef6e7d4f1610ab751d9ffbcf9cff0cff6bb"
+    },
+    {
+      "path": "src/runtime-loop.js",
+      "bytes": 1005,
+      "sha256": "a6740d58036c294cc14e2980f695c672e56715f170a4da586c109ed37a0a3a77"
+    },
+    {
+      "path": "src/scarecrow-view.js",
+      "bytes": 6713,
+      "sha256": "4f03de33d4fa3bc7a9379013af8ac43e32ff6d2e29937ac78443147b8dc6c3b6"
+    },
+    {
+      "path": "src/scene.js",
+      "bytes": 50213,
+      "sha256": "ba02675981aca192c28be4e4ac5c17d190f1594073c0f2ce502ff469c9ef3c00"
+    },
+    {
+      "path": "src/shot-effects.js",
+      "bytes": 2472,
+      "sha256": "e3e07c545172279fcd1495ecd548b5ce6a7fbff1282676be0d6b12d8d8f21a7e"
+    },
+    {
+      "path": "src/style.css",
+      "bytes": 24745,
+      "sha256": "83c4eb2c29a351e662d4700ab3852e80f5d8e75a1fb56b153a5ff311a807ec8e"
+    },
+    {
+      "path": "src/survival-audio.js",
+      "bytes": 1480,
+      "sha256": "34cc44a718e86ff8fbc207c59e9a89cda8d0584a4670861843ebb0ae3a883e81"
+    },
+    {
+      "path": "src/survival-ending.js",
+      "bytes": 5381,
+      "sha256": "d7910a5dc68d51a1e51df3af10109dd66f6abab3979503cbb5978201da7f3cc0"
+    },
+    {
+      "path": "src/survival-script.js",
+      "bytes": 1449,
+      "sha256": "6126d2b3719f0e90c9478a14fa3a7530ef56681366f1889b4e8d6df46b332b6f"
+    },
+    {
+      "path": "src/survival-visuals.js",
+      "bytes": 6314,
+      "sha256": "5f9fdda245cd284325bee8d41062da1f7c26c69ead22e66e3d0f2848d0cdeb46"
+    },
+    {
+      "path": "src/survival-voice-timing.js",
+      "bytes": 654,
+      "sha256": "e5cc4b5b448818fbbca287fc905b0222bde11be75aea59efaeb29c85ebed46e2"
+    },
+    {
+      "path": "src/threat-director.js",
+      "bytes": 3833,
+      "sha256": "57daec95419c9dce2ad5589b7169095afb3e38dc4f4564fe520f545f70a487c9"
+    },
+    {
+      "path": "src/touch-input.js",
+      "bytes": 4383,
+      "sha256": "c548ccc5268368f2abd338fa415ef5e69fcbc2416da683ae4fe1f9db93ce4457"
+    },
+    {
+      "path": "src/ui.js",
+      "bytes": 17210,
+      "sha256": "1cff705435f87b1dbce6fbceb1b6128652e1cb92cfc68ad8d9cd4fc035ede265"
+    },
+    {
+      "path": "src/viewmodel-pose.js",
+      "bytes": 3748,
+      "sha256": "c9293054f9abc57ebf6c3bc309b87b1dee273e1ef3122e0547ad482c1a0b2a44"
+    },
+    {
+      "path": "src/visual-check-build.d.ts",
+      "bytes": 42,
+      "sha256": "63551753b526cc1cabe72520722fe2f72e30d37097f764fb3736988977558f86"
+    },
+    {
+      "path": "src/visual-check-build.js",
+      "bytes": 118,
+      "sha256": "f2ffca2711dd9845cee1a2daac7787ff8703a8d836ef11141e1952d4e08b4fbe"
+    },
+    {
+      "path": "src/visual-check-cornfields.js",
+      "bytes": 6134,
+      "sha256": "e9c9f92527f634d49adc94fabf75ceea42d48e765de7f6dba73652f4b1870425"
+    },
+    {
+      "path": "src/visual-check.d.ts",
+      "bytes": 728,
+      "sha256": "09bf421671388cac7c1098cbdd517be36658fd621f434adcf0641e63567c7774"
+    },
+    {
+      "path": "src/visual-check.js",
+      "bytes": 11913,
+      "sha256": "bb4b33f13fd61403b42ecb3b437369b97c9fc4d4373b990457f9bd1f505192dc"
+    },
+    {
+      "path": "src/weather-view.js",
+      "bytes": 12552,
+      "sha256": "202a88c97d972209c218a96845e39751d4b93e2a38423abb00a4bc4a7beb7974"
+    },
+    {
+      "path": "src/weather.js",
+      "bytes": 9081,
+      "sha256": "514fda9883c327159d65b5b2e9e2caab97e0062aa798aa4d3d104885fb8bee38"
+    },
+    {
+      "path": "src/wood-panels.js",
+      "bytes": 4235,
+      "sha256": "83d76d77d83d1bafcd754d4e85fbc0207730512d22851177124928cf45b346fe"
+    },
+    {
+      "path": "src/zombie-ai.js",
+      "bytes": 21483,
+      "sha256": "b2f82e70db6c6d89402ae96c5fc868164a6b1ed0127280b0f029b6f6111da644"
+    },
+    {
+      "path": "src/zombie-animation.js",
+      "bytes": 2854,
+      "sha256": "bc26d4f70b7473c3eb5b6417aff122b3eedbdf4a259ed9c88f62a382813d7d3c"
+    },
+    {
+      "path": "src/zombie-beams.js",
+      "bytes": 8319,
+      "sha256": "5630f69e5f2e1a3e72d32dd49c589c550ca62c5ad518718e182c60a0a81a4e83"
+    },
+    {
+      "path": "src/zombie-poses.js",
+      "bytes": 11747,
+      "sha256": "04d4c2462f1ee4bdd01748712a23302f379892f1d2e8f919a17e14cad2ab5b0c"
+    },
+    {
+      "path": "src/zombie.js",
+      "bytes": 7596,
+      "sha256": "9364799dcc18249bfa4ea042f2806968585f7165d1af994292d54147cc2ed7d1"
+    },
+    {
+      "path": "tests/approach-wind.test.mjs",
+      "bytes": 10817,
+      "sha256": "b9ba2ca9309352fe3cd970b70733f277cf6e3192847e8ff1353f19e08b7e0002"
+    },
+    {
+      "path": "tests/browser.mjs",
+      "bytes": 10519,
+      "sha256": "06d7583a6ea1854e1095d51d75d4513368479b545fd187dc60397c1694b10420"
+    },
+    {
+      "path": "tests/build.test.mjs",
+      "bytes": 10519,
+      "sha256": "1c01f7e6fb95eb6b97b85ac0b188b3152e6a4b3c1173c4b5f38ec5bd3aec4704"
+    },
+    {
+      "path": "tests/checkpoint-vision.test.mjs",
+      "bytes": 5696,
+      "sha256": "9935dd0ee84f7f2851aa816cdb148a1bdf05b2e6cf493d0dbd5f6b8f274ae563"
+    },
+    {
+      "path": "tests/checkpoints-browser.mjs",
+      "bytes": 8814,
+      "sha256": "bec25bf38d5f8d8d6e1678c6a1464b83dfa5d6e1ba2e7b8afba9a9bdb73066ad"
+    },
+    {
+      "path": "tests/cinematic-assets.test.mjs",
+      "bytes": 12583,
+      "sha256": "b77e5a3ef94534fed6fb7ba6c691acae4262273111074e60b2585e39b5e9d3d9"
+    },
+    {
+      "path": "tests/control-mode-browser.mjs",
+      "bytes": 2753,
+      "sha256": "c95bc97b8b5340cfc3e15a132add5c8dcec59615324f8335c510711bfaa95a3e"
+    },
+    {
+      "path": "tests/control-mode.test.mjs",
+      "bytes": 1176,
+      "sha256": "c27b5f18ffca0b2eb4b310dac1dacc3c26665e6e05b41e013332d325048d6192"
+    },
+    {
+      "path": "tests/corn-survival-browser.mjs",
+      "bytes": 6093,
+      "sha256": "ecea4f6fd9e7ba492f43fcee10e9d5b0a720af27073b71fcb924d2fbb1943cb7"
+    },
+    {
+      "path": "tests/corn-survival.test.mjs",
+      "bytes": 18725,
+      "sha256": "4c4b080087ea018abf9942c80c8297872d3fb61631a33f3b5715337904ea1fa2"
+    },
+    {
+      "path": "tests/corn-world.test.mjs",
+      "bytes": 7551,
+      "sha256": "8b8b6d39f34b6de1958f8fa92d9b0b87ececd3dfd0c7d0b1dda18e9f616c56aa"
+    },
+    {
+      "path": "tests/corridor-field-browser.mjs",
+      "bytes": 5111,
+      "sha256": "4ae123e3b4ce297c022c46858418d671c11173f6b4d6cf363771d6320a8edbf8"
+    },
+    {
+      "path": "tests/corridor-field.test.mjs",
+      "bytes": 8794,
+      "sha256": "0f72323ec2d3640792ad6cb175073d2e1668aa38bc2780e83e07d408a506c634"
+    },
+    {
+      "path": "tests/environment-art.test.mjs",
+      "bytes": 7923,
+      "sha256": "254d411b5d2f25778e88240f1df87ffc51bfa974e364253e4e824b5766e6fa50"
+    },
+    {
+      "path": "tests/field-portal-crossing.test.mjs",
+      "bytes": 5783,
+      "sha256": "046b864a1fb57e7fbbccaffcae5233c7a63735018cadc827681d9831e5e7d6d5"
+    },
+    {
+      "path": "tests/field-return-recovery.test.mjs",
+      "bytes": 2305,
+      "sha256": "03f0eede96a38a899b2e49dca5d8db90d2e0422714883c20a973495cd1def770"
+    },
+    {
+      "path": "tests/field-visuals.mjs",
+      "bytes": 4955,
+      "sha256": "44ba56acda494e8506fa415e1053c019b5642654c7a20b692f6acfebb4bf44cc"
+    },
+    {
+      "path": "tests/footsteps-browser.mjs",
+      "bytes": 5423,
+      "sha256": "c9dce9b0ef7f744c039074a93b48594956100061a2d1d6ec6ba7955c096ff6fc"
+    },
+    {
+      "path": "tests/footsteps.test.mjs",
+      "bytes": 4962,
+      "sha256": "6b3345adb70972ed49f84e5889da0839db7a052f6b60122f0a490e17e71cc70e"
+    },
+    {
+      "path": "tests/game.test.mjs",
+      "bytes": 4850,
+      "sha256": "647a6bcf4136c7d3fe350f5640fbc1cf20287a005c6cbbdcd08f1777823c3e6d"
+    },
+    {
+      "path": "tests/gameplay-regressions.test.mjs",
+      "bytes": 5779,
+      "sha256": "177eb837a42cefa288496cd14999dd1e1c37f9f3646dc9514eae65a57a4ea8ec"
+    },
+    {
+      "path": "tests/grapple.test.mjs",
+      "bytes": 8446,
+      "sha256": "b6b7cfe091b060443f91ff54a1bd89065ebdb7d39c7561aaeb2cbead60b2fbb6"
+    },
+    {
+      "path": "tests/hand-grip.test.mjs",
+      "bytes": 10840,
+      "sha256": "11a98abe042d9736600708a005aae5de68c9dd7b45cd958dd7546bda3a81f3bc"
+    },
+    {
+      "path": "tests/handheld-upgrade.test.mjs",
+      "bytes": 7871,
+      "sha256": "5d9aae554e46e12997a8201ca4114474d126c700f0e3badcc2d2510ac51d01ba"
+    },
+    {
+      "path": "tests/hands-corn-browser.mjs",
+      "bytes": 5900,
+      "sha256": "df3c3b89df83d0474ede7675a90a64238bc95e1f80a4aed224ea690870a755e5"
+    },
+    {
+      "path": "tests/hands-corn-performance.mjs",
+      "bytes": 3630,
+      "sha256": "b664a8539496aa67332a9f3db08bb528a06c5b5ec14fcbb6fc97ccadd63da90a"
+    },
+    {
+      "path": "tests/helpers/browser.mjs",
+      "bytes": 4721,
+      "sha256": "fa288b07fcb4d35a3ff4fbd720282375d13880dd11d747d417a99ad5991bb3d9"
+    },
+    {
+      "path": "tests/helpers/capture.mjs",
+      "bytes": 2422,
+      "sha256": "357a9c6c48b8325d240c0ee314946251e05e572edf37ead7794849e422d02296"
+    },
+    {
+      "path": "tests/helpers/foliage-motion-cpu.mjs",
+      "bytes": 2152,
+      "sha256": "4e0181962dd40aaefeb52db2c97928f3876c8857c6dcaaa674b9a560e9f3d505"
+    },
+    {
+      "path": "tests/helpers/performance.mjs",
+      "bytes": 2941,
+      "sha256": "8f0f9a76cc705b8afc0b0c625f3a5fc2159bb39dddfc94b4d650a509929e7fb4"
+    },
+    {
+      "path": "tests/helpers/scenarios.mjs",
+      "bytes": 1893,
+      "sha256": "b9d323b150f37bd1d69ae9cc0d32dbc1f07197128fdb57f7c2c8150fb8182dfc"
+    },
+    {
+      "path": "tests/horror-browser.mjs",
+      "bytes": 6658,
+      "sha256": "1fa406d6e23d9340900978e9bbf36739e670e04ae9d4e73a3f2d0edf54c40f9e"
+    },
+    {
+      "path": "tests/horror-performance.mjs",
+      "bytes": 3451,
+      "sha256": "f1c912d71c3f18e4861008af905a3f53a20044be82bcae34ed93f6111d49e1bb"
+    },
+    {
+      "path": "tests/horror-presentation.test.mjs",
+      "bytes": 2556,
+      "sha256": "9c9e92c99616302f0880f7315301069c5c98d48e64fdf53845f8bff7af498959"
+    },
+    {
+      "path": "tests/infrastructure.test.mjs",
+      "bytes": 2552,
+      "sha256": "c91fe13e6e4ceb9b29a48fc52b7174d9dbcd90abfc6d1c70e3391ed9f4dc388a"
+    },
+    {
+      "path": "tests/input.test.mjs",
+      "bytes": 2743,
+      "sha256": "812c4967332642f9c2abd723c541ee4f1c61e8a301c38f10ac58c041b15dd63c"
+    },
+    {
+      "path": "tests/interactive-prologue.test.mjs",
+      "bytes": 12496,
+      "sha256": "a716683498b4f44208a8e2fb391a77f572540b082c949e98c2300eda59000e88"
+    },
+    {
+      "path": "tests/intro-assets.test.mjs",
+      "bytes": 1680,
+      "sha256": "6a9fa34e4588247dfe41a28c918db0f1f1955a8d0624efc1125367b1671764a6"
+    },
+    {
+      "path": "tests/intro-audio.test.mjs",
+      "bytes": 10890,
+      "sha256": "09104d13b413d65042c5ad8febc1d8f2ad0a542af8c04184367f6989c9c63101"
+    },
+    {
+      "path": "tests/intro-browser.mjs",
+      "bytes": 6999,
+      "sha256": "ca3c299c90bb3682391d421f1cc7675c4ccfaedeeb5d4e98bf4fa91a0ce8f941"
+    },
+    {
+      "path": "tests/intro-gameplay-upgrade-browser.mjs",
+      "bytes": 5116,
+      "sha256": "7b4becb1964a47a278913fd2bdfc19868680d62bfce32d5fe6ebcf93769363c1"
+    },
+    {
+      "path": "tests/intro.test.mjs",
+      "bytes": 7973,
+      "sha256": "d2d806e3fceee7be790814eae9cb6a4006fcb7faa39d117367e90f8daad2702c"
+    },
+    {
+      "path": "tests/mobile-browser.mjs",
+      "bytes": 9212,
+      "sha256": "a3d6959ae789d3f860b0d464f4bef97a487e7fd72f055446f2ae72bd9cc1dafc"
+    },
+    {
+      "path": "tests/open-passages.test.mjs",
+      "bytes": 5392,
+      "sha256": "f0a5b084952e0103ee2fa46c503dba5c79f08bd5ea58a6baa422b8a5aaaabcf9"
+    },
+    {
+      "path": "tests/opening.test.mjs",
+      "bytes": 8878,
+      "sha256": "1a4dd610a05c9cf4060adc2619e2ed90d1b8ca5c10eec6d4540f66d6db44132a"
+    },
+    {
+      "path": "tests/player-upgrade-browser.mjs",
+      "bytes": 3979,
+      "sha256": "a0c760a72d19bcc1e0254096cbb135ce070006798adbf9d91de4df123257b9ab"
+    },
+    {
+      "path": "tests/player-upgrade.test.mjs",
+      "bytes": 10204,
+      "sha256": "367627d4bee39e57dc31b9954f229e81cf33d72f0b9d2eca36d100fceeeaba90"
+    },
+    {
+      "path": "tests/polish-browser.mjs",
+      "bytes": 5084,
+      "sha256": "300975cb3754adf29b50394cb452c1c41da1c78c28f752c5bdadc4e76155660b"
+    },
+    {
+      "path": "tests/polish.test.mjs",
+      "bytes": 3275,
+      "sha256": "a362437ecb429bed1cce5166816f295817581f7a89adf25b8efeb498d16a6cda"
+    },
+    {
+      "path": "tests/prologue-assets.test.mjs",
+      "bytes": 8273,
+      "sha256": "a612e43d1f700a03ff757c1b28a8934609e076651bed8bfa120c7005aa8e7a62"
+    },
+    {
+      "path": "tests/prologue-audio.test.mjs",
+      "bytes": 9369,
+      "sha256": "b657b40d6bf474f00250f4ece1cf157edf317e3e07560273e8bf66b1c4336326"
+    },
+    {
+      "path": "tests/prologue-body-fit.test.mjs",
+      "bytes": 9356,
+      "sha256": "2de5e68d69778a5227a84cb3688d91d463dbd35913e008606351ca3098058a48"
+    },
+    {
+      "path": "tests/prologue-browser.mjs",
+      "bytes": 12616,
+      "sha256": "24c611eaa4446dc6b423a38cd05b1b199fcaf8cbf4b8027f3ce6734203c2eed0"
+    },
+    {
+      "path": "tests/prologue-character-identity.test.mjs",
+      "bytes": 8100,
+      "sha256": "569001a1c85ee01070d274c6be3e7acfbe172c793b32e4f977d1d99ffb0a39a7"
+    },
+    {
+      "path": "tests/prologue-door-hinge.test.mjs",
+      "bytes": 8226,
+      "sha256": "6a08cc941069b9be05dcd6bef68af03a40e372ff74e985e266563982ca17c4d6"
+    },
+    {
+      "path": "tests/prologue-driver-wrists.test.mjs",
+      "bytes": 6004,
+      "sha256": "b34886f487bb725b76c891c541d009d05ffc549f3b228eb7a60f5a0b98bc7e0d"
+    },
+    {
+      "path": "tests/prologue-driving.test.mjs",
+      "bytes": 5883,
+      "sha256": "2d88894d538dd8bff8c195f903b702db8f0d6b0d63fd989fe8a8768eeca531bc"
+    },
+    {
+      "path": "tests/prologue-face-repair.test.mjs",
+      "bytes": 9036,
+      "sha256": "817fb59d89d7acd562a3841cffbe8edf9c0e3946ce7d362de978dab3abe71a2d"
+    },
+    {
+      "path": "tests/prologue-liquid-cinematics-browser.mjs",
+      "bytes": 3338,
+      "sha256": "45167a8e9ac52823cd8caeaee8ff191272b76ccd1fee278d4910f50f9cac22d9"
+    },
+    {
+      "path": "tests/prologue-liquid-cinematics.test.mjs",
+      "bytes": 8282,
+      "sha256": "b797d0942f30ce55e28ca0395b525b2e8cbfe0c1b83f5a5fb811b168db4a0cd6"
+    },
+    {
+      "path": "tests/prologue-model-actor.test.mjs",
+      "bytes": 25804,
+      "sha256": "6d0e8f0d8346f4f728996d4060e1deae2731beb7f7fbbc92fa057a798c22e2e7"
+    },
+    {
+      "path": "tests/prologue-motion.test.mjs",
+      "bytes": 8697,
+      "sha256": "fd4c58c443d24f2d4e2d8012ff8aa4c277ab78287c61c6703b2716b81a3fd156"
+    },
+    {
+      "path": "tests/prologue-polish.test.mjs",
+      "bytes": 5481,
+      "sha256": "4e510ba7f6c68898f6d8e9f977acb1d01a048afb4775b004916a454a19dfdde4"
+    },
+    {
+      "path": "tests/prologue-radio.test.mjs",
+      "bytes": 7368,
+      "sha256": "3a551ba5e923547723774dd03326b8aa082e738efc2a989dae1dbbfe0d752f6e"
+    },
+    {
+      "path": "tests/prologue-rain.test.mjs",
+      "bytes": 10239,
+      "sha256": "445721a2c139bc6c7a843e9213d3f68d05fbd45a271b0af200d5e1bf1f087fba"
+    },
+    {
+      "path": "tests/prologue-scene-alignment.test.mjs",
+      "bytes": 22259,
+      "sha256": "a4738f196e07529616673c08eb95cfceae2692f59b11bd37d894f7915522f387"
+    },
+    {
+      "path": "tests/prologue-visuals.test.mjs",
+      "bytes": 31217,
+      "sha256": "374418fe7191286a6fb6d2574cade8d7fc84623fd638b939583627b25c107bf7"
+    },
+    {
+      "path": "tests/prologue.test.mjs",
+      "bytes": 6074,
+      "sha256": "e8894ead1e2d1ada2fd99c3ad2d15ca9c6c8206e907ccde668840d0757354f1a"
+    },
+    {
+      "path": "tests/pursuit-portals-browser.mjs",
+      "bytes": 7599,
+      "sha256": "424fcaa2be715690382731a689546e4bd0c04b6a4f124c5b8dd426bd39c382b8"
+    },
+    {
+      "path": "tests/pursuit.test.mjs",
+      "bytes": 6582,
+      "sha256": "37a26cbf7587e458a22529b81fc9b3e1c790d13356faeee6387c43daa82ce962"
+    },
+    {
+      "path": "tests/renderer-trial-browser.mjs",
+      "bytes": 2442,
+      "sha256": "0d2a5cb0d00ed18b0d86c7b2d5be7e75e773ab11d21e1650070ffb34ba945ce6"
+    },
+    {
+      "path": "tests/shot-beacon-browser.mjs",
+      "bytes": 9087,
+      "sha256": "4f65a09cc17855b47e702aaf17021132de6aec2e7f85088f7f579bd9d6d19294"
+    },
+    {
+      "path": "tests/shot-beacon.test.mjs",
+      "bytes": 3234,
+      "sha256": "1e9001d50147c3b48fe10d827b193dd83bb258c7af0e0074b9cd42abeac1e3e1"
+    },
+    {
+      "path": "tests/sky-visuals.mjs",
+      "bytes": 4436,
+      "sha256": "8b402573cde0374ee0e3e492155d8bb70c1372b35feed55ea9a6a73ac8c643a7"
+    },
+    {
+      "path": "tests/survival-ending-browser.mjs",
+      "bytes": 6750,
+      "sha256": "d5acc482715e8a9ed6235c3eafbe5d9ae1187608181ab2e4c551f64d41e159eb"
+    },
+    {
+      "path": "tests/survival-ending.test.mjs",
+      "bytes": 8417,
+      "sha256": "1f364e6ea9f8996fcd0f24e2621a1f76b2f75372b3c75f73a472f0dd541c7b15"
+    },
+    {
+      "path": "tests/survival.test.mjs",
+      "bytes": 15529,
+      "sha256": "0c9d7d0a5e77d8beb4d4a3b52654d83940e886244fb835552a8edd21a4ecb6a4"
+    },
+    {
+      "path": "tests/touch-input.test.mjs",
+      "bytes": 6733,
+      "sha256": "fd4322ad6a5fb65aff41e5ebb3d4da7e0a22fcf80796e4ec49cdddb8a1792690"
+    },
+    {
+      "path": "tests/trigger-eligibility.test.mjs",
+      "bytes": 2080,
+      "sha256": "8668e9a517a7eead9a97863e4da2d5752581305fb1f38973085a745c688d1915"
+    },
+    {
+      "path": "tests/ui-runtime.test.mjs",
+      "bytes": 4909,
+      "sha256": "dce77372f8b77dcc682ad82c57c4e9732980ac25b052dee5ab46d05aefce0c34"
+    },
+    {
+      "path": "tests/upgrade-browser.mjs",
+      "bytes": 7754,
+      "sha256": "a647614f3081e7b3e34533b0483437c7b7ab495ae2a307b78569c53762463ce9"
+    },
+    {
+      "path": "tests/upgrade.test.mjs",
+      "bytes": 9434,
+      "sha256": "caf507a94e1d77602e51db1a4119a555300331635d89ead9137ecf505375fcc8"
+    },
+    {
+      "path": "tests/visual-check-backend.test.mjs",
+      "bytes": 9368,
+      "sha256": "5b4a551a5a8c1f9a6cde81febac70db2d7f06859a1190ae1ac9ea4a30359f391"
+    },
+    {
+      "path": "tests/visual-check-package.mjs",
+      "bytes": 3284,
+      "sha256": "b73171fe1cd2ade650014bc98a18f430b8516113ec3775b2fed87a8734a2480b"
+    },
+    {
+      "path": "tests/visual-check-presets.mjs",
+      "bytes": 3223,
+      "sha256": "0c942f184f84b914a1ed5fa0b1136ecabb632b729e3d3e1fc56ffa8b07e933d3"
+    },
+    {
+      "path": "tests/visual-check-suspend.test.mjs",
+      "bytes": 839,
+      "sha256": "b98242041c2ad108ff28731fdac6572f196dc436668594561151fad20cde0f34"
+    },
+    {
+      "path": "tests/visual-check-zip.test.mjs",
+      "bytes": 1157,
+      "sha256": "a5fd737b45fec4c38386b21fae72ea2c54d4d77d52bd840ecc7931e0a0e201cb"
+    },
+    {
+      "path": "tests/visual-integration.test.mjs",
+      "bytes": 2503,
+      "sha256": "38cab9e10e5304559ce714addab2cb08e0413caf6314efb9dab6b22930f225c5"
+    },
+    {
+      "path": "tests/weapon-audio.test.mjs",
+      "bytes": 5090,
+      "sha256": "bc11df0ce1a07bdfecec3b1a8331ba21d3b64d252baa2977c5e5c577eca3d9a9"
+    },
+    {
+      "path": "tests/weather-audio.test.mjs",
+      "bytes": 2467,
+      "sha256": "46af315392637915d0040fd4429074f48171890dfef04843ca48d502ae371bd1"
+    },
+    {
+      "path": "tests/weather-browser.mjs",
+      "bytes": 5492,
+      "sha256": "c7fb098db2f7964c55ead8d0aeae06c5724b2115b46700128c6de223db3ea064"
+    },
+    {
+      "path": "tests/weather.test.mjs",
+      "bytes": 7878,
+      "sha256": "e2e7231545fb4196febe4c1ddd89447810bd68b5ec8930fe830d410cf135d4e5"
+    },
+    {
+      "path": "tests/zombie-beams.test.mjs",
+      "bytes": 6408,
+      "sha256": "2352b5db663ea7b6ba4703622aec39fa9217af591eda9a6ccdec26f09e2bf329"
+    },
+    {
+      "path": "tests/zombie-poses.test.mjs",
+      "bytes": 7543,
+      "sha256": "734ecc27e2a4ab1c7843646b48abe9a0e89d6ac710b2d1579c7d133a5f27cd47"
+    },
+    {
+      "path": "visual-check-limits.json",
+      "bytes": 57,
+      "sha256": "4cc112d987f94d6f1024dcb3b2d5f30b75f732f2c822852a9c2f284259c88eb5"
+    },
+    {
+      "path": "worker/visual-check-worker.js",
+      "bytes": 14937,
+      "sha256": "1b334652d3308b9114c4afa5bc0043f3e563f45b31e9967ad62fb38123772c0d"
+    }
+  ]
+}

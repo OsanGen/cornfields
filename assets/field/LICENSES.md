@@ -129,3 +129,6 @@ from the exact candidate GLB. `scripts/export-cinematic-characters.py` records t
 bounded export. The exact source/output hashes and texture sizes are recorded in
 `zombie-source.json`. Render studies are isolated asset evidence; runtime eye
 attachments, continuous gameplay and device performance need separate checks.
+
+## Visual overhaul v3 arm correction
+The existing CC0 para / MakeHuman FPS arms remain the source. The inherited eight-fold forearm extension was removed, cropped elbow ends closed, and runtime presentation fitted without altering the licensed source hand/finger geometry or adding a new weapon. Editable authoring and provenance: scripts/export-visual-overhaul-v3.py and art/visual-overhaul-v3-sources.json.

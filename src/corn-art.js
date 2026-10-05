@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 const randomFrom=seed=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
 const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
-export const CORN_ART_VERSION='ribbed-corn-2026-10-03';
+export const CORN_ART_VERSION='rooted-corn-visual-overhaul-v3';
 
 /** Original kit refinement: shared silhouette/height family, stable origin and UV strips.
  * Geometry is authored once, never rebuilt by a frame, and never used for collision.
@@ -36,7 +36,10 @@ export function createCornGeometry(variant=0,{far=false}={}){
     }
     for(let j=0;j<segments;j++)for(let k=0;k<columns;k++){const a=start+j*(columns+1)+k,b=a+columns+1;indices.push(a,b,a+1,a+1,b,b+1);}
   }
-  tube([0,0,0],[lean,height,0],.026,far?4:5,far?3:6);
+  // A low soil/contact collar survives the runtime replacement of the Blender kit.
+  // The instance base is planted slightly below the shared terrain height.
+  tube([0,.004,0],[0,.042,0],.095,far?4:6,1,1);
+  tube([0,0,0],[lean,height,0],.026,far?4:5,far?2:6);
   // Same leaf attachment heights in both LODs. The far kit drops only the smallest
   // interior leaves, retaining the upper silhouette and the same gameplay cover.
   for(let leaf=0;leaf<11;leaf++){
@@ -57,6 +60,7 @@ export function createCornGeometry(variant=0,{far=false}={}){
       tube([lean*(y-.013)/height,y-.013,0],[lean*(y+.013)/height,y+.013,0],r,5,1,2);
     }
     for(let branch=0;branch<6;branch++)for(let grain=0;grain<2;grain++){
+      if(grain===1&&[2,5].includes(branch))continue; // Reallocate twelve close-detail triangles to rooted soil contact.
       const a=branch*2.4,f=.5+grain*.3,x=lean+Math.cos(a)*.16*f,z=Math.sin(a)*.16*f,y=height+.04+.18*f;
       tube([x,y,z],[x+Math.cos(a+.7)*.025,y+.052,z+Math.sin(a+.7)*.025],.005,3,1,3);
     }

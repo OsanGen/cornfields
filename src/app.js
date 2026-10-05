@@ -161,6 +161,7 @@ export function createGameApp({
         survivalAudio?.sync({gameplay:true,chapter:phase,time:state.time,line:trialLine,nextLine:['entry','room'].includes(phase)?SURVIVAL_LINES[0]:phase==='transform'?SURVIVAL_LINES.find(line=>line.chapter==='pit'):null});
       }else survivalAudio?.pause();
     }
+    audio.syncIntro?.(intro.active&&intro.phase==='playing'&&!document.hidden&&(!prologueEnabled||intro.stage==='credits')?intro.frame(reducedMotion):null);
   }
 
   function cancelIntroEntry() {

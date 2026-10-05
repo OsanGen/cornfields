@@ -186,8 +186,8 @@ export function createPrologueActor({name = 'Clarence', police = true} = {}) {
         shoulder.rotation.set(Math.sin(phase)*stride*.72-distress*.12,0,sign*(.045+distress*.04));
         elbow.rotation.set(-.11-(running?.65:0)-distress*.15,0,0);hand.rotation.set(.04,0,sign*.05);
       }
-      if(mode==='drive'||mode==='exit'){
-        const seated=mode==='drive'?1:1-(exitPose?.transfer??1);
+      if(mode==='drive'||mode==='seated'||mode==='exit'){
+        const seated=mode==='drive'||mode==='seated'?1:1-(exitPose?.transfer??1);
         hip.position.y=.91;body.rotation.x=-.035*seated;
         for(const {thigh,knee}of legs){thigh.rotation.x=-1.34*seated;knee.rotation.x=1.48*seated;}
         for(const {shoulder,elbow,hand,sign}of arms){shoulder.rotation.set(-.88*seated,sign*.10*seated,-sign*.10*seated);elbow.rotation.x=-.55*seated;hand.rotation.x=-.40*seated;}

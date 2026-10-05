@@ -91,3 +91,12 @@ test('gaze rotates each eyeball at its own source-side socket instead of the opp
   actor.dispose();
  }
 });
+
+
+test('fictional police detail is fitted to Clarence only and owns its generated geometry',()=>{
+ const officer=createTexturedPrologueActor({gltf:variants.clarence,police:true}),civilian=createTexturedPrologueActor({gltf:variants.stanley,police:false});
+ const details=actor=>{const list=[];actor.root.traverse(o=>{if(o.name.startsWith('Fictional police uniform '))list.push(o)});return list;};
+ const fitted=details(officer);assert.equal(variants.clarence.asset.extras.authoredUniformV3,true);assert(fitted.every(o=>!o.name.endsWith('shirt details')&&o.parent.name==='waist'));assert.equal(fitted.length,2);assert.equal(details(civilian).length,0);
+ assert(fitted.every(o=>o.parent.isBone));assert(triangles(officer.root)<=18000);let disposed=0;for(const mesh of fitted)mesh.geometry.addEventListener('dispose',()=>disposed++);
+ officer.dispose();assert.equal(disposed,2);civilian.dispose();
+});

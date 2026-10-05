@@ -16,14 +16,14 @@ const noise=`
 /** World-anchored weathering with no displacement. Wrappers preserve existing
  * liquid/other shader hooks and maintain a distinct program cache identity.
  */
-export function applyEnvironmentSurface(material,{kind='mud',wet=true}={}){
+export function applyEnvironmentSurface(material,{kind='mud',wet=true,terrainProfile=false}={}){
   if(applied.has(material))return applied.get(material);
   if(!['mud','wood','paint','earth'].includes(kind))throw new Error('Unknown environment surface '+kind);
-  const uniforms={wetness:{value:wet?1:0}},before=material.onBeforeCompile,key=material.customProgramCacheKey?.bind(material),baseKey=key?key():'';
+  const uniforms={wetness:{value:wet?1:0},terrainFromWorld:{value:new THREE.Matrix4()}},before=material.onBeforeCompile,key=material.customProgramCacheKey?.bind(material),baseKey=key?key():'';
   material.onBeforeCompile=shader=>{
-    before?.(shader);shader.uniforms.environmentWetness=uniforms.wetness;
+    before?.(shader);shader.uniforms.environmentWetness=uniforms.wetness;shader.uniforms.environmentTerrainFromWorld=uniforms.terrainFromWorld;
     shader.vertexShader='varying vec3 vEnvironmentWorld;\n'+shader.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n'+vertexWorld);
-    shader.fragmentShader='varying vec3 vEnvironmentWorld; uniform float environmentWetness;\n'+noise+shader.fragmentShader;
+    shader.fragmentShader='varying vec3 vEnvironmentWorld; uniform float environmentWetness; uniform mat4 environmentTerrainFromWorld;\n'+noise+shader.fragmentShader;
     let color='',rough='',bump='';
     if(kind==='mud'){
       // Large damp hollows, medium clods and dry mineral tops. Normal/albedo maps
@@ -33,6 +33,10 @@ export function applyEnvironmentSurface(material,{kind='mud',wet=true}={}){
         float environmentGrain=environmentNoise(vEnvironmentWorld.xz*21.);
         float environmentClod=smoothstep(.42,.68,environmentNoise(vEnvironmentWorld.xz*8.));
         diffuseColor.rgb*=mix(.94+environmentGrain*.10+environmentClod*.07,.48,environmentHollow);`;
+      if(terrainProfile){
+        const hollows=ROADSIDE_HOLLOWS.map(h=>`{vec2 hp=(environmentTerrainXZ-vec2(${h.x.toFixed(5)},${h.z.toFixed(5)}))/vec2(${h.rx.toFixed(5)},${h.rz.toFixed(5)});float ha=atan(hp.y,hp.x);float hr=length(hp)/(1.+.10*sin(ha*3.+${h.phase.toFixed(5)})+.045*sin(ha*7.-${h.phase.toFixed(5)}));terrainWetness=max(terrainWetness,1.-smoothstep(.38,1.13,hr));}`).join('\n');
+        color=`vec2 environmentTerrainXZ=(environmentTerrainFromWorld*vec4(vEnvironmentWorld,1.)).xz;float terrainWetness=0.;${hollows}\n`+color.replace('smoothstep(.42,.72,environmentPatch)*environmentWetness','terrainWetness*environmentWetness');
+      }
       rough=`roughnessFactor=clamp(mix(max(.84,roughnessFactor),.27,environmentHollow),.25,1.);`;
       bump='environmentClod*.005+environmentGrain*.0015';
     }else if(kind==='wood'){
@@ -66,7 +70,7 @@ export function applyEnvironmentSurface(material,{kind='mud',wet=true}={}){
       normal=normalize(abs(environmentDet)*normal-environmentGradient);
     `);
   };
-  material.customProgramCacheKey=()=>baseKey+'|environment-'+kind+'-v2';material.needsUpdate=true;
+  material.customProgramCacheKey=()=>baseKey+'|environment-'+kind+'-v3'+(terrainProfile?'-shared-hollows':'');material.needsUpdate=true;
   material.userData.environmentSurface=kind;applied.set(material,uniforms);return uniforms;
 }
 
@@ -100,4 +104,53 @@ export function createPoreNormal(size=128){
     bytes[at]=(dx/n*.5+.5)*255;bytes[at+1]=(dy/n*.5+.5)*255;bytes[at+2]=(1/n*.5+.5)*255;bytes[at+3]=255;
   }
   const t=new THREE.DataTexture(bytes,size,size);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.generateMipmaps=true;t.repeat.set(8,6);t.needsUpdate=true;return t;
+}
+
+// One continuous local height/wetness description for corn bases, mud and water.
+// It is presentation only: route geometry, player collision and gameplay stay fixed.
+export const ROADSIDE_HOLLOWS=Object.freeze([
+ {x:2.35,z:6.35,rx:1.12,rz:.59,depth:.058,level:-.041,phase:.4},
+ {x:4.55,z:7.55,rx:.80,rz:.43,depth:.052,level:-.043,phase:1.7},
+ {x:-12.6,z:-5.9,rx:1.20,rz:.68,depth:.064,level:-.046,phase:2.4},
+ {x:-20.1,z:-3.1,rx:.83,rz:.49,depth:.052,level:-.046,phase:.9},
+ {x:-33.4,z:-5.1,rx:1.45,rz:.56,depth:.068,level:-.044,phase:1.2},
+].map(Object.freeze));
+const groundSmooth=x=>{const t=Math.max(0,Math.min(1,x));return t*t*(3-2*t);};
+export function hollowRadius(x,z,h){
+ const a=Math.atan2((z-h.z)/h.rz,(x-h.x)/h.rx),edge=1+.10*Math.sin(a*3+h.phase)+.045*Math.sin(a*7-h.phase);
+ return Math.hypot((x-h.x)/h.rx,(z-h.z)/h.rz)/edge;
+}
+export function wetGroundHeight(x,z){
+ const local=groundSmooth(Math.min(x+64,18-x,z+18,22-z)/2);
+ let y=-.027+local*(.010*Math.sin(x*.73+z*.37)+.007*Math.sin(z*1.31-x*.23));
+ for(const h of ROADSIDE_HOLLOWS)y-=h.depth*(1-groundSmooth(hollowRadius(x,z,h)));
+ return y;
+}
+export function wetGroundContact(x,z){
+ let wetness=0;for(const h of ROADSIDE_HOLLOWS)wetness=Math.max(wetness,1-groundSmooth((hollowRadius(x,z,h)-.38)/.75));
+ return {height:wetGroundHeight(x,z),wetness};
+}
+export function wetGroundGeometry(){
+ const positions=[],uv=[],indices=[];
+ function grid(x0,x1,z0,z1,nx,nz){const offset=positions.length/3;
+  for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){const x=x0+(x1-x0)*i/nx,z=z0+(z1-z0)*j/nz;positions.push(x,wetGroundHeight(x,z),z);uv.push((x+65)/130,(420-z)/600);}
+  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=offset+j*(nx+1)+i,b=a+nx+1;indices.push(a,b,a+1,a+1,b,b+1);}
+ }
+ // Dense only along the local review route; distant landscape stays inexpensive.
+ grid(-64,18,-18,22,164,80);grid(-65,-64,-180,420,1,60);grid(18,65,-180,420,5,60);grid(-64,18,-180,-18,9,17);grid(-64,18,22,420,9,40);
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();g.computeBoundingSphere();g.userData.visualOnly=true;return g;
+}
+export function createGroundedPuddles(material){
+ const group=new THREE.Group();group.name='Shallow water in shared ground depressions';const waters=[];
+ for(const h of ROADSIDE_HOLLOWS){
+  const positions=[h.x,h.level+.001,h.z],uv=[.5,.5],indices=[],segments=40;
+  for(let i=0;i<=segments;i++){
+   const a=i/segments*Math.PI*2;let lo=0,hi=1.25;
+   for(let n=0;n<20;n++){const r=(lo+hi)/2,x=h.x+Math.cos(a)*h.rx*r,z=h.z+Math.sin(a)*h.rz*r;if(wetGroundHeight(x,z)<h.level)lo=r;else hi=r;}
+   const r=(lo+hi)/2,x=h.x+Math.cos(a)*h.rx*r,z=h.z+Math.sin(a)*h.rz*r;positions.push(x,h.level+.001,z);uv.push(.5+Math.cos(a)*r*.5,.5+Math.sin(a)*r*.5);if(i)indices.push(0,i+1,i);
+  }
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();g.computeBoundingSphere();
+  const water=new THREE.Mesh(g,material);water.name='Terrain-contact shallow puddle';water.userData.hollow=h;group.add(water);waters.push(water);
+ }
+ group.userData.waterMeshes=waters;return group;
 }

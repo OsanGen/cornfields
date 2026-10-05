@@ -1,14 +1,14 @@
 // Fast playtest adaptation. R=retained, A=adapted, N=new draft, U=user wording.
 // Cue IDs and provenance match CORNFIELDS_FAST_INTERACTIVE_PROLOGUE_REFINEMENT.md.
-import {EXIT_SECONDS} from './prologue-performance.js';
+import {EXIT_SECONDS,PROLOGUE_OPENING} from './prologue-performance.js';
 import {BANG_TIMES} from './prologue-confrontation.js';
 const freeze=Object.freeze;
-const VOICE_TAIL=.12,LINE_GAP=.18;
+const VOICE_TAIL=.12,LINE_GAP=PROLOGUE_OPENING.lineGap;
 // 2026-10-04: the owner explicitly deferred recordings for these two new cues only.
 export const PROLOGUE_SUBTITLE_ONLY_IDS=freeze(['CAR-00','UND-01']);
 const raw=(id,voice,chapter,basis,text)=>freeze({id,voice,chapter,basis,text,audioMode:PROLOGUE_SUBTITLE_ONLY_IDS.includes(id)?'subtitle-only':'recorded',speaker:voice==='face'?'PROJECTED FACE':voice==='unknown'?'':voice.toUpperCase()});
 const SOURCE=freeze([
-  raw('CAR-00','mike','car','N','Clarence, I need to get something off my chest.'),
+  raw('CAR-00','mike','car','U',PROLOGUE_OPENING.confession),
   raw('CAR-01','mike','car','A','That standoff in 2002. I lost my partner that day.'),
   raw('CAR-02','mike','car','R',"But I can't get this shit out of my head."),
   raw('CAR-03','mike','car','R',"It won't stop replaying in my head. Like the worst overplayed song you've heard on the radio."),
@@ -17,8 +17,8 @@ const SOURCE=freeze([
   raw('CAR-06','mike','car','R',"Don't be nervous. Be ready."),
   raw('CAR-07','mike','car','R',"That's what'll make you the man who tells the story back and wears it like a crown."),
   raw('RAD-01','dispatch','dispatch','N','Chief Hartmouth, Edwards. Missing child reported just down the road. Sadie Yates. Her father is at the cornfield.'),
-  raw('RAD-02','clarence','dispatch','N',"That's close. Pulling over."),
-  raw('ARR-00','stanley','emergence','U','The call was about me! My daughter! Please, help!'),
+  raw('RAD-02','clarence','emergence','N',"That's close. Pulling over."),
+  raw('ARR-00','stanley','bang','U','The call was about me! My daughter! Please, help!'),
   raw('CAB-01','mike','cabin','U','Calm the hell down! Step back. Give us a second.'),
   raw('FLA-03','mike','cabin','A',"This guy's fucking insane. Let's just make sure he didn't kill his own daughter."),
   raw('CAB-02','clarence','cabin','N',"All right. Let's talk to him."),
@@ -50,10 +50,10 @@ const SOURCE=freeze([
   raw('LIQ-01','unknown','liquid','U','WE ARE ONE'),
 ]);
 const CHAPTERS=freeze([
-  {id:'car',title:'Police car',lead:6},
+  {id:'car',title:'Police car',lead:PROLOGUE_OPENING.musicLead},
   {id:'dispatch',title:'Dispatch call',lead:.3},
-  {id:'emergence',title:'Stanley emerges',lead:.65},
-  {id:'bang',title:'At the window',duration:2},
+  {id:'emergence',title:'Stanley stops the cruiser',lead:.45,minDuration:5.2},
+  {id:'bang',title:'At the window',lead:1.52},
   {id:'cabin',title:'A private word',lead:.15},
   {id:'exit',title:'Leave the cruiser',lead:EXIT_SECONDS},
   {id:'flashlight',title:'Light and warning',lead:.2},
@@ -108,11 +108,12 @@ export function createPrologueTimeline({durations={}}={}){
         if(i<script.length-1)cursor+=LINE_GAP;
       }
       cursor+=.12;
+      cursor=Math.max(cursor,start+(chapter.minDuration||0));
     }
     chapters.push(freeze({id:chapter.id,title:chapter.title,start,end:cursor}));
   }
   const chapter=id=>chapters.find(item=>item.id===id);
-  const cues=[['entertainment_off',4.15],['zombie_scream_1',chapter('undead').start+1.5],['zombie_scream_2',chapter('undead').start+1.72],['radio',chapter('dispatch').start+.04],['corn_burst',chapter('emergence').start+.04],...BANG_TIMES.map((at,index)=>['car_bang_'+(index+1),chapter('bang').start+at]),['undead',chapter('undead').start],['redroom',chapter('redroom').start],['liquid',chapter('liquid').start],['crash',chapter('rupture').start]];
+  const cues=[['entertainment_off',lines.find(line=>line.id==='CAR-01').start],['zombie_scream_1',chapter('undead').start+1.5],['zombie_scream_2',chapter('undead').start+1.72],['radio',chapter('dispatch').start+.04],['corn_burst',chapter('emergence').start+.04],['car_honk',chapter('emergence').start+.5],...BANG_TIMES.map((at,index)=>['car_bang_'+(index+1),chapter('bang').start+at]),['undead',chapter('undead').start],['redroom',chapter('redroom').start],['liquid',chapter('liquid').start],['crash',chapter('rupture').start]];
   return freeze({duration:cursor,chapters:freeze(chapters),lines:freeze(lines),cues:freeze(cues.map(freeze))});
 }
 const baseline=createPrologueTimeline();
