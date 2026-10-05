@@ -1732,8 +1732,8 @@
     },
     {
       "path": "tests/player-upgrade-browser.mjs",
-      "bytes": 3979,
-      "sha256": "ee8f541608dd666d8749c8fe82f24a3f1ae01622e9bd237ac727415809082d0e"
+      "bytes": 6995,
+      "sha256": "cb6121fe86ab5e8040d6359bb02b65b7d4585ed53be49224208c32e7df71671c"
     },
     {
       "path": "tests/polish-browser.mjs",
