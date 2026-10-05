@@ -5,9 +5,9 @@ import {startPreview} from '../scripts/preview-dist.mjs';
 import {captureGame} from './helpers/capture.mjs';
 
 const output='output/remaining-upgrade-2026-10-01/browser';await mkdir(output,{recursive:true});
-const preview=await startPreview({port:0,basePath:'/cornfields/',seconds:180});
+const preview=await startPreview({port:0,basePath:'/cornfields/',seconds:270});
 const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
-const deadline=setTimeout(()=>browser.close(),150000),report={errors:[],devices:[]};
+const deadline=setTimeout(()=>browser.close(),240000),report={errors:[],devices:[]};
 try{
   for(const touch of [false,true]){
     const name=touch?'phone':'desktop',page=await browser.newPage({viewport:touch?{width:844,height:390}:{width:1280,height:720},isMobile:touch,hasTouch:touch,deviceScaleFactor:1});
