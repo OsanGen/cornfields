@@ -7,6 +7,10 @@ on:
         description: Publish after verification (false builds and captures evidence only)
         type: boolean
         default: true
+      defer_browser_checks:
+        description: Approved P1-B playtest deferral; three browser checks and screenshots will NOT RUN
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,6 +34,7 @@ jobs:
       - run: npm run check
       - run: npm run build
       - name: Install isolated browser verifier
+        if: ${{ !inputs.defer_browser_checks }}
         run: |
           npm install --prefix "$RUNNER_TEMP/corn-browser" --no-save --package-lock=false playwright@1.58.2
           ln -s "$RUNNER_TEMP/corn-browser/node_modules/playwright" node_modules/playwright
@@ -37,23 +42,42 @@ jobs:
           "$browser_path" --version
           echo "CORNFIELD_BROWSER_EXECUTABLE=$browser_path" >> "$GITHUB_ENV"
       - name: Verify corridor and field in desktop and touch browsers
+        if: ${{ !inputs.defer_browser_checks }}
         run: node tests/corridor-field-browser.mjs
       - name: Verify player assets and fallback in desktop and touch browsers
+        if: ${{ !inputs.defer_browser_checks }}
         run: npm run test:player:browser
       - name: Run shared game client
+        if: ${{ !inputs.defer_browser_checks }}
         run: |
           CORNFIELD_BASE_PATH=/cornfields/ CORNFIELD_SESSION_SECONDS=90 node scripts/preview-dist.mjs &
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           node scripts/verification/web-game-client.mjs --url 'http://127.0.0.1:4180/cornfields/?intro=off' --click-selector '#start-btn' --actions-json '{"steps":[{"buttons":[],"frames":5},{"buttons":["up"],"frames":30}]}' --iterations 1 --screenshot-dir output/corridor-field/client
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && !inputs.defer_browser_checks }}
         with:
           name: corridor-field-verification
           path: |
             output/corridor-field/
             output/remaining-upgrade-2026-10-01/browser/
           retention-days: 7
+      - name: Report browser-check evidence
+        if: always()
+        env:
+          DEFER_BROWSER_CHECKS: ${{ inputs.defer_browser_checks }}
+        run: |
+          if [ "$DEFER_BROWSER_CHECKS" = "true" ]; then
+            {
+              echo 'P1-B approved playtest deferral. Browser-functional evidence: NOT RUN.'
+              echo '- NOT RUN: Verify corridor and field in desktop and touch browsers (tests/corridor-field-browser.mjs).'
+              echo '- NOT RUN: Verify player assets and fallback in desktop and touch browsers (npm run test:player:browser).'
+              echo '- NOT RUN: Run shared game client (scripts/verification/web-game-client.mjs).'
+              echo 'No new browser screenshot artifact. Listening, visual quality, user QA and measured performance remain unverified.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Browser checks were not deferred. See the three named steps for their actual results; a failed or unexecuted check is not a pass.' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist

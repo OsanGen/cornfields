@@ -126,3 +126,75 @@ test('dispose cancels frames and removes runtime and input listeners', async () 
   assert.equal(h.node('scene').listenerCount(), 0);
   assert.equal(h.audio.ctx.state, 'suspended');
 });
+
+// A boundary adapter records the real runtime's accepted traversal without changing game state.
+async function breathingHarness(options={}){
+  const {createPlayerBreathing,playerBreathingAllowed}=await import('../src/player-breathing.js');
+  const h=createHarness({corridors:true,...options}),model=createPlayerBreathing(),samples=[];
+  h.audio.stopPlayerBreathing=()=>model.reset();
+  const pause=h.audio.pause.bind(h.audio),reset=h.audio.reset.bind(h.audio);
+  h.audio.pause=()=>{model.reset();pause();};h.audio.reset=()=>{model.reset();reset();};
+  h.audio.updatePlayerBreathing=(game,dt,{distance,visible})=>{
+    const allowed=visible&&!h.audio.muted&&game.mode==='playing'&&playerBreathingAllowed(game);
+    samples.push({distance,dt,allowed,phase:game.survivalEnding?.phase,interaction:game.interaction?.phase});
+    if(allowed)model.update(distance,dt);else model.reset();
+  };
+  return {...h,breathing:model,samples};
+}
+
+test('breathing sees collision-resolved distance, never wall pushing or camera movement',async()=>{
+  const h=await breathingHarness();await h.app.enter();h.app.fixture('viewmodel');
+  h.app.step(1,{yaw:.3,pitch:.1,lookDelta:80});
+  assert.equal(h.breathing.snapshot().effort,0);assert.ok(h.samples.every(s=>s.distance===0));
+  h.app.step(20,{forward:1,yaw:0});const position=h.app.snapshot().player;
+  const before=h.samples.length;h.app.step(10,{forward:1,yaw:0});
+  assert.equal(h.app.snapshot().player.x,position.x);assert.equal(h.app.snapshot().player.z,position.z);assert.ok(h.samples.slice(before).every(s=>s.distance===0));
+  assert.notEqual(h.breathing.snapshot().state,'exerted');h.app.dispose();
+});
+
+test('diagonal movement has no breathing advantage and neither path changes gameplay',async()=>{
+  const cardinal=await breathingHarness(),diagonal=await breathingHarness();
+  for(const h of [cardinal,diagonal]){await h.app.enter();h.app.fixture('field');}
+  cardinal.app.step(1,{forward:1});diagonal.app.step(1,{forward:1,strafe:1});
+  assert.ok(Math.abs(cardinal.breathing.snapshot().effort-diagonal.breathing.snapshot().effort)<1e-10);
+  const sum=h=>h.samples.reduce((total,s)=>total+s.distance,0);assert.ok(Math.abs(sum(cardinal)-sum(diagonal))<1e-9);
+  const plain=createHarness({corridors:true});await plain.app.enter();plain.app.fixture('field');plain.app.step(1,{forward:1});
+  assert.deepEqual(cardinal.app.snapshot(),plain.app.snapshot());
+  cardinal.app.dispose();diagonal.app.dispose();plain.app.dispose();
+});
+
+test('breathing agrees between 30/60/120 rendered frames and fixed simulation stepping',async()=>{
+  const results=[];
+  for(const hz of [30,60,120]){
+    const h=await breathingHarness();h.maze.spawn={...h.maze.corridorLayout.sections[3].anchor};await h.app.restart();h.app.startLoop();h.key('KeyW');
+    for(let i=1;i<=hz*2;i++)h.frame(i*1000/hz);
+    results.push({breathing:h.breathing.snapshot(),game:h.app.snapshot()});h.app.dispose();
+  }
+  const stepped=await breathingHarness();stepped.maze.spawn={...stepped.maze.corridorLayout.sections[3].anchor};await stepped.app.restart();stepped.app.step(2,{forward:1,movementIntent:true});
+  results.push({breathing:stepped.breathing.snapshot(),game:stepped.app.snapshot()});stepped.app.dispose();
+  assert.ok(results[0].breathing.effort>0,'frame-rate comparison must exercise active breathing');
+  for(const result of results){assert.deepEqual(result.game,results[0].game);assert.deepEqual(result.breathing,results[0].breathing);}
+});
+
+test('breathing resets through pause, focus, page lifecycle, restart and title exit',async()=>{
+  for(const interrupt of [h=>h.app.pause(),h=>h.window.dispatch('blur'),h=>h.window.dispatch('pagehide'),h=>{h.document.hidden=true;h.document.dispatch('visibilitychange');}]){
+    const h=await breathingHarness();await h.app.enter();h.app.fixture('viewmodel');h.app.step(.7,{forward:1});
+    assert.ok(h.breathing.snapshot().effort>0);interrupt(h);assert.equal(h.breathing.snapshot().effort,0);
+    h.app.step(2,{forward:1});assert.equal(h.breathing.snapshot().effort,0);h.document.hidden=false;
+    await h.app.restart();assert.equal(h.breathing.snapshot().effort,0);h.app.fixture('viewmodel');h.app.step(.7,{forward:1});
+    h.click('title-btn');assert.equal(h.breathing.snapshot().effort,0);h.app.dispose();
+  }
+});
+
+test('arrival, grapple, story transition, death and opening replay cannot retain breathing',async()=>{
+  const arrival=await breathingHarness({ending:true});await arrival.app.enter();arrival.app.step(.5,{forward:1});
+  assert.ok(arrival.samples.every(s=>!s.allowed));assert.equal(arrival.breathing.snapshot().effort,0);arrival.app.dispose();
+  const h=await breathingHarness({ending:true});await h.app.enter();h.app.fixture('viewmodel');h.app.step(.7,{forward:1});
+  h.app.fixture('survival-expire');h.app.step(.05);
+  assert.equal(h.samples.at(-1).phase,'transform');assert.equal(h.samples.at(-1).allowed,false);assert.equal(h.breathing.snapshot().effort,0);
+  const grapple=await breathingHarness();await grapple.app.enter();grapple.app.fixture('encounter');grapple.app.step(.5);
+  assert.ok(grapple.samples.some(s=>s.interaction));assert.equal(grapple.breathing.snapshot().effort,0);grapple.app.dispose();
+  h.app.fixture('survival-death');h.app.step(10);assert.equal(h.app.snapshot().mode,'dead');assert.equal(h.breathing.snapshot().effort,0);h.app.dispose();
+  const replay=await breathingHarness({prologue:true});await replay.app.enter();replay.app.step(.5);
+  assert.equal(replay.samples.length,0);replay.app.pause();replay.click('replay-intro');assert.equal(replay.breathing.snapshot().effort,0);replay.app.dispose();
+});

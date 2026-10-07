@@ -137,3 +137,11 @@ stills are separate from browser QA, measured performance and owner acceptance.
 The revised Mike and Clarence assets reuse the existing NPC male Steve by supersteve, CC0-1.0, source https://opengameart.org/content/npc-male-steve . New cotton/skin fitting, navy uniform panels, fictional insignia and restrained face/material refinements are original project adaptations. Stanley is unchanged. The Level 1 house keeps the already-cleared Rob Tuytel / Poly Haven weathered timber maps under CC0 and adds original recessed apertures, porch lantern and graded drive geometry.
 
 roadside-dog-v1.glb is original locally authored Blender geometry and vertex colors, with no external dog mesh or texture source. The collar/tether and sampled idle/bark mouth movement are original. A bark sound is not included pending approval. No new asset service, model installation, external AI or spending was used. Current hashes and historical provenance are recorded separately in human-roadside-v2-source.json and art/visual-overhaul-v3-sources.json.
+
+## Realism and Liquid Sequence v1 original art
+
+roadside-dog-v2.glb and background-trees-v1.glb are original Cornfields geometry and embedded images authored locally in Blender for this outcome. No stock model, paid asset, downloaded texture, external AI service or new dependency was used. The existing bark recording and all earlier source attribution remain unchanged. Current runtime asset hashes are recorded in sources.json.
+
+Dog anatomy and coat refinement on 6 October 2026 remains wholly original local Blender work. The revised short-coat maps are locally painted deterministic strands with no photo, downloaded texture, model service or external AI input. Bark bytes, tree bytes and earlier licenses remain unchanged.
+
+The later 6 October 2026 cranial, eye-seat, pinna and coat correction remains original project geometry and original maps. A public breed proportion description was consulted as read-only guidance; no reference photograph, stock mesh or texture was imported. Existing external attribution is unchanged.

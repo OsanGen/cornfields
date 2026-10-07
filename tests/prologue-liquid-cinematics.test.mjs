@@ -50,7 +50,7 @@ test('released hallucinations reject late asset results without restoring clones
 });
 test('rupture stays liquid during the lift and retains six bounded connected ribbons',()=>{
  let scene;const view=createPrologueVisuals(rendererStub(s=>scene=s));
- for(const t of [0,2,5,8,9,12]){const v=prologueVisionState({chapter:'rupture',chapterTime:t});if(t>=2&&t<9)assert(v.liquid>0);if(t>=9)assert.equal(v.escortsVisible,false);view.render({chapter:'rupture',chapterTime:t,time:t,chapterProgress:t/12});if(t===8){assert.equal(view.diagnostics().ribbons,6);assert.equal(view.diagnostics().binaryFragments,0);}}
+ for(const t of [0,2,5,8,9,12]){const v=prologueVisionState({chapter:'rupture',chapterTime:t});if(t>=5)assert(v.liquid>0);if(t>=11.35)assert.equal(v.escortsVisible,false);else assert.equal(v.escortsVisible,true,'no vanished escort before full cover');view.render({chapter:'rupture',chapterTime:t,time:t,chapterProgress:t/12});if(t===8){assert.equal(view.diagnostics().ribbons,6);assert.equal(view.diagnostics().binaryFragments,0);}}
  view.render({chapter:'car',chapterTime:0,time:0});assert.equal(view.diagnostics().ribbons,0);view.dispose();
 });
 test('projector is legible geometry at ordinary desktop and landscape-phone gaze',()=>{
@@ -63,11 +63,11 @@ test('the specific voice deferral affects only the two new cues and preserves re
  const {runtimeAssets}=await import('../scripts/build.mjs');
  assert.deepEqual(PROLOGUE_SUBTITLE_ONLY_IDS,['CAR-00','UND-01']);
  assert.deepEqual(PROLOGUE_LINES.filter(l=>l.audioMode==='subtitle-only').map(l=>l.id),PROLOGUE_SUBTITLE_ONLY_IDS);
- assert.equal(PROLOGUE_AUDIO_LINES.length,42);
+ assert.equal(PROLOGUE_AUDIO_LINES.length,41);
  for(const id of PROLOGUE_SUBTITLE_ONLY_IDS){assert(!PROLOGUE_AUDIO_LINES.some(l=>l.id===id));assert(!runtimeAssets.includes(`assets/audio/prologue/${id}.mp3`));assert(PROLOGUE_LINES.some(l=>l.id===id&&l.text));}
  for(const line of PROLOGUE_AUDIO_LINES){assert.equal(line.audioMode,'recorded');assert(runtimeAssets.includes(`assets/audio/prologue/${line.id}.mp3`));}
  const {readFile,readdir}=await import('node:fs/promises'),{createHash}=await import('node:crypto');let aggregate='';
- const names=(await readdir('assets/audio/prologue')).filter(n=>n.endsWith('.mp3')&&!['entertainment-music.mp3','title-music.mp3'].includes(n)).sort();assert.equal(names.length,78,'all78 inherited voice files remain byte-identical; the two explicitly approved music excerpts are separate');
- for(const name of names)aggregate+=`${name}\0${createHash('sha256').update(await readFile(`assets/audio/prologue/${name}`)).digest('hex')}\n`;
+ const names=(await readdir('assets/audio/prologue')).filter(n=>n.endsWith('.mp3')&&!['entertainment-music.mp3','title-music.mp3'].includes(n)).sort();assert.equal(names.length,78,'retain all 78 inherited voice identities; only the END-01 trim changes bytes');
+ for(const name of names){const digest=createHash('sha256').update(await readFile(`assets/audio/prologue/${name}`)).digest('hex');if(name==='END-01.mp3'){assert.equal(digest,'2f437ea51a38f510d241105359fc27ceb336517ad868e62f63090a5a4ecf2a38');aggregate+=`${name}\0e28eebd99e4e28dd1f814da3fd0fa524353ccfe23e2faeb6a09e1fcbb5436072\n`;}else aggregate+=`${name}\0${digest}\n`;}
  assert.equal(createHash('sha256').update(aggregate).digest('hex'),'e0afed33ffcf237189deea22a64ddd1520c01544095d4daac4970d491098a6bc');
 });

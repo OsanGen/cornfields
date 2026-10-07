@@ -45,14 +45,14 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args),lin
       }
     }finally{loading=false;}
   }
-  function preload(frame){
+  function preload(frame,only=false){
     // At most the current utterance and two successors, never the entire soundtrack.
     const next=frame.line||frame.nextLine;
     if(!next)return;
     const index=lines.findIndex(line=>line.id===next.id);
     // Explicit subtitle-only cues retain their captions and preload the next
     // recorded line. They never become failed or repeatedly requested assets.
-    const upcoming=index<0?(recordedIds.has(next.id)?[next]:[]):lines.slice(index).filter(line=>recordedIds.has(line.id)).slice(0,3);
+    const upcoming=only||frame.gameplay?(recordedIds.has(next.id)?[next]:[]):index<0?(recordedIds.has(next.id)?[next]:[]):lines.slice(index).filter(line=>recordedIds.has(line.id)).slice(0,3);
     pending.clear();
     for(const line of upcoming)if(!buffers.has(line.id)&&!failed.has(line.id))pending.add(line.id);
     void pump();
@@ -209,5 +209,5 @@ export function createPrologueAudio(audio,{fetcher=(...args)=>fetch(...args),lin
   }
   function pause(){stopBark();contacts.reset();audio.footsteps?.stop('prologue');stopVoice();stop(ambience);ambience=null;stop(engine);engine=null;stopEntertainment();stop(projector);projector=null;for(const item of effects)stop(item);effects.clear();bus?.disconnect();bus=null;}
   function release(){pause();barkGeneration++;barkRequest?.abort();barkRequest=null;barkLoading=false;barkBuffer=null;Object.assign(bark,{status:'not requested',bytes:0,decodedBytes:0,error:null,playing:false,phase:null,cycle:null,pan:0,gain:0});pending.clear();request?.abort();buffers.clear();lastFrame=null;musicGeneration++;musicRequest?.abort();musicRequest=null;musicLoading=false;musicBuffer=null;Object.assign(music,{status:'not requested',bytes:0,decodedBytes:0,error:null,playing:false,startedAtStorySeconds:null,missedOpening:false});}
-  return {sync,cue,pause,release,prepareLine(line){if(!disposed)preload({line});},dispose(){disposed=true;release();failed.clear();},diagnostics(){return {voice:current,playing:!!voice,buffers:buffers.size,loading,failed:[...failed],played,missed,footfalls,chapter:lastFrame?.chapter||null,synthetic:true,music:{...music},bark:{...bark}};}};
+  return {sync,cue,pause,release,prepareLine(line){if(!disposed)preload({line},true);},dispose(){disposed=true;release();failed.clear();},diagnostics(){return {voice:current,playing:!!voice,buffers:buffers.size,loading,failed:[...failed],played,missed,footfalls,chapter:lastFrame?.chapter||null,synthetic:true,music:{...music},bark:{...bark}};}};
 }

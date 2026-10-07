@@ -1,3 +1,5 @@
+import {reachPrologueArm} from './prologue-confrontation.js';
+import {sampleRealismSequence,sampleRecoveryGunPose} from './prologue-return-sequence.js';
 import {cabinRadioEnvelope} from './prologue-clearance.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {createTexturedPrologueActor} from './prologue-model-actor.js';
@@ -81,7 +83,14 @@ export function createPrologueBody({loader=new GLTFLoader(),deadlineMs=8000,onMa
     const motion=frame.motion?.actors?.mike,phase=motion?.phase??(frame.player?.distance||0)/.35*Math.PI;
     actor.pose({mode,time:frame.elapsed??frame.time??0,phase,gait:mode==='walk'?1:0,reduced:frame.reduced,exitPose:frame.exitPose,support:motion?.support});
     updateWorld();for(const side of ['R','L']){const at=n=>root.getObjectByName(n+side).getWorldPosition(new THREE.Vector3());lengths[side]=[at('armup').distanceTo(at('armlo')),at('armlo').distanceTo(at('hand'))];}
-    const lean=samplePrologueBodyReach(frame.chapter==='car'?frame.radioHandReach:0);
+    const sequence=sampleRealismSequence(frame),lean=samplePrologueBodyReach(frame.chapter==='car'?frame.radioHandReach:sequence.crouch*.6);
+    if(sequence.crouch){
+      updateWorld();const waist=root.getObjectByName('waist'),feet=['L','R'].map(side=>{const foot=root.getObjectByName('foot1'+side);return {side,foot,position:foot.getWorldPosition(new THREE.Vector3()),rotation:foot.getWorldQuaternion(new THREE.Quaternion())};});
+      const down=new THREE.Vector3(0,-.78*sequence.crouch,.42*sequence.crouch).applyQuaternion(root.getWorldQuaternion(new THREE.Quaternion()));
+      waist.position.copy(waist.parent.worldToLocal(waist.getWorldPosition(new THREE.Vector3()).add(down)));updateWorld();
+      for(const f of feet){const upper=root.getObjectByName('legup'+f.side),lower=root.getObjectByName('leglo'+f.side);reachPrologueArm(root,upper,lower,f.foot,root.worldToLocal(f.position.clone()),new THREE.Vector3(f.side==='R'?-.2:.2,.35,.48),true);f.foot.quaternion.copy(f.foot.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(f.rotation));}
+      updateWorld();stats.recoveryFeet=feet.map(f=>({side:f.side,error:f.foot.getWorldPosition(new THREE.Vector3()).distanceTo(f.position)}));
+    }
     if(lean.weight){
       updateWorld();const waist=root.getObjectByName('waist'),pivot=waist.getWorldPosition(new THREE.Vector3()),before=waist.getWorldQuaternion(new THREE.Quaternion());
       const hands=['R','L'].map(side=>{const hand=root.getObjectByName('hand'+side);return {hand,position:hand.getWorldPosition(new THREE.Vector3()),rotation:hand.getWorldQuaternion(new THREE.Quaternion())};});
@@ -99,9 +108,10 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
   const fill=new THREE.HemisphereLight(0xb4bdad,0x514234,.68),key=new THREE.DirectionalLight(0xe7e9d8,1.15);
   key.position.set(-.5,.6,.25);overlay.add(fill,key);key.target.position.set(0,-.2,-.6);overlay.add(key.target);
   const materials=new Set(),geometries=new Set(),skeletons=new Set(),treatments=[],radioViews=[],storyArms=new Map();
-  let pistol=null,radio=null,doorHand=null,handheld=null,body=null,version=null,disposed=false;const restingArms=[];
+  let pistol=null,radio=null,doorHand=null,handheld=null,body=null,version=null,disposed=false;const pistolParts=[];const restingArms=[];
   const stats={active:false,kind:null,source:'existing player gun and hands; locally modeled dispatch radio',liquid:0,opacity:0,meshes:0};
   function clear(){
+    pistolParts.length=0;
     for(const item of restingArms)item.root.removeFromParent();restingArms.length=0;
     body?.dispose();body=null;
     pistol?.removeFromParent();radio?.removeFromParent();doorHand?.removeFromParent();handheld?.removeFromParent();pistol=radio=doorHand=handheld=null;
@@ -157,6 +167,11 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
   function ensure(){
     const next=getAssetVersion();if(pistol&&version===next)return;
     clear();version=next;body=createPrologueBody({loader:bodyLoader,deadlineMs:bodyDeadlineMs,onMaterial:mat=>{mat.fog=false;treatments.push({material:mat,uniforms:attachPrologueLiquid(mat),opacity:mat.opacity,transparent:mat.transparent});}});overlay.add(body.root);stats.body=body.stats;pistol=cloneGun(false);radio=cloneGun(true);doorHand=cloneGun(true,false);doorHand.name='Story hand on passenger door';doorHand.getObjectByName('Handheld dispatch radio').visible=false;
+    // Capture the exact weapon transform separately from the forearm. We move
+    // this existing clone, never create a second weapon or fire an action.
+    const weapon=pistol.getObjectByName('ServicePistol');
+    if(weapon)pistolParts.push({object:weapon,position:weapon.position.clone(),quaternion:weapon.quaternion.clone(),scale:weapon.scale.clone()});
+    else for(const child of pistol.children)if(child.isMesh&&!child.isSkinnedMesh)pistolParts.push({object:child,position:child.position.clone(),quaternion:child.quaternion.clone(),scale:child.scale.clone()});
     if(torch?.children.length){
       handheld=cloneSkeleton(torch);handheld.name='Story hand and flashlight';camera.add(handheld);
       handheld.traverse(o=>{o.layers.set(0);if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.isMesh)o.material=Array.isArray(o.material)?o.material.map(ownMaterial):ownMaterial(o.material);});
@@ -175,14 +190,14 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
   return {stats,reset,render(storyCamera,frame={}){
     if(disposed)return;
     const chapter=frame.chapter,radioReach=chapter==='car'&&(frame.radioHandReach||0)>.001,dispatch=chapter==='dispatch',exiting=chapter==='exit'&&frame.exitPose&&!frame.exitPose.finished;
-    const outside=['flashlight','walk','undead','history','redroom','return_walk','disappearance','liquid','arrival','rupture'].includes(chapter);
+    const outside=['flashlight','walk','undead','history','redroom','return_walk','disappearance','liquid','arrival','rupture','solid_return','gun_recovery','reaction'].includes(chapter);
     const bodyVisible=!!chapter&&!frame.returning;
     if(!dispatch&&!outside&&!exiting&&!radioReach&&!bodyVisible){reset();return;}
-    ensure();const vision=prologueVisionState(frame),fade=outside?(1-vision.mist)*(1-vision.roomCover):1;
+    ensure();const sequence=sampleRealismSequence(frame),vision=prologueVisionState(frame),fade=outside?1-Math.max(vision.mist,vision.roomCover):1;
     if(fade<=.001){reset();return;}
     pistol.visible=outside;radio.visible=dispatch;doorHand.visible=!!exiting||radioReach;
     body.root.visible=bodyVisible;
-    pistol.position.set(-.035-(storyCamera.aspect<1.3?.045:0),-.035,-.20);pistol.rotation.set(-.09,0,0);
+    if(sequence.afterTitles){const home=viewmodelPose({time:0,reduced:frame.reduced,aspect:storyCamera.aspect});pistol.position.fromArray(home.position);pistol.rotation.set(...home.rotation);}else{pistol.position.set(-.035-(storyCamera.aspect<1.3?.045:0),-.035,-.20);pistol.rotation.set(-.09,0,0);}
     const raise=prologueEase(Number(frame.chapterTime)||0,0,.42)*(1-prologueEase(Number(frame.chapterProgress)||0,.93,1));
     radio.position.set(-.025,.045-.34*(1-raise),-.10+.08*(1-raise));radio.rotation.set(-.05+.28*(1-raise),-.10,.10);
     storyCamera.updateWorldMatrix(true,false);
@@ -203,10 +218,10 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
       const transfer=exiting?(frame.exitPose.transfer||0):inCar?0:1;
       const heading=player.yaw||0,bodyBack=.15+.08*(1-transfer);
       const x=exiting?frame.exitPose.position[0]+Math.sin(heading)*.15*transfer:inCar?.5:(player.x||0)+Math.sin(heading)*.15,z=exiting?frame.exitPose.position[2]+bodyBack:inCar?.58:(player.z||0)+Math.cos(heading)*.15;
-      const y=exiting?-.38*(1-transfer):inCar?-.38:Math.max(0,(player.y||1.58)-1.58);
+      const y=exiting?-.38*(1-transfer):inCar?-.38:Math.max(0,(player.y||1.58)-1.58)+sequence.lift;
       const yaw=inCar&&!exiting?Math.PI:(player.yaw||0)+Math.PI;
-      const lean=samplePrologueBodyReach(chapter==='car'?frame.radioHandReach:0);
-      const local=new THREE.Matrix4().compose(new THREE.Vector3(x+lean.hipOffset[0],y,z+lean.hipOffset[2]),new THREE.Quaternion().setFromAxisAngle(up,yaw),new THREE.Vector3(1,1,1));
+      const lean=samplePrologueBodyReach(chapter==='car'?frame.radioHandReach:sequence.crouch*.6);
+      const local=new THREE.Matrix4().compose(new THREE.Vector3(x+(chapter==='car'?lean.hipOffset[0]:0),y,z+(chapter==='car'?lean.hipOffset[2]:0)),new THREE.Quaternion().setFromAxisAngle(up,yaw),new THREE.Vector3(1,1,1));
       // Ground-contact history belongs to the physical scene. Pose there before
       // converting to the camera-relative coordinates used by this depth pass.
       const physical=(inCar&&!exiting?cabin:location).clone().multiply(local);
@@ -243,6 +258,37 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
       const pose=flashlightPose({time:frame.elapsed??frame.time,steps:frame.player?.distance||0,moving:frame.player?.moving,reduced:frame.reduced,aspect:storyCamera.aspect});
       handheld.position.fromArray(pose.position);handheld.rotation.set(...pose.rotation);
     }
+    const recovery=sampleRecoveryGunPose(frame);
+    for(const part of pistolParts){part.object.position.copy(part.position);part.object.quaternion.copy(part.quaternion);part.object.scale.copy(part.scale);}
+    let groundMinimum=null,gripError=null;
+    if(recovery.active&&pistolParts.length===1){
+      const g=sequence.gun,part=pistolParts[0],weapon=part.object;
+      overlay.updateMatrixWorld(true);
+      const held=weapon.matrixWorld.clone(),rootHome=pistol.matrixWorld.clone(),relative=rootHome.clone().invert().multiply(held);
+      const q=new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI/2,player.yaw||0,.22,'YXZ'));
+      q.premultiply(new THREE.Quaternion().setFromRotationMatrix(location));
+      const scale=weapon.getWorldScale(new THREE.Vector3()),point=new THREE.Vector3((player.x||0)-Math.sin(player.yaw||0)*.34+Math.cos(player.yaw||0)*.20,0,(player.z||0)-Math.cos(player.yaw||0)*.34-Math.sin(player.yaw||0)*.20).applyMatrix4(location);
+      const ground=new THREE.Matrix4().compose(point,q,scale),inverseHeld=held.clone().invert();
+      let bottom=Infinity;
+      weapon.traverse(mesh=>{if(!mesh.isMesh||!mesh.visible)return;if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();const bounds=mesh.geometry.boundingBox,relativeMesh=inverseHeld.clone().multiply(mesh.matrixWorld),matrix=ground.clone().multiply(relativeMesh);
+        for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z])bottom=Math.min(bottom,new THREE.Vector3(x,y,z).applyMatrix4(matrix).y);
+      });
+      if(Number.isFinite(bottom))ground.elements[13]+=.008-bottom;
+      const target=view.clone().multiply(ground),targetRoot=target.clone().multiply(relative.clone().invert());
+      const homeP=new THREE.Vector3(),homeQ=new THREE.Quaternion(),homeS=new THREE.Vector3(),targetP=new THREE.Vector3(),targetQ=new THREE.Quaternion(),targetS=new THREE.Vector3();
+      rootHome.decompose(homeP,homeQ,homeS);targetRoot.decompose(targetP,targetQ,targetS);
+      const handWeight=prologueEase(Number(frame.chapterTime)||0,2.4,3)*(1-g.pickup);
+      pistol.position.copy(homeP).lerp(targetP,handWeight);pistol.quaternion.copy(homeQ).slerp(targetQ,handWeight);pistol.scale.copy(homeS);overlay.updateMatrixWorld(true);
+      if(g.detached){
+        const a=new THREE.Vector3(),aq=new THREE.Quaternion(),as=new THREE.Vector3(),b=new THREE.Vector3(),bq=new THREE.Quaternion(),bs=new THREE.Vector3();held.decompose(a,aq,as);target.decompose(b,bq,bs);
+        const desired=new THREE.Matrix4().compose(a.lerp(b,g.fall),aq.slerp(bq,g.fall),as);
+        weapon.parent.matrixWorld.clone().invert().multiply(desired).decompose(weapon.position,weapon.quaternion,weapon.scale);
+      }
+      groundMinimum=g.rest?.008:null;
+      // At re-grip, the original weapon-local attachment is restored exactly.
+      gripError=g.contact?weapon.position.distanceTo(part.position):null;
+    }
+    stats.recovery={active:recovery.active,weaponObjects:pistolParts.length,detached:sequence.gun.detached,contact:sequence.gun.contact,settled:sequence.gun.settled,groundMinimum,gripError,inventoryMutation:false};
     overlay.updateMatrixWorld(true);
     for(const [owner,fit]of storyArms)if(owner.visible&&bodyVisible){
       const wrist=fit.arm.parent.localToWorld(new THREE.Vector3()),contact=body.connectArm(fit.side||'R',wrist);
@@ -260,7 +306,7 @@ export function createPrologueEquipment(renderer,{gun,torch,skinMaterial,getAsse
     }
     stats.restingHands=restingArms.filter(a=>a.root.visible).map(a=>a.side);
     stats.flashlight=!!handheld?.visible;
-    for(const t of treatments){t.uniforms.amount.value=vision.liquid;t.uniforms.time.value=Number(frame.time)||0;t.material.opacity=t.opacity*fade;const transparent=t.transparent||fade<.999;if(t.material.transparent!==transparent){t.material.transparent=transparent;t.material.needsUpdate=true;}}
+    for(const t of treatments){t.uniforms.amount.value=sequence.active?sequence.bodyLiquid:vision.liquid;t.uniforms.lift.value=sequence.bodyLiquid*.4;t.uniforms.time.value=Number(frame.time)||0;t.material.opacity=t.opacity*fade;const transparent=t.transparent||fade<.999;if(t.material.transparent!==transparent){t.material.transparent=transparent;t.material.needsUpdate=true;}}
     camera.projectionMatrix.copy(storyCamera.projectionMatrix);camera.projectionMatrixInverse.copy(storyCamera.projectionMatrixInverse);camera.near=storyCamera.near;camera.far=storyCamera.far;
     const clear=renderer.autoClear,resetInfo=renderer.info.autoReset;
     try{renderer.autoClear=false;renderer.info.autoReset=false;renderer.render(overlay,camera);Object.assign(stats,{active:true,kind:radioReach?'radio knob hand':exiting?'door hand':dispatch?'radio':outside?'gun':'body',liquid:vision.liquid,opacity:fade});}

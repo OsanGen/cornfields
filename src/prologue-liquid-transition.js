@@ -1,3 +1,4 @@
+import {sampleRealismSequence} from './prologue-return-sequence.js';
 import * as THREE from 'three';
 import {ease,clamp} from './prologue-performance.js';
 export const ROOM_TRANSITION=Object.freeze({edge:1.2,hold:10,duration:12.4,enter:.6,leave:11.8});
@@ -21,5 +22,5 @@ export function createLiquidVeil(){
  vec3 c=mix(vec3(.026,.050,.043),vec3(.22,.022,.036),vUv.y);
  c+=vec3(.14,.08,.07)*pow(max(0.,flow),7.);gl_FragColor=vec4(c,alpha);}`});
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(2,2),material);mesh.name='Continuous liquid scene-transfer veil';mesh.frustumCulled=false;mesh.renderOrder=1002;
- return {mesh,update(frame){const s=sampleRoomTransition(frame);uniforms.cover.value=s.cover;uniforms.clock.value=frame.reduced?0:frame.time||0;uniforms.reduced.value=frame.reduced?1:0;mesh.visible=s.cover>0;return s;}};
+ return {mesh,update(frame){const s=sampleRoomTransition(frame),sequence=sampleRealismSequence(frame);const cover=Math.max(s.cover,sequence.cover);uniforms.cover.value=cover;uniforms.clock.value=frame.reduced?0:frame.time||0;uniforms.reduced.value=frame.reduced?1:0;mesh.visible=cover>0;return s;}};
 }

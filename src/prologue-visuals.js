@@ -1,3 +1,4 @@
+import {sampleRealismSequence} from './prologue-return-sequence.js';
 import {samplePrologueBodyReach} from './viewmodel-pose.js';
 import {sampleRoomTransition,createLiquidVeil} from './prologue-liquid-transition.js';
 import {sampleHallucination,createPrologueHallucination} from './prologue-hallucination.js';
@@ -31,18 +32,18 @@ export function prologueVisionState(frame={}){
   const chapter=frame.chapter,duration={undead:5.2,redroom:12.4,liquid:5,rupture:12}[chapter]||1;
   const t=Math.max(0,Number.isFinite(frame.chapterTime)?frame.chapterTime:clamp(frame.chapterProgress)*duration);
   const reduced=!!frame.reduced,rupture=chapter==='rupture',liquid=chapter==='liquid';
-  const hallucination=sampleHallucination(frame),transfer=sampleRoomTransition(frame);
+  const sequence=sampleRealismSequence(frame),hallucination=sampleHallucination(frame),transfer=sampleRoomTransition(frame);
   const envelope=liquid?smooth(t)*smooth(5-t):rupture?smooth(t/2)*(1-smooth((t-8.5)/.5)):hallucination.bridge;
   const reveal=(at,width=.75)=>t<at?0:Math.max(0,1-(t-at)/width);
   return {
-    room:transfer.room,corpse:false,hallucination,roomCover:transfer.cover,liquid:envelope*(reduced?.30:1),
-    red:rupture?smooth((t-1)/2):0,
-    mist:rupture?(t<9?.16*smooth((t-1)/2):.16+.84*smooth((t-9)/2.2)):0,
+    room:transfer.room,corpse:false,hallucination,roomCover:Math.max(transfer.cover,sequence.cover),sequence,liquid:sequence.active?sequence.worldLiquid:envelope*(reduced?.30:1),
+    red:rupture?smooth((t-4)/4)*.45:0,
+    mist:sequence.cover,
     lightning:reduced?0:chapter==='undead'?reveal(0,1.2)*.7:rupture?Math.max(reveal(3.1),reveal(6.1))*.75:0,
     // Keep the nearest escort's head and breakup inside a normal level gaze.
     limp:rupture&&t>=1,limpWeight:rupture?smooth((t-1)/.7):0,rise:rupture?(t<6?.8*smooth((t-3)/3):.8+.6*smooth((t-6)/3)):0,
     dissolve:rupture?smooth((t-6)/3):0,binary:rupture&&t>=8.5&&t<9,
-    escortsVisible:!frame.returning&&(!rupture||t<9),time:t,
+    escortsVisible:!frame.returning&&sequence.escortsVisible,time:t,
   };
 }
 
@@ -53,12 +54,14 @@ export function applyPrologueCamera(camera,motion,player={}){
 }
 
 /** Temporary presentation borrowing is transactional, including renderer errors. */
-export function withPrologueWorld(world, {camera, stage, actors=[], fog, background, red=0}, draw) {
+export function withPrologueWorld(world, {camera, stage, actors=[], fog, background, red=0,liquid=0,time=0}, draw) {
   const scene=world.scene, previousFog=scene.fog, previousBackground=scene.background;
   const originalCameraVisibility=world.camera?.visible;
   const moved=[stage,...actors].map(object=>({object,parent:object.parent,index:object.parent?.children.indexOf(object)??-1}));
   const photograph=scene.getObjectByName('Photographic night sky');
   const skyColor=photograph?.material?.color, previousSkyColor=skyColor?.clone();
+  const restored=[];
+  if(liquid>0)scene.traverse(o=>{for(const material of [o.material].flat().filter(Boolean)){if(!material.isMeshStandardMaterial)continue;const u=attachPrologueLiquid(material);if(restored.some(item=>item.u===u))continue;restored.push({u,amount:u.amount.value,time:u.time.value});u.amount.value=liquid;u.time.value=time;}});
   try {
     scene.fog=fog;scene.background=background;
     if(world.camera)world.camera.visible=false;
@@ -66,6 +69,7 @@ export function withPrologueWorld(world, {camera, stage, actors=[], fog, backgro
     stage.add(...actors);scene.add(stage);stage.visible=true;
     camera.updateWorldMatrix(true,false);return draw(scene,camera);
   } finally {
+    for(const r of restored){r.u.amount.value=r.amount;r.u.time.value=r.time;}
     for(const {object,parent}of moved)object.removeFromParent();
     // Restore membership and order, not just the parent reference.
     for(const {object,parent,index}of moved)if(parent){parent.add(object);const current=parent.children.indexOf(object);parent.children.splice(current,1);parent.children.splice(index,0,object);}
@@ -104,7 +108,7 @@ function fallbackCorn() {
 export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld = () => null, renderEquipment=()=>{}, spawn = {x: 0, z: 0, yaw: 0}, touch = false} = {}) {
   let scene, location, camera, car, road, field, door, wheel, clarence, stanley, sky, haze, headlight, worldStage, worldFog, worldBackground,room,face,projectorLight,binary,flashlight,hemi,moon;
   let live = false, dead = false, size = '', borrowed = new Set(), ownedTextures = new Set();
-  let dog=null,porchLight=null,puddleMaterial=null;
+  let dog=null,porchLight=null,puddleMaterial=null,backgroundTrees=null;
   let liquidUniforms=[],foliage=null,rain=null,entertainment=null,liquidVeil=null,hallucinations=null,ribbons=null,groundMaterial=null,groundContactUniforms=null;
   let assets=null,cruiser=null,roadMaterial=null,woodMaterial=null,roadMist=null,roadsideSet=null,roadsideFallback=null,streetlight=null,policeSpill=[],fallbackLampMaterials=[],roomPresentation=null;
   const stats = {live:false, frames:0, draws:0, chapter:null, cast:PROLOGUE_CAST_PROVENANCE, corn:'uninitialized', passenger:'Mike', driver:'Clarence', error:null};
@@ -117,7 +121,7 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
   function disposeSet() {
     rain?.dispose();rain=null;
     hallucinations?.dispose();hallucinations=null;clarence?.dispose?.();stanley?.dispose?.();
-    dog?.dispose();dog=null;porchLight=null;puddleMaterial=null;
+    dog?.dispose();dog=null;porchLight=null;puddleMaterial=null;backgroundTrees=null;
     const geometries=new Set(), materials=new Set();
     scene?.traverse(item=>{ if(item.isInstancedMesh)item.dispose(); if(item.geometry&&!borrowed.has(item.geometry)&&!assets?.owns(item.geometry))geometries.add(item.geometry); for(const mat of Array.isArray(item.material)?item.material:item.material?[item.material]:[])if(!borrowed.has(mat)&&!assets?.owns(mat))materials.add(mat); });
     for(const geometry of geometries)geometry.dispose();for(const material of materials)material.dispose();for(const texture of ownedTextures)texture.dispose();
@@ -229,11 +233,8 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     dog=createRoadsideDog(roadsideSet,{heightAt:wetGroundHeight});
     const verge=new THREE.InstancedMesh(grassGeometry(),standard(0x66684b,{vertexColors:true,side:THREE.DoubleSide,roughness:.96}),100);verge.name='Graded verge grass and fallen husks';
     for(let i=0;i<100;i++){const x=i<50?-.72+(i%10)*.66:-10.2-Math.floor(i/10)*1.9,z=i<50?3.5+Math.floor(i/10)*1.03:-8.1+(i%10)*.68;dummy.position.set(x,wetGroundHeight(x,z)+.002,z);dummy.rotation.set(0,i*2.399,0);dummy.scale.setScalar(.62+.3*Math.sin(i*8.1)**2);dummy.updateMatrix();verge.setMatrixAt(i,dummy.matrix);}verge.computeBoundingSphere();location.add(verge);
-    // A bounded, distant irregular tree line closes the field silhouette.
-    // Original opaque geometry, two draws, no colliders, textures or shadow maps.
-    const trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(.12,.22,4,5),standard(0x26271d),12),crowns=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),standard(0x273329),36);
-    trunks.name='Distant tree line trunks';crowns.name='Distant irregular tree crowns';
-    for(let i=0;i<12;i++){const x=29+Math.sin(i*1.7)*4,z=-28+i*6.2,h=.8+Math.sin(i*2.9)**2*.5;dummy.position.set(x,2*h-.027,z);dummy.rotation.set(0,i*.71,.025*Math.sin(i));dummy.scale.set(1,h,1);dummy.updateMatrix();trunks.setMatrixAt(i,dummy.matrix);for(let j=0;j<3;j++){dummy.position.set(x+Math.sin(j*2.4+i)*1.6,(4.8+j*.7)*h,z+Math.cos(j*2.4+i)*1.3);dummy.scale.set(2.1+j*.24,2.6*h-j*.18,2.2);dummy.rotation.set(i*.16,j*1.3,i*.21);dummy.updateMatrix();crowns.setMatrixAt(i*3+j,dummy.matrix);}}trunks.computeBoundingSphere();crowns.computeBoundingSphere();location.add(trunks,crowns);
+    backgroundTrees=group(location);backgroundTrees.name='Original broadleaf near middle and far backdrop';
+    stats.trees={status:'loading',instances:0,draws:0};
     const lamp=new THREE.PointLight(0xe7b976,.72,7,2);lamp.position.set(-1.3,2.0,-50.8);field.add(lamp);
     const lantern=standard(0xba9d6a,{emissive:0xc5883a,emissiveIntensity:.6});box(field,post,.19,.28,.16,-1.28,2.0,-50.7);box(field,lantern,.115,.15,.01,-1.28,2.0,-50.60);
   }
@@ -302,7 +303,25 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
         stats.castRoles[role]=`cast-${role}.glb`;
       },
       onGround(key,map){groundMaterial[key]=map;groundMaterial.needsUpdate=true;},
-      onDog(gltf){dog.accept(gltf);},
+      onDog(gltf){dog.accept(gltf);treat(gltf.scene);},
+      onTrees(gltf){
+        gltf.scene.updateMatrixWorld(true);
+        const variants=[0,1,2].map(i=>gltf.scene.getObjectByName('Broadleaf_'+i));
+        if(variants.some(v=>!v)){stats.trees.status='failed';return;}
+        const matrix=new THREE.Object3D();
+        for(const [variant,root]of variants.entries())root.traverse(source=>{
+          if(!source.isMesh)return;
+          const geometry=source.geometry.clone();geometry.applyMatrix4(source.matrixWorld);
+          const material=source.material;material.alphaTest=material.transparent?.45:0;material.transparent=false;material.depthWrite=true;material.side=THREE.DoubleSide;material.needsUpdate=true;
+          const batch=new THREE.InstancedMesh(geometry,material,5);batch.name=source.name+' | depth-batched';
+          for(let i=0;i<5;i++){
+            const x=[17,28,49,-32,-57][i]+variant*4.1,z=[12,-17,-34,18,-22][i]+variant*7.3;
+            matrix.position.set(x,wetGroundHeight(x,z),z);matrix.rotation.set(0,variant*.8+i*1.71,0);matrix.scale.setScalar(.82+.25*Math.sin(i*3.1+variant)**2);matrix.updateMatrix();batch.setMatrixAt(i,matrix.matrix);
+          }
+          batch.computeBoundingSphere();backgroundTrees.add(batch);stats.trees.draws++;
+        });
+        stats.trees.status='ready';stats.trees.instances=15;treat(backgroundTrees);
+      },
       onSky(map){if(puddleMaterial){puddleMaterial.envMap=map;puddleMaterial.envMap.mapping=THREE.EquirectangularReflectionMapping;puddleMaterial.envMapIntensity=.30;puddleMaterial.needsUpdate=true;}sky.material.uniforms.skyMap.value=map;sky.material.uniforms.hasMap.value=1;},
       onRoad(key,map){roadMaterial[key]=map;roadMaterial.needsUpdate=true;},
       onWood(key,map){woodMaterial[key]=map;if(key==='map')woodMaterial.color.setHex(0xffffff);woodMaterial.needsUpdate=true;},
@@ -315,7 +334,7 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     });
   }
   function start() {
-    if(dead)return;disposeSet();scene=new THREE.Scene();scene.background=skyNormal.clone();scene.fog=new THREE.FogExp2(fogNormal.clone(),.019);
+    if(dead)return;disposeSet();scene=new THREE.Scene();scene.background=skyNormal.clone();scene.fog=new THREE.Fog(fogNormal.clone(),14,100);
     location=new THREE.Group();const alignment=approachStageTransform(spawn);location.rotation.y=alignment.yaw;location.position.fromArray(alignment.position);scene.add(location);
     camera=new THREE.PerspectiveCamera(65,1,.035,175);location.add(camera);
     worldStage=new THREE.Group();worldStage.name='Temporary prologue cast and lighting';worldStage.position.copy(location.position);worldStage.quaternion.copy(location.quaternion);worldStage.visible=false;scene.add(worldStage);
@@ -339,11 +358,13 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     const world=getWorld(),locomotion=frame.motion||samplePrologueMotion(frame,{worldAvailable:!!world?.scene?.isScene}),b=locomotion.blocking,transition=locomotion,vision=prologueVisionState(frame);
     location.updateWorldMatrix(true,false);groundContactUniforms?.terrainFromWorld.value.copy(location.matrixWorld).invert();
     const time=locomotion.time,p=b.progress,reduced=!!frame.reduced,chapter=b.chapter;
+    for(const light of worldStage.children)if(light.isHemisphereLight)light.intensity=vision.sequence.afterTitles?0:.40;
     foliage.update(time,null,reduced);
     const width=Math.max(1,renderer.domElement.clientWidth||renderer.domElement.width),height=Math.max(1,renderer.domElement.clientHeight||renderer.domElement.height),key=`${width}:${height}`,fov=transition.world?(world.camera?.fov??70):65;
     if(size!==key||camera.fov!==fov){camera.aspect=width/height;camera.fov=fov;camera.updateProjectionMatrix();size=key;}
     const cameraParent=vision.room?room:location;if(camera.parent!==cameraParent)cameraParent.add(camera);
     applyPrologueCamera(camera,locomotion,frame.player);
+    camera.rotation.x+=vision.sequence.cameraPitch;
     const motion=reduced?0:1;
     location.visible=!vision.room;room.visible=vision.room;
     room.userData.roomUpdate?.(Math.max(0,vision.time-1.2),reduced,vision.room&&!frame.returning);liquidVeil.update(frame);
@@ -351,7 +372,7 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     // corn and people readable without flattening their surfaces. No extra lights.
     hemi.intensity=vision.room?0:1.12+vision.lightning*1.8;moon.intensity=vision.room?0:1.85+vision.lightning*4;
     flashlight.intensity=frame.player?.flashlightOn?18:0;
-    for(const uniforms of liquidUniforms){uniforms.amount.value=vision.liquid;uniforms.time.value=time;}
+    for(const uniforms of liquidUniforms){uniforms.amount.value=vision.liquid;uniforms.time.value=reduced&&vision.sequence.active?time*.25:time;uniforms.scale.value=reduced&&vision.sequence.active?.28:1;}
     const drive=frame.driving||samplePrologueDriving(frame),wake=samplePrologueWake(frame);
     const bodyReach=samplePrologueBodyReach(wake.reach);
     car.position.fromArray(drive.position);car.rotation.set(drive.bodyPitch,drive.yaw,drive.bodyRoll,'YXZ');car.updateMatrix();
@@ -382,7 +403,7 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     if(driver.mode==='drive'){clarence.root.position.applyMatrix4(car.matrix);clarence.root.quaternion.premultiply(car.quaternion);}
     stanley.root.position.fromArray(father.position);stanley.root.position.y+=vision.rise;stanley.root.rotation.set(0,father.yaw,0,'YXZ');
     const bangTargets=father.mode==='bang'?[1,-1].map(sign=>stanley.root.worldToLocal(location.localToWorld(new THREE.Vector3(BANG_WINDOW_TARGET[0],BANG_WINDOW_TARGET[1],BANG_WINDOW_TARGET[2]+sign*.18))).toArray()):null;
-    const effect={corpse:false,dissolve:vision.dissolve};
+    const effect={corpse:false,dissolve:0}; // Whole liquid silhouettes remain until opaque cover; no grain disappearance.
     const driverAct=performanceFor(frame,'clarence',driver,(locomotion.listener?.position||b.camera)),fatherAct=performanceFor(frame,'stanley',father,(locomotion.listener?.position||b.camera));
     (cruiser?.steering||wheel).updateWorldMatrix(true,false);
     clarence.pose({wheelMatrix:(cruiser?.steering||wheel).matrixWorld,time,phase:driver.phase,mode:vision.limp?'limp':driver.mode,speaking:isClarence,look:driverAct.look,reduced,steer:drive.steer,performance:driverAct,gait:driver.gait,support:driver.support,exitPose:driver.exitPose,limpWeight:vision.limpWeight,...effect});
@@ -390,10 +411,10 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
     stats.confrontation={...confrontation,windowTargets:bangTargets,cameraImpact:reduced?0:confrontation.impact};
     const hallucination=hallucinations.update(frame,[clarence,stanley]);
     for(const human of [clarence,stanley])human.root.traverse(o=>{for(const m of [o.material].flat().filter(Boolean)){const u=m.userData?.prologueLiquid;if(u){u.handover.value=hallucinations.stats.status==='ready'?hallucination.zombie:0;u.lift.value=chapter==='rupture'?vision.dissolve:0;}}});
-    ribbons.visible=chapter==='rupture'&&vision.time>=5&&vision.time<9;
-    for(const [i,root]of ribbons.children.entries()){const actor=i?stanley:clarence;root.position.copy(actor.root.position);root.quaternion.copy(actor.root.quaternion);for(const strand of root.children){strand.material.opacity=smooth((vision.time-5)/1.5)*(1-smooth((vision.time-8.5)/.5));strand.userData.liquid.amount.value=reduced?.25:1;strand.userData.liquid.time.value=time;strand.userData.liquid.lift.value=vision.dissolve;}}
+    ribbons.visible=chapter==='rupture'&&vision.time>=5&&vision.time<11.35;
+    for(const [i,root]of ribbons.children.entries()){const actor=i?stanley:clarence;root.position.copy(actor.root.position);root.quaternion.copy(actor.root.quaternion);for(const strand of root.children){strand.material.opacity=smooth((vision.time-5)/1.5)*(1-vision.sequence.cover);strand.userData.liquid.amount.value=reduced?.25:1;strand.userData.liquid.time.value=time;strand.userData.liquid.lift.value=vision.dissolve;}}
     updateBinary(vision,time,reduced);
-    const red=chapter==='rupture'?vision.red:clamp(frame.red),mist=chapter==='rupture'?vision.mist:clamp(frame.mist),cover=Math.max(mist,transition.cover||0);scene.background.copy(skyNormal).lerp(skyRed,red);scene.fog.color.copy(fogNormal).lerp(fogRed,red);scene.fog.density=vision.room?.018:.019+cover*.14;
+    const red=chapter==='rupture'?vision.red:clamp(frame.red),mist=chapter==='rupture'?vision.mist:clamp(frame.mist),cover=Math.max(mist,transition.cover||0);scene.background.copy(skyNormal).lerp(skyRed,red);scene.fog.color.copy(fogNormal).lerp(fogRed,red);scene.fog.near=vision.room?6:14*(1-cover);scene.fog.far=vision.room?55:100-cover*93;stats.fog={near:scene.fog.near,far:scene.fog.far,scope:'staged roadside and approach only'};
     sky.material.uniforms.red.value=red;sky.material.uniforms.liquid.value=vision.liquid;sky.material.uniforms.clock.value=time;haze.material.uniforms.red.value=red;haze.material.uniforms.amount.value=Math.max(mist*1.34,(transition.cover||0)*1.34);haze.material.uniforms.clock.value=reduced?0:time;haze.visible=!vision.room&&cover>.001;
     const target=renderer.getRenderTarget(),auto=renderer.autoClear,infoAuto=renderer.info.autoReset,test=renderer.getScissorTest();renderer.getViewport(viewport);renderer.getScissor(scissor);renderer.getClearColor(savedClear);const alpha=renderer.getClearAlpha();
     try {
@@ -401,7 +422,7 @@ export function createPrologueVisuals(renderer, {getCorn = () => null, getWorld 
       if(transition.world&&world?.scene&&!vision.room){
         worldFog.color.copy(world.scene.fog?.color||fogNormal).lerp(fogRed,red);worldFog.density=(world.scene.fog?.density??.075)+cover*.14;
         const background=world.scene.background?.isColor?worldBackground.copy(world.scene.background).lerp(skyRed,red):world.scene.background;
-        withPrologueWorld(world,{camera,stage:worldStage,actors:[clarence.root,stanley.root,binary,ribbons,haze],fog:worldFog,background,red},(actualScene,cinematicCamera)=>renderer.render(actualScene,cinematicCamera));
+        withPrologueWorld(world,{camera,stage:worldStage,actors:[clarence.root,stanley.root,binary,ribbons,haze,liquidVeil.mesh],fog:worldFog,background,red,liquid:vision.liquid,time},(actualScene,cinematicCamera)=>renderer.render(actualScene,cinematicCamera));
       }else renderer.render(scene,camera);
       renderEquipment(camera,frame);
       stats.frames++;stats.draws=renderer.info.render.calls;stats.chapter=chapter;stats.environment=vision.room?'red room':transition.world?'live maze':'staged approach';stats.transitionCover=transition.cover||0;camera.getWorldPosition(cameraWorld);stats.camera={x:cameraWorld.x,y:cameraWorld.y,z:cameraWorld.z,yaw:camera.rotation.y,pitch:camera.rotation.x};stats.menVisible=menVisible;stats.vision={...vision};stats.hallucination={...hallucinations.stats,...hallucination};stats.ribbons=ribbons.visible?ribbons.children.length*3:0;stats.roomContents=vision.room?['projector','original detailed anonymous face projection']:[];stats.liquidMaterials=vision.liquid?liquidUniforms.length:0;stats.flashlight=flashlight.intensity>0;

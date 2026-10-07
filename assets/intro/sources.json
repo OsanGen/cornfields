@@ -608,5 +608,43 @@
     "newExternalAIProcessing": false,
     "newSpendingUSD": 0,
     "evidenceLimits": "Asset hashes and structural measurements only; browser motion, owner QA, listening and device performance remain separate acceptance requirements."
+  },
+  "realismLiquidV1": {
+    "baselineCommit": "115d3343f58a23cfc78811071c5e45bbe7a5e3a4",
+    "authoring": "Original Blender 4.3.2 mesh and texture authoring; no external input",
+    "currentAssets": {
+      "roadside-dog-v2.glb": {
+        "file": "assets/intro/roadside-dog-v2.glb",
+        "sha256": "9023bf740daf4bf3fd3bded5b8cc06bebd0ef100d0dd16671c767df1b126f0a3",
+        "bytes": 1692000,
+        "triangles": 29913,
+        "draws": 10,
+        "images": 2
+      },
+      "background-trees-v1.glb": {
+        "file": "assets/intro/background-trees-v1.glb",
+        "sha256": "63c047ef575a596e15834ebd24aaad5b31080f8dbb6abe867bb95541f8cb986b",
+        "bytes": 512088,
+        "triangles": 8940,
+        "draws": 6,
+        "images": 1
+      }
+    },
+    "newExternalAssets": false,
+    "newExternalAIProcessing": false,
+    "newSpendingUSD": 0,
+    "dogRefinement": {
+      "dateUTC": "2026-10-06",
+      "method": "Original continuous anatomical loft and sculpt refinement, fitted collar, shorter muzzle, inset eyes, articulated paw contours and locally painted irregular short-coat maps. Existing bark, collar anchor, shader origin, tree bytes and runtime motion source unchanged.",
+      "costUSD": 0
+    },
+    "dogRefinementV2": {
+      "dateUTC": "2026-10-06",
+      "revision": "dog-cranial-and-coat-correction-v2",
+      "originalArt": "Continuous narrower nasal bridge and flatter cranial planes; recessed almond eye seats; closed cupped pinnae rooted inside the skull; finer restrained fur relief, whiskers and fitted mouth. No imported mesh, texture or image.",
+      "barkRepair": "Own a clone of the existing torso coat material so the torso effort shader cannot deform the independently moving head, jaw coat or tail. Existing time, bark recording, shader amounts, node motion and gameplay unchanged.",
+      "readOnlyProportionReference": "https://cdn.akc.org/GermanShepherdDog.pdf",
+      "costUSD": 0
+    }
   }
 }

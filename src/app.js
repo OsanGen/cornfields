@@ -101,6 +101,7 @@ export function createGameApp({
     for (const event of weatherEvents) audio.weatherEvent?.(event, game);
     if(!presentation)audio.update(game, dt, {footsteps: !weather});
     else if(game.player.moving&&Math.floor(game.steps/1.55)>Math.floor(beforeSteps/1.55))audio.footstep?.({surface:game.survivalEnding.phase==='room'?'hard':'soft',gain:.25,bus:audio.master});
+    audio.updatePlayerBreathing?.(game,dt,{distance:game.steps-beforeSteps,visible:!intro.active&&!document.hidden&&document.hasFocus()});
     audioTicks++;
     // Present the newly enabled action before consuming any more catch-up time.
     return previousPhase!=='qte'&&game.interaction?.phase==='qte';
@@ -120,6 +121,7 @@ export function createGameApp({
     if (game.mode !== 'playing' && document.pointerLockElement === canvas) {
       document.exitPointerLock();
     }
+    if(game.mode!=='playing')audio.stopPlayerBreathing?.({fade:.025});
     if (game.mode === 'paused') audio.pause();
     ui.focusMode(game.mode);
   }
@@ -142,7 +144,7 @@ export function createGameApp({
           if(openingStage!==intro.stage){
             openingStage=intro.stage;
             if(openingStage==='credits'){prologueAudio?.pause();prologueAudio?.prepareLine(PROLOGUE_END_LINE);introView?.start();if(intro.phase==='playing')audio.startIntro?.();}
-            else{audio.stopIntro?.();introView?.release();if(openingStage==='prologue')prologueView?.start();}
+            else{audio.stopIntro?.();introView?.release();if(openingStage==='prologue'&&!prologueView?.diagnostics?.().live)prologueView?.start();}
           }
           const shot=intro.frame(reducedMotion);
           if(intro.stage==='credits')introView?.render(shot);
@@ -186,6 +188,7 @@ export function createGameApp({
     if(!introEnabled)return;
     if(disposed||(!replay&&intro.phase!=='preflight')||(replay&&game.mode==='playing'))return;
     if(!intro.begin({replay}))return;
+    audio.stopPlayerBreathing?.();
     creditsOpen=false;input.clear();clock.reset();last=now();manual=false;
     ui.chooseIntroFont();
     try{introView?.start();}catch{introView?.release();introView=null;}
@@ -236,18 +239,19 @@ export function createGameApp({
       pointerError='Opening paused. Continue when you are ready.';prologueAudio?.pause();audio.pause();present();return;
     }
     const skipped=intro.snapshot().skipped,light=intro.player.flashlightOn;
-    if(skipped)prologueAudio?.release();else prologueAudio?.pause();
+    prologueAudio?.release();
     prologueView?.release();introView?.release();audio.stopIntro?.();intro.finish();openingStage=null;
     if(skipped){input.quarantine?.();input.clear();}else{input.quarantineActions?.();input.clearEdges();}
     clock.reset();last=now();
     alias='MIKE';ui.setAlias(alias);startGame(game);previousMode=game.mode;game.player.flashlightOn=light;
-    handoffAt=skipped?null:game.elapsed;endingAt=skipped&&!survivalEndingEnabled?null:game.elapsed;audio.startGameplay?.();present();
+    handoffAt=skipped?null:game.elapsed;endingAt=null;audio.startGameplay?.();present();
   }
 
   async function beginOpening({replay=false,skip=false}={}){
     if(disposed||introEntering||!coreReady||coreError||(touch&&window.innerHeight>window.innerWidth))return;
     if(replay&&game.mode==='playing')return;
     if(!replay&&!['preflight','paused','ready'].includes(intro.phase))return;
+    audio.stopPlayerBreathing?.();
     const attempt=++entryAttempt;introEntering=true;pointerError=null;let timer,accepted=false;
     try{
       const capture=touch?Promise.resolve():new Promise((resolve,reject)=>{
@@ -416,12 +420,12 @@ export function createGameApp({
   });
   for(const id of ['replay-intro','credits-replay'])listen(ui.node(id),'click',()=>beginIntro(true));
   if(prologueEnabled){
-    listen(ui.node('story-skip'),'click',()=>{intro.skipStory();prologueAudio?.pause();present();});
+    listen(ui.node('story-skip'),'click',()=>{intro.skipStory();prologueAudio?.pause();if(intro.phase==='ready')readyIntro();else present();});
     listen(ui.node('opening-pause'),'click',pause);
     listen(document,'keydown',event=>{
       if(!intro.active||event.repeat||['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName))return;
       if(event.code==='KeyK'){event.preventDefault();skipIntro();}
-      if(event.code==='KeyJ'){event.preventDefault();intro.skipStory();prologueAudio?.pause();present();}
+      if(event.code==='KeyJ'){event.preventDefault();intro.skipStory();prologueAudio?.pause();if(intro.phase==='ready')readyIntro();else present();}
     });
   }
   for(const id of ['credits-btn','pause-credits'])listen(ui.node(id),'click',()=>{creditsOpen=true;present();ui.node('credits-close').focus();});
@@ -605,6 +609,7 @@ export function createGameApp({
       audioSamples:Object.keys(audio.samples||{}),
       weaponAudio:{...audio.weaponStats,voices:audio.weaponVoices?.size||0},
       footstepAudio:audio.footsteps?.diagnostics(),
+      playerBreathing:audio.playerBreathing?.diagnostics(),
       weatherAudioSamples:Object.keys(audio.weatherSamples||{}),
       weather:weather?.snapshot(),
       audioSources:audio.transients?.size||0,
@@ -660,6 +665,7 @@ export function createGameApp({
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       audio.pause();
       audio.footsteps?.dispose();
+      audio.playerBreathing?.dispose();
     },
   };
 }

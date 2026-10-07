@@ -1,3 +1,4 @@
+import {sampleRealismSequence} from './prologue-return-sequence.js';
 import {WEST_APPROACH,approachPoint,approachPathPosition,approachYaw,approachViewYaw,approachDepth} from './prologue-layout.js';
 import {EXIT_SECONDS,samplePrologueExit} from './prologue-performance.js';
 import {GAME_CONFIG} from './game-config.js';
@@ -115,8 +116,8 @@ export function samplePrologueMotion(frame={}, {worldAvailable=true}={}){
 
 /** Actual travel drives the interactive camera, gait and audio contact clock. */
 export function sampleInteractivePrologueMotion(frame,escorts){
-  const player=frame.player,chapter=frame.chapter,room=chapter==='redroom',exit=frame.exitProgress;
-  const camera=[player.x,player.y,player.z],inCar=exit<.999;
+  const player=frame.player,chapter=frame.chapter,room=chapter==='redroom'&&!!frame.transfer?.room,exit=frame.exitProgress;
+  const sequence=sampleRealismSequence(frame),camera=[player.x,player.y+sequence.lift-sequence.crouch*.82,player.z],inCar=exit<.999;
   const actors={};
   for(const id of IDS){
     const a=id==='mike'?player:escorts[id],roadside=id==='stanley'?sampleRoadsideConfrontation(frame):null;
@@ -133,8 +134,8 @@ export function sampleInteractivePrologueMotion(frame,escorts){
     actors[id].support={time:frame.elapsed,distance:actors[id].distance,phase:actors[id].phase,moving:actors[id].moving,grounded:actors[id].grounded,stride:id==='stanley'&&roadside?.mode==='run'?RUN_STEP:STEP[id],anchors:roadside?roadsideFootAnchors(roadside,OFFSET[id]):null,segment:actors[id].segment};
   }
   if(room)actors.mike.grounded=true;
-  return {time:frame.elapsed,chapter,returning:false,world:false,cover:0,
-    blocking:{camera,look:[player.x-Math.sin(player.yaw)*8,player.y,player.z-Math.cos(player.yaw)*8],exit,inCar,travel:clamp(approachDepth(camera)/48),menVisible:!room,chapter,progress:frame.chapterProgress},
+  return {time:frame.elapsed,chapter,returning:false,world:sequence.afterTitles&&!room,cover:sequence.cover,
+    blocking:{camera,look:[player.x-Math.sin(player.yaw)*8,player.y+sequence.lift-sequence.crouch*.82,player.z-Math.cos(player.yaw)*8],exit,inCar,travel:clamp(approachDepth(camera)/48),menVisible:!room&&sequence.escortsVisible,chapter,progress:frame.chapterProgress},
     listener:{position:camera,yaw:player.yaw},actors};
 }
 

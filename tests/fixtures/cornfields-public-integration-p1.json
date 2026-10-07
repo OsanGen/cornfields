@@ -1,0 +1,85 @@
+{
+  "publicBaselineCommit": "fdc219b1d40862f0270e1bf3fa025aeeb49d7bf9",
+  "candidateCommit": "a35846e47dacf9dca6ae7e1262decbbd9c15856d",
+  "realismReplacements": [
+    {
+      "path": "assets/audio/prologue/END-01.mp3",
+      "baselineSha256": "e28eebd99e4e28dd1f814da3fd0fa524353ccfe23e2faeb6a09e1fcbb5436072",
+      "candidateSha256": "2f437ea51a38f510d241105359fc27ceb336517ad868e62f63090a5a4ecf2a38"
+    },
+    {
+      "path": "src/app.js",
+      "baselineSha256": "51a645cc02fc2ac6afba2f32444e17ddc07890af6cec02ed7fe0568c358e546f",
+      "candidateSha256": "b351c03960a80af053b075ab2aa4a36e7380bef70d1a5eb6ba39ddf0b6c2014e"
+    },
+    {
+      "path": "src/opening.js",
+      "baselineSha256": "fc19e979e48ceac16681dd63049353d3f93a215a88b4f899e43a1abaf9c106e9",
+      "candidateSha256": "34c8e428cd5092cf06e95f640bbc2d144bbaa1e160f5a90fdc754648b09b194d"
+    },
+    {
+      "path": "src/prologue-liquid-transition.js",
+      "baselineSha256": "f99071bd8850c751e3676d46cdf0379acace5ff6da8fc2c6ccb7a0d98d9b8327",
+      "candidateSha256": "0a65b55d550a8dbf6303369aec1ea49e80dcf2477138d9e90bad937b4fdbfab7"
+    },
+    {
+      "path": "src/prologue-motion.js",
+      "baselineSha256": "9304c134d68d109b928c1e4177b37b57aea789bc95ac0f241ceda1a3e7f4d577",
+      "candidateSha256": "c970369bd285b6613e3c4d57d2c2f7a40de1ca47885ab4d88d40417b06fcfa9d"
+    },
+    {
+      "path": "src/prologue-voice-timing.js",
+      "baselineSha256": "37ac7cb3545855ebdc38546d84a27b3119ce95e61217ff654a11a79b6c6f7577",
+      "candidateSha256": "870e05e31c22453720269cae0fb87b1ffac3250309ad48c6c93057f6e75467f9"
+    },
+    {
+      "path": "tests/interactive-prologue.test.mjs",
+      "baselineSha256": "a716683498b4f44208a8e2fb391a77f572540b082c949e98c2300eda59000e88",
+      "candidateSha256": "f6df9c73b078e8b8dac3cc3a30e75117eb5762a0d3dcae5b4910093691a0e10d"
+    },
+    {
+      "path": "tests/opening.test.mjs",
+      "baselineSha256": "1a4dd610a05c9cf4060adc2619e2ed90d1b8ca5c10eec6d4540f66d6db44132a",
+      "candidateSha256": "8b2eb74388b4be9ca6abef1638c234c0587255b25e233cd15098245f80ba2104"
+    },
+    {
+      "path": "tests/prologue-visuals.test.mjs",
+      "baselineSha256": "374418fe7191286a6fb6d2574cade8d7fc84623fd638b939583627b25c107bf7",
+      "candidateSha256": "b133cbfb76523612dd55aa79464337f7307404881834578aaca9eff6d04982f6"
+    }
+  ],
+  "breathingReplacements": [
+    {
+      "path": "src/app.js",
+      "baselineSha256": "b351c03960a80af053b075ab2aa4a36e7380bef70d1a5eb6ba39ddf0b6c2014e",
+      "candidateSha256": "1644d154da806686ab1d7f9e8b5010ad681a645a90266c8074f97475b857bf79"
+    },
+    {
+      "path": "src/audio.js",
+      "baselineSha256": "b17c92df6ba37805b4f316880cd9eaff961a5b2b883e70b2f1180e36a030e403",
+      "candidateSha256": "bf9cd8eb9c6df2c2866beb71785f1fb226d526e49eabd0c5d1a4038b93ac7560"
+    },
+    {
+      "path": "tests/ui-runtime.test.mjs",
+      "baselineSha256": "dce77372f8b77dcc682ad82c57c4e9732980ac25b052dee5ab46d05aefce0c34",
+      "candidateSha256": "b5b68d440ff5116b922cf882658076905100d3a26257c9d916ff5d80f2498fdc"
+    }
+  ],
+  "audio": {
+    "path": "assets/audio/prologue/END-01.mp3",
+    "baselineSha256": "e28eebd99e4e28dd1f814da3fd0fa524353ccfe23e2faeb6a09e1fcbb5436072",
+    "sha256": "2f437ea51a38f510d241105359fc27ceb336517ad868e62f63090a5a4ecf2a38",
+    "bytes": 9644,
+    "sampleFrames": 26977,
+    "sampleRate": 24000,
+    "decodedDurationSeconds": 1.1240416666666666,
+    "legacyDurationSeconds": 1.904
+  },
+  "publicAdapters": [
+    {
+      "path": "src/prologue-voice-timing.js",
+      "baselineSha256": "870e05e31c22453720269cae0fb87b1ffac3250309ad48c6c93057f6e75467f9",
+      "candidateSha256": "4df3c3c9039c6793980fe229d3a354c4c406408a044e44f783f3b47f017685d8"
+    }
+  ]
+}

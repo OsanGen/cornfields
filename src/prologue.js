@@ -1,3 +1,4 @@
+import {sampleRealismSequence,POST_TITLE_CHAPTERS} from './prologue-return-sequence.js';
 import {sampleRoomTransition} from './prologue-liquid-transition.js';
 import {samplePrologueWake} from './prologue-performance.js';
 import {WEST_APPROACH,approachWaypoint,approachLateral,clampApproachPosition,approachYaw} from './prologue-layout.js';
@@ -28,6 +29,8 @@ export function prologueFrame(seconds,{reduced=false,timeline,durations}={}){
     radioOffAt:script.cues.find(([id])=>id==='entertainment_off')[1]-script.chapters.find(c=>c.id==='car').start,
     reduced,returning:false,returnTime:0,
   };
+  frame.sequence=sampleRealismSequence(frame);
+  if(frame.sequence.afterTitles){frame.red=0;frame.mist=0;}
   frame.wake=samplePrologueWake(frame);frame.transfer=sampleRoomTransition(frame);
   frame.driving=samplePrologueDriving(frame,{timeline:script});
   return frame;
@@ -47,7 +50,7 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
   const fired=new Set(),dropped=new Set();
   const cabinEnd=script.chapters.find(c=>c.id==='cabin').end;
   const chapter=()=>script.chapters.find(c=>time<c.end-1e-8)||script.chapters.at(-1);
-  const walking=new Set(['walk','history','return_walk','disappearance','arrival']);
+  const walking=new Set(['walk','history','disappearance','arrival']);
   const vision=new Set(['undead','redroom','liquid']);
   // Presentation smoothing leaves gameplay routes, cumulative travel and the audio
   // phase untouched. Two critically damped channels blend acceleration and stops;
@@ -73,6 +76,7 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
   }
   function enterChapter(c){
     if(c.id!==chapterId){
+      if(c.id==='solid_return'){Object.assign(player,{x:WEST_APPROACH.thresholdX,y:GAME_CONFIG.player.eyeHeight,z:WEST_APPROACH.centerZ,yaw:Math.PI/2,pitch:0,moving:false});}
       if(c.id==='redroom'){
         outdoor={...player};inRoom=false;
       }else if(chapterId==='redroom'&&outdoor){Object.assign(player,outdoor,{moving:false});outdoor=null;inRoom=false;}
@@ -84,15 +88,16 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
     const transfer=sampleRoomTransition({chapter:c.id,chapterTime:time-c.start});
     if(c.id==='redroom'&&transfer.room!==inRoom){inRoom=transfer.room;if(inRoom)Object.assign(player,{x:0,y:GAME_CONFIG.player.eyeHeight,z:2,yaw:0,pitch:0,moving:false});else if(outdoor)Object.assign(player,outdoor,{moving:false});}
     if(controls.lookDelta>0||Number.isFinite(controls.yaw)&&Math.abs(controls.yaw-player.yaw)>.001||Number.isFinite(controls.pitch)&&Math.abs(controls.pitch-player.pitch)>.001)player.looked=true;
-    if(Number.isFinite(controls.yaw))player.yaw=controls.yaw;
-    if(Number.isFinite(controls.pitch))player.pitch=Math.max(-1.25,Math.min(1.25,controls.pitch));
+    if(Number.isFinite(controls.yaw)&&(!POST_TITLE_CHAPTERS.includes(c.id)||c.id==='redroom')&&c.id!=='rupture')player.yaw=controls.yaw;
+    if(Number.isFinite(controls.pitch)&&(!POST_TITLE_CHAPTERS.includes(c.id)||c.id==='redroom')&&c.id!=='rupture')player.pitch=Math.max(-1.25,Math.min(1.25,controls.pitch));
     if(!exited&&time>=cabinEnd-1e-8&&controls.interact){
       exited=true;fired.add('door_open');onCue('door_open');
     }
     const exit=c.id==='exit'?clamp((time-c.start)/EXIT_SECONDS):exited?1:0;
     if(exited&&exit<1){const pose=samplePrologueExit(exit*EXIT_SECONDS);[player.x,player.y,player.z]=pose.position;}
-    const movable=exited&&exit>=1&&c.id!=='rupture'&&(c.id!=='redroom'||transfer.cover===0&&transfer.room);
-    if(exited&&controls.flashlight)player.flashlightOn=!player.flashlightOn;
+    const cinematic=c.id==='rupture'||POST_TITLE_CHAPTERS.includes(c.id)&&c.id!=='redroom';
+    const movable=exited&&exit>=1&&!cinematic&&(c.id!=='redroom'||transfer.cover===0&&transfer.room);
+    if(exited&&!cinematic&&controls.flashlight)player.flashlightOn=!player.flashlightOn;
     player.moving=false;
     if(movable){
       player.y=GAME_CONFIG.player.eyeHeight;
@@ -158,11 +163,11 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
       if(disposed||!['preflight','finished'].includes(phase))return false;
       time=0;elapsed=0;skipped=false;exited=false;outdoor=null;inRoom=false;held=false;follow=null;separationTime=0;lastCall=-Infinity;callCount=0;chapterId='car';reset();fired.clear();dropped.clear();phase='playing';return true;
     },
-    tick(dt,controls={}){
+    tick(dt,controls={},stopAt=script.duration){
       if(disposed||phase!=='playing'||!Number.isFinite(dt)||dt<=0)return 0;
       let used=0;
-      while(used<dt-1e-8&&phase==='playing'){
-        const step=Math.min(.05,dt-used,Math.max(1e-6,chapter().end-time));
+      while(used<dt-1e-8&&phase==='playing'&&time<stopAt-1e-8){
+        const step=Math.min(.05,dt-used,Math.max(1e-6,chapter().end-time),Math.max(0,stopAt-time));
         update(step,controls);used+=step;
         controls={...controls,interact:false,flashlight:false};
       }
@@ -178,7 +183,8 @@ export function createPrologue({onCue=()=>{},durations={},timeline}={}){
       frame.waitingForExit=!exited&&time>=cabinEnd-1e-8;
       if(frame.waitingForExit){frame.chapter='cabin';frame.chapterTime=script.chapters.find(c=>c.id==='cabin').end-script.chapters.find(c=>c.id==='cabin').start;frame.chapterProgress=1;frame.spoken='';frame.line=null;}
       if(follow){Object.assign(frame,{time:elapsed,line:follow,nextLine:null,spoken:follow.text,speaker:follow.speaker});}
-      frame.exitPose=exited?samplePrologueExit(frame.exitProgress*EXIT_SECONDS):null;frame.storyTime=time;frame.followHeld=held;frame.canMove=exited&&frame.exitProgress>=1&&frame.chapter!=='rupture';
+      frame.exitPose=exited?samplePrologueExit(frame.exitProgress*EXIT_SECONDS):null;frame.storyTime=time;frame.followHeld=held;frame.canMove=exited&&frame.exitProgress>=1&&!frame.sequence.freeze&&(frame.chapter!=='redroom'||frame.transfer.cover===0&&frame.transfer.room);
+      frame.sequence=sampleRealismSequence(frame);
       frame.motion=sampleInteractivePrologueMotion(frame,escorts);
       if(frame.chapter==='redroom')frame.motion.blocking.menVisible=!frame.transfer.room;
       if(phase==='paused'){frame.spoken='';frame.speaker='';}

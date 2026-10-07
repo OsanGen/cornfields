@@ -16,7 +16,8 @@ test('approved exit adds only 0.75 seconds, stages clearance then support, and l
   // 5.2s encounter +1.52s knock lead replace .65s emergence lead +2s bang
   // and the old .18s interline gap; the unchanged reply duration is subtracted.
   const encounterExtension=5.2+1.52-.65-2-.18-(reply.end-reply.start);
-  assert(Math.abs(timeline.duration-(163.33829354838724+5.55+(PROLOGUE_OPENING.musicLead-6)+(bridge.end-bridge.start)+.18+3.2+2.4+encounterExtension))<1e-8,'only the approved waking, bridge, vision and moving-car encounter durations extend the baseline');
+  const reorderedDelta=4+5.8+2.4-5-(.1+Math.max(1.15,10/3.1,PROLOGUE_VOICE_TIMING['RET-01'].duration+.12)+.12);
+  assert(Math.abs(timeline.duration-(163.33829354838724+5.55+(PROLOGUE_OPENING.musicLead-6)+(bridge.end-bridge.start)+.18+3.2+2.4+encounterExtension+reorderedDelta))<1e-8,'only approved staged timing changes extend the baseline; no exit or dialogue acceleration');
   assert(Math.abs(timeline.chapters.find(c=>c.id==='exit').end-timeline.chapters.find(c=>c.id==='exit').start-7.467448387096773)<1e-8);
   assert(Math.abs(timeline.lines.find(l=>l.id==='ARR-01').start-timeline.chapters.find(c=>c.id==='exit').start-EXIT_SECONDS)<1e-8);
   assert.deepEqual(samplePrologueExit(0).position,[.5,1.13,.35]);assert.deepEqual(samplePrologueExit(1.6).position,[1.85,1.58,-.35]);

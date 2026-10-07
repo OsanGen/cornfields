@@ -224,9 +224,9 @@
       "duration": 1.6254
     },
     "END-01.mp3": {
-      "bytes": 14012,
-      "sha256": "e28eebd99e4e28dd1f814da3fd0fa524353ccfe23e2faeb6a09e1fcbb5436072",
-      "duration": 1.904
+      "bytes": 9644,
+      "sha256": "2f437ea51a38f510d241105359fc27ceb336517ad868e62f63090a5a4ecf2a38",
+      "duration": 1.1240416666666666
     }
   },
   "subtitle_only_cues": [
@@ -355,6 +355,27 @@
       "newSpendUSD": 0,
       "newExternalProcessing": false,
       "approvedMessage": "Sentinel_ebf1c14d50bc8191bcc3e5705334cfbb"
+    }
+  },
+  "realismLiquidV1": {
+    "end01": {
+      "file": "END-01.mp3",
+      "text": "Am I going crazy?",
+      "sourceFileRecord": {
+        "bytes": 14012,
+        "sha256": "e28eebd99e4e28dd1f814da3fd0fa524353ccfe23e2faeb6a09e1fcbb5436072",
+        "duration": 1.904
+      },
+      "sourceCommit": "115d3343f58a23cfc78811071c5e45bbe7a5e3a4",
+      "sha256": "2f437ea51a38f510d241105359fc27ceb336517ad868e62f63090a5a4ecf2a38",
+      "bytes": 9644,
+      "decodedDurationSeconds": 1.1240416666666666,
+      "sampleRate": 24000,
+      "sampleFrames": 26977,
+      "modifications": "Existing recording trimmed from 0.780 seconds with 8 ms onset and 22 ms ending fades; mono MP3 64 kbps. No new recording or voice provider.",
+      "newSpendUSD": 0,
+      "newExternalProcessing": false,
+      "timingContract": "Prologue dialogue uses decodedDuration 26977/24000 seconds. The existing legacy duration field of 1.904 seconds remains unchanged for the separate survival-arrival presentation clock."
     }
   }
 }

@@ -28,7 +28,7 @@ export const runtimeAssets = [
 ].map(name=>`assets/audio/${name}`)).concat([...new Set(Object.values(FOOTSTEP_FILES))].filter(name=>name.startsWith('footsteps/')).map(name=>`assets/audio/${name}`),['assets/audio/footsteps/sources.json']).concat([
   'barlow-condensed.ttf','rubik-glitch.ttf','barlowcondensed-OFL.txt','rubikglitch-OFL.txt','LICENSES.md','sources.json',
 ].map(name=>`assets/fonts/${name}`)).concat([
-  'human-roadside-v2-source.json','roadside-dog-v1.glb','mike-body.glb','roadside-set.glb','projector.glb','cruiser.glb','cast-clarence.glb','cast-stanley.glb','dispatch-radio.glb','asphalt_diff.jpg','asphalt_nor_gl.jpg','asphalt_rough.jpg','sources.json','LICENSES.md',
+  'human-roadside-v2-source.json','roadside-dog-v2.glb','background-trees-v1.glb','mike-body.glb','roadside-set.glb','projector.glb','cruiser.glb','cast-clarence.glb','cast-stanley.glb','dispatch-radio.glb','asphalt_diff.jpg','asphalt_nor_gl.jpg','asphalt_rough.jpg','sources.json','LICENSES.md',
 ].map(name=>`assets/intro/${name}`)).concat(['assets/audio/prologue/entertainment-music.mp3','assets/audio/prologue/title-music.mp3','assets/audio/prologue/roadside-dog-bark.wav']).concat([...PROLOGUE_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/prologue/${name}`)).concat([...SURVIVAL_LINES.map(line=>`${line.id}.mp3`),'sources.json','LICENSES.md'].map(name=>`assets/audio/survival/${name}`));
 
 // The game's static ES-module imports, including multiline import/export lists.

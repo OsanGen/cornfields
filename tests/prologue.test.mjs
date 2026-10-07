@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import {PROLOGUE,PROLOGUE_CHAPTERS,PROLOGUE_LINES,PROLOGUE_AUDIO_LINES,PROLOGUE_FOLLOW_LINES,PROLOGUE_END_LINE,createPrologueTimeline} from '../src/prologue-script.js';
 import {PROLOGUE_VOICE_TIMING} from '../src/prologue-voice-timing.js';
 
-const ids=['car','dispatch','emergence','bang','cabin','exit','flashlight','walk','undead','history','redroom','return_walk','disappearance','liquid','arrival','rupture'];
+const ids=['car','dispatch','emergence','bang','cabin','exit','flashlight','walk','undead','history','disappearance','arrival','rupture','solid_return','gun_recovery','reaction','redroom'];
 function verifyTimeline(timeline){
   assert.deepEqual(timeline.chapters.map(c=>c.id),ids);
   let end=0;for(const chapter of timeline.chapters){assert.equal(chapter.start,end);assert(chapter.end>chapter.start);end=chapter.end;}
@@ -24,7 +24,7 @@ function verifyTimeline(timeline){
 
 test('fast opening keeps one contiguous, complete script and independent follow/end cues',()=>{
   verifyTimeline({chapters:PROLOGUE_CHAPTERS,lines:PROLOGUE_LINES,duration:PROLOGUE.duration});
-  assert.equal(new Set(PROLOGUE_AUDIO_LINES.map(line=>line.id)).size,42);
+  assert.equal(new Set(PROLOGUE_AUDIO_LINES.map(line=>line.id)).size,41);
   // c169100 baseline: 6-second lead and 9-word CAR-00. The approved opening
   // adds an 8-second lead and removes 3 caption words at the same 2.75 words/s.
   const openingDelta=(14-6)+(6-9)/2.75;
@@ -33,12 +33,12 @@ test('fast opening keeps one contiguous, complete script and independent follow/
     142.65181818181827,146.5081818181819,175.85818181818198,180.85818181818198,182.85818181818198,194.85818181818198];
   assert.equal(PROLOGUE_LINES[0].start,14);
   assert(Math.abs(PROLOGUE_LINES[0].end-PROLOGUE_LINES[0].start-6/2.75)<1e-9,'approved caption keeps natural reading time');
-  PROLOGUE_CHAPTERS.forEach((chapter,i)=>assert(Math.abs(chapter.end-baselineChapterEnds[i]-openingDelta)<1e-9,chapter.id+' shifts only by the approved opening delta'));
-  assert(PROLOGUE.duration+20+4<223+openingDelta,'original tutorial-reaction budget plus only the approved opening delta');
+  PROLOGUE_CHAPTERS.slice(0,10).forEach((chapter,i)=>assert(Math.abs(chapter.end-baselineChapterEnds[i]-openingDelta)<1e-9,chapter.id+' shifts only by the approved opening delta'));
+  assert(PROLOGUE.duration+20<240,'approved reordered opening stays within the existing four-minute authored budget');
   assert.deepEqual(PROLOGUE_FOLLOW_LINES.map(line=>line.id),['FOL-01','FOL-02','FOL-03']);
-  assert.equal(PROLOGUE_END_LINE.text,'Where did they go? Am I going crazy?');
+  assert.equal(PROLOGUE_END_LINE.text,'Am I going crazy?');
   assert.equal(PROLOGUE_END_LINE.basis,'U');
-  assert(PROLOGUE_LINES.every(line=>!line.id.startsWith('FOL-')&&line.id!=='END-01'));
+  assert(PROLOGUE_LINES.every(line=>!line.id.startsWith('FOL-')));assert.equal(PROLOGUE_LINES.filter(line=>line.id==='END-01').length,1);assert.equal(PROLOGUE_LINES.find(line=>line.id==='END-01').chapter,'reaction');assert(!PROLOGUE_LINES.some(line=>line.id==='RET-01'));
 });
 
 test('source wording, provenance and unanswered identity survive the fast adaptation',()=>{
@@ -53,12 +53,12 @@ test('source wording, provenance and unanswered identity survive the fast adapta
   for(const fact of [/2002/,/Sadie Yates/,/gray jacket with holes in it/,/seven hundred acres/,/compass.*lost/,/mind sees north/,/Sadie knew that rule/,/dog was barking wild/,/Were there footsteps\?/,/She just vanished/])assert.match(text,fact);
   assert.doesNotMatch(text,/Cold Case|that thing on TV|blitzkrieg|Glenda/);
   assert(PROLOGUE_AUDIO_LINES.every(item=>['R','A','N','U'].includes(item.basis)));
-  assert.equal(PROLOGUE_LINES.filter(item=>item.chapter==='rupture').length,0);
+  assert.equal(PROLOGUE_LINES.filter(item=>item.chapter==='rupture').length,1);
 });
 
 test('hallucinations hold at the three required completed-sentence boundaries',()=>{
   const timeline=createPrologueTimeline(),chapter=id=>timeline.chapters.find(c=>c.id===id),line=id=>timeline.lines.find(l=>l.id===id);
-  for(const [id,seconds,preceding,next] of [['undead',5.2,'WAL-05','WAL-06'],['redroom',12.4,'WAL-09','RET-01'],['liquid',5,'WAL-16',null]]){
+  for(const [id,seconds,preceding,next] of [['undead',5.2,'WAL-05','WAL-06'],['rupture',12,'WAL-16','END-01'],['redroom',12.4,'END-01',null]]){
     const c=chapter(id);assert(Math.abs(c.end-c.start-seconds)<1e-9);assert(c.start>=line(preceding).end);
     if(next)assert(line(next).start>=c.end);
     assert(timeline.lines.filter(l=>l.start>=c.start&&l.start<c.end).every(l=>l.chapter===id));

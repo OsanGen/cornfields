@@ -112,7 +112,7 @@ test('redroom transfers only under liquid cover, permits held-room walking and r
   assert.deepEqual(Object.fromEntries(Object.entries(story.snapshot().escorts).map(([id,actor])=>[id,[actor.x,actor.z,actor.distance]])),stationary);
   story.pause();const paused=story.snapshot();story.tick(30,{forward:1});assert.deepEqual(story.snapshot(),paused);story.resume();
   story.tick(chapter('redroom').end-story.frame().storyTime);
-  assert.equal(story.frame().chapter,'return_walk');
+  assert.equal(story.phase,'finished');assert.equal(story.frame().chapter,'redroom');
   for(const key of ['x','z','yaw','pitch','distance','flashlightOn'])assert.equal(story.frame().player[key],before[key],key);
   assert.equal(story.snapshot().followCalls,0);story.dispose();
 });
@@ -122,28 +122,28 @@ test('all visions fire once, retain fixed durations under reduced effects and co
   while(story.phase!=='finished'&&wall<240){
     const frame=story.frame(),snapshot=story.snapshot();seen.add(frame.chapter);
     if(['undead','redroom','liquid'].includes(frame.chapter)){
-      const reduced=story.frame(true);assert.equal(reduced.spoken,frame.spoken);assert.equal(reduced.canMove,true);
+      const reduced=story.frame(true);assert.equal(reduced.spoken,frame.spoken);assert.equal(reduced.canMove,frame.canMove);if(frame.chapter==='redroom')assert.equal(reduced.canMove,frame.transfer.room&&frame.transfer.cover===0);
     }
     story.tick(DT,followControls(frame,snapshot));wall+=DT;
   }
   assert.equal(story.phase,'finished');assert.equal(story.snapshot().followCalls,0);
   for(const id of ['undead','redroom','liquid','crash'])assert.equal(cues.filter(c=>c===id).length,1,id);
-  for(const [id,duration] of [['undead',5.2],['redroom',12.4],['liquid',5],['rupture',12]])assert(Math.abs(chapter(id).end-chapter(id).start-duration)<1e-8);
-  assert(seen.has('redroom')&&seen.has('liquid'));
-  assert(wall+20+PROLOGUE_END_LINE.end<240);
+  for(const [id,duration] of [['undead',5.2],['redroom',12.4],['rupture',12],['solid_return',4],['gun_recovery',5.8],['reaction',2.4]])assert(Math.abs(chapter(id).end-chapter(id).start-duration)<1e-8);
+  assert(seen.has('redroom')&&seen.has('rupture')&&seen.has('gun_recovery'));
+  assert(wall+20<240,'same four-minute total opening budget; reaction is now part of the story');
   assert.deepEqual(story.snapshot().dropped,[]);story.dispose();
 });
 
-test('credits follow the revised story once and become gameplay-ready without an added return hold',t=>{
-  const opening=createOpening();opening.begin();let elapsed=0,creditsStarted=null;
+test('credits occur once between world liquid and the approved return sequence, then enter gameplay',t=>{
+  const opening=createOpening();opening.begin();let elapsed=0,creditsStarted=null,creditsEnded=null;
   while(opening.phase!=='ready'&&elapsed<240){
     const frame=opening.frame(),snapshot=opening.snapshot();
-    if(opening.stage==='credits'&&creditsStarted===null)creditsStarted=elapsed;
+    if(opening.stage==='credits'&&creditsStarted===null)creditsStarted=elapsed;else if(opening.stage==='prologue'&&creditsStarted!==null&&creditsEnded===null){creditsEnded=elapsed;assert.equal(frame.chapter,'solid_return');}
     opening.tick(DT,opening.stage==='prologue'?followControls(frame,snapshot):{});elapsed+=DT;
   }
-  assert.equal(opening.phase,'ready');assert.equal(opening.stage,'credits');
-  assert(Math.abs(elapsed-creditsStarted-20)<DT*2);assert(elapsed+PROLOGUE_END_LINE.end<240);
-  t.diagnostic(`Attentive control-driver run: ${elapsed.toFixed(2)} seconds through credits, ${(elapsed+PROLOGUE_END_LINE.end).toFixed(2)} seconds through END-01 caption.`);
+  assert.equal(opening.phase,'ready');assert.equal(opening.stage,'prologue');assert.equal(opening.frame().chapter,'redroom');
+  assert(Math.abs(creditsEnded-creditsStarted-20)<DT*2);assert(elapsed<240);assert.equal(opening.snapshot().story.fired.filter(c=>c==='redroom').length,1);
+  t.diagnostic(`Attentive control-driver run: ${elapsed.toFixed(2)} seconds for the complete reordered opening, including its reaction and projector.`);
   assert.equal(opening.snapshot().credits.time,20);opening.finish();assert.equal(opening.active,false);opening.dispose();
 });
 
@@ -166,9 +166,9 @@ test('diagonal movement toward the group slides around the cruiser instead of st
 });
 
 
-test('returning to title during END-01 clears the line instead of replaying it in a fresh game',async()=>{
+test('skipping and returning to title never duplicate the earlier reaction in gameplay',async()=>{
   const h=createHarness({prologue:true});await h.app.enter();h.key('KeyJ');h.app.advance(20000);
-  assert.equal(h.node('ending-caption').hidden,false);h.app.advance(1000);h.app.pause();
+  assert.equal(h.node('ending-caption').hidden,true);h.app.advance(1000);h.app.pause();
   h.click('title-btn');await h.app.enter();h.app.advance(50);
   assert.equal(h.app.snapshot().mode,'playing');assert.equal(h.node('ending-caption').hidden,true);h.app.dispose();
 });
@@ -183,11 +183,12 @@ test('look tutorial clears on genuine look input rather than ignoring it until a
 
 test('liquid phrase stays readable once without a duplicate subtitle and clears after its vision',()=>{
   const h=createHarness(),ui=createUI(h.document);
-  for(const [seconds,visible] of [[.5,false],[1,true],[2.5,true],[3.9,true],[4.1,false]]){
-    const frame={...prologueFrame(chapter('liquid').start+seconds,{timeline}),stage:'prologue',player:{flashlightOn:true},canMove:true};
+  const line=timeline.lines.find(l=>l.id==='LIQ-01');assert.equal(line.chapter,'rupture');
+  for(const [time,visible]of [[line.start-.1,false],[line.start+.01,true],[line.end-.01,true],[line.end+.1,false]]){
+    const frame={...prologueFrame(time,{timeline}),stage:'prologue',player:{flashlightOn:true},canMove:false};
     ui.renderOpening({active:true,phase:'playing',frame:()=>frame});
-    assert.equal(h.node('liquid-phrase').hidden,!visible);assert.equal(h.node('story-caption').hidden,true);
+    assert.equal(h.node('liquid-phrase').hidden,true,'no duplicate legacy full-screen phrase');assert.equal(h.node('story-caption').hidden,!visible);
+    if(visible)assert.equal(h.node('story-subtitle').textContent,'WE ARE ONE');
   }
-  const after={...prologueFrame(chapter('liquid').end+.1,{timeline}),stage:'prologue',player:{flashlightOn:true},canMove:true};
-  ui.renderOpening({active:true,phase:'playing',frame:()=>after});assert.equal(h.node('liquid-phrase').hidden,true);h.app.dispose();
+  assert.equal(timeline.lines.filter(l=>l.id==='LIQ-01').length,1);h.app.dispose();
 });

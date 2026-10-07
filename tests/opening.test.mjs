@@ -29,7 +29,7 @@ test('entire opening freezes gameplay and enters directly once at the original s
   h.key('KeyJ');h.app.advance(20000);
   assert.equal(h.app.snapshot().mode,'playing');assert.equal(h.app.snapshot().elapsed,0);assert.equal(h.app.snapshot().player.ammo,2);
   assert.equal(h.app.introSnapshot().phase,'finished');assert.equal(h.audio.gameStarts,1);
-  assert.equal(h.node('ending-caption').hidden,false);
+  assert.equal(h.node('ending-caption').hidden,true,'the reaction belongs before the projector and must not replay in gameplay');
   h.app.advance(100);assert.equal(h.app.snapshot().player.moving,true);
   assert.equal(h.app.snapshot().player.flashlightOn,true);h.app.dispose();
 });
@@ -113,4 +113,10 @@ test('title-only fallback also syncs visible frames and silences music at its re
   await h.app.enter();await h.flush();h.app.advance(18100);
   assert.equal(frames.at(-1).shot,'title');assert.ok(frames.at(-1).opacity>0);
   h.click('intro-skip');assert.equal(h.app.introSnapshot().phase,'ready');assert.equal(frames.at(-1),null);h.app.dispose();
+});
+
+test('skipping the remaining story after credits enters gameplay without replaying titles or an extra confirmation',async()=>{
+ const {followApproachTarget}=await import('../src/prologue-layout.js');const h=createHarness({prologue:true});await h.app.enter();
+ for(let n=0;n<10000;n++){const s=h.app.introSnapshot();if(s.titlesPlayed&&s.stage==='prologue')break;const p=s.story.player,c={};if(s.story.waitingForExit)c.interact=true;else if(s.stage==='prologue'){const a=followApproachTarget(p,s.story.escorts),dx=a.x-p.x,dz=a.z-p.z;if(Math.hypot(dx,dz)>.28){c.forward=1;c.yaw=Math.atan2(-dx,-dz);}}h.app.step(.05,c);}
+ assert.equal(h.app.introSnapshot().titlesPlayed,true);assert.equal(h.app.introSnapshot().stage,'prologue');h.key('KeyJ');assert.equal(h.app.snapshot().mode,'playing');assert.equal(h.app.introSnapshot().credits.time,20);assert.equal(h.app.snapshot().elapsed,0);assert.equal(h.node('ending-caption').hidden,true);h.app.dispose();
 });

@@ -74,7 +74,7 @@ test('the new visions preserve their order and information in reduced effects',(
     assert.equal(vision('rupture',.5).limp,false);assert.equal(vision('rupture',2).limp,true);assert.equal(vision('rupture',2).rise,0);
     assert.ok(vision('rupture',5).rise>.4);assert.equal(vision('rupture',5).dissolve,0);
     assert.equal(vision('rupture',7).binary,false);assert.ok(vision('rupture',7).liquid>0);assert.ok(vision('rupture',7).dissolve>0);assert.ok(vision('rupture',7).mist<.2);
-    assert.equal(vision('rupture',9.1).escortsVisible,false);assert.equal(vision('rupture',9.1).binary,false);assert.equal(vision('rupture',12).mist,1);
+    assert.equal(vision('rupture',9.1).escortsVisible,true);assert.equal(vision('rupture',11.35).escortsVisible,false);assert.equal(vision('rupture',11.35).roomCover,1);assert.equal(vision('rupture',9.1).binary,false);assert.equal(vision('rupture',12).mist,1);
     if(reduced)for(const t of [0,1,3.1,6.1,9])assert.equal(vision('rupture',t).lightning,0);
   }
 });
@@ -139,7 +139,7 @@ test('opening scenery excludes the giant cone-tree placeholders and retains the 
       });
       assert.equal(coneBatches.length,0,'placeholder cone scenery must not cross the approaching car view');
       assert.equal(skies.length,1,'retain the existing night sky');
-      assert.ok(scene.fog?.isFogExp2,'retain the existing fog');
+      assert.ok(scene.fog?.isFog,'approved smooth approach depth ramp');assert.equal(scene.fog.near,14);assert.equal(scene.fog.far,100);
       assert.ok(scene.getObjectByName('Continuous roadside'),'retain the road');
       assert.ok(scene.getObjectByName('Roadside corn with door and leaf clearance'),'retain roadside corn');
       assert.ok(scene.getObjectByName('Westward cornfield approach and threshold'),'retain the approach field');
@@ -178,8 +178,8 @@ test('rendering consumes live motion, draws the red room and capped ascent, then
   d=draw('redroom',4);assert.equal(d.environment,'red room');assert.deepEqual(d.roomContents,['projector','original detailed anonymous face projection']);assert.equal(scene.getObjectByName('Ten second red room').visible,true);assert.equal(d.camera.pitch,.12);
   d=draw('liquid',2);assert.ok(d.liquidMaterials>10);assert.equal(scene.getObjectByName('Ten second red room').visible,false);
   d=draw('rupture',5);assert.ok(d.actors.every(a=>a.pose==='limp'));assert.ok(scene.getObjectByName('Prologue Clarence').position.y>.4);assert.equal(d.binaryFragments,0);
-  d=draw('rupture',7,true);assert.equal(d.binaryFragments,0);assert.equal(d.ribbons,6);assert.ok(d.actors.every(a=>a.dissolve>0));assert.equal(d.vision.lightning,0);
-  d=draw('rupture',10);assert.equal(d.menVisible,false);assert.equal(d.binaryFragments,0);
+  d=draw('rupture',7,true);assert.equal(d.binaryFragments,0);assert.equal(d.ribbons,6);assert.ok(d.actors.every(a=>a.dissolve===0),'liquid geometry stays whole rather than disappearing as grain');assert(d.liquidMaterials>10);assert.equal(d.vision.lightning,0);
+  d=draw('rupture',10);assert.equal(d.menVisible,true);assert.equal(d.binaryFragments,0);d=draw('rupture',11.35);assert.equal(d.menVisible,false);assert.equal(d.vision.roomCover,1,'escort removal occurs only behind full coverage');
   assert.equal(material.onBeforeCompile,priorHook);assert.equal(material.userData.prologueLiquid,undefined);
   view.release();assert.equal(borrowedDisposed,0);view.dispose();geometry.dispose();material.dispose();assert.equal(borrowedDisposed,2);
 });

@@ -3,7 +3,7 @@ import {createCabinWheel,steeringAngle} from './prologue-cabin.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 /** Owned optional assets. A released set rejects late arrivals without leaking. */
-export function createPrologueAssets({onCar,onCast,onRoad,onMist,onWood,onGround,onSky,onRoadside,onProjector,onDog,deadlineMs=8000,gltfLoader=new GLTFLoader(),textureLoader=new THREE.TextureLoader()}={}){
+export function createPrologueAssets({onCar,onCast,onRoad,onMist,onWood,onGround,onSky,onRoadside,onProjector,onDog,onTrees,deadlineMs=8000,gltfLoader=new GLTFLoader(),textureLoader=new THREE.TextureLoader()}={}){
   const resources=new Set(),timers=new Set();let closed=false;
   const stats={car:'loading',cast:'loading',castRoles:{clarence:'loading',stanley:'loading'},road:'loading',roadComponents:{map:'loading',normalMap:'loading',roughnessMap:'loading'},mist:'loading',errors:[]};
   function status(name,value){
@@ -43,7 +43,8 @@ export function createPrologueAssets({onCar,onCast,onRoad,onMist,onWood,onGround
   // Each role owns an independently authored face. A failed role keeps only its
   // own fallback; neither late arrival nor timeout may replace the other actor.
   load('car',gltf.loadAsync(url('cruiser.glb')),onCar);
-  if(onDog)load('dog',gltf.loadAsync(url('roadside-dog-v1.glb')),onDog);
+  if(onTrees)load('trees',gltf.loadAsync(url('background-trees-v1.glb')),onTrees);
+  if(onDog)load('dog',gltf.loadAsync(url('roadside-dog-v2.glb')),onDog);
   if(onRoadside)load('roadside',gltf.loadAsync(url('roadside-set.glb')),onRoadside);
   if(onProjector)load('projector',gltf.loadAsync(url('projector.glb')),onProjector);
   for(const role of ['clarence','stanley'])

@@ -59,3 +59,7 @@ Changes: excerpted 0:22.0–0:24.2, short onset/ending fades and volume adjustme
 “Dog barking mono” by Brandon Morris (uploaded by HaelDB), from https://opengameart.org/content/dog-barking-mono . Used under the offered CC0 1.0 option: https://creativecommons.org/publicdomain/zero/1.0/ . OpenGameArt permits selecting one offered license: https://opengameart.org/content/faq#q-multilicense .
 
 Local file: `roadside-dog-bark.wav`. Original 179,848-byte mono PCM16 44.1 kHz file is unchanged, SHA-256 `bbd0f908b3514dd3bd7d2bc04dcf64f8d360a161e7f43cac5d6761e7add79451`. Runtime gain envelopes, distance attenuation, stereo panning and car lowpass are applied. No new voice, paid processing or spend. Attentive listening remains unverified.
+
+## Realism and Liquid Sequence v1 short reaction edit, 5 October 2026
+
+END-01.mp3 is a local edit of the existing synthetic Mike recording, with its original Piper/LibriTTS source attribution and license retained above. The earlier words were removed so the line is “Am I going crazy?” The original source hash, current output hash, edit and decoded duration are retained in sources.json. No new voice, external processing or spend.
